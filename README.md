@@ -13,3 +13,17 @@ Current status
 --------------
 
 Buffer data structure completely fuctional.
+
+Usage
+-----
+
+
+License
+-------
+
+This project is licensed under the MIT license, please see LICENSE.md for more information.
+
+Contact
+-------
+
+Please feel free to contact me at haydenkparker@gmail.com
