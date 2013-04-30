@@ -29,11 +29,10 @@ class Buffer
 	end
 	def dump
 		safeCount = countChunks(0)
-		return if safeCount == 0
 		if @chunkArray[0].return("id") == @fileTop+1
 			toDump = @chunkArray.shift(safeCount)
 			@fileTop = toDump[-1].return("id")
-			@@file.concat(toDump)
+			#@@file.concat(toDump) dump to file here (perhaps open file in object, exists as instance variable, filename passed in initialize)
 		end
 	end
 end
