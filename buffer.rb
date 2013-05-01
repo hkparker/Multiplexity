@@ -21,11 +21,8 @@ class Buffer
 		self.dump
 	end
 	def countChunks(i)		
-		if @chunkArray.size == i+1 || @chunkArray[i].return("id") != @chunkArray[i+1].return("id")-1
-			return i+1
-		else
-			countChunks(i+1)
-		end
+		return i+1 if @chunkArray.size == i+1 || @chunkArray[i].return("id") != @chunkArray[i+1].return("id")-1
+		countChunks(i+1)
 	end
 	def dump
 		safeCount = countChunks(0)
