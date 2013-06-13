@@ -64,15 +64,15 @@ def close
 	exit 0
 end
 
-puts "Loading Multiplex client ".good + "-- proof of concept code - version 0.0.1".teal
+puts "Loading Multiplex client ".good
 
 puts "Please enter the IP address of the multiplex server".question
 puts "Skipping and using 192.210.217.180".bad
 server = "192.210.217.180"
 
 puts "Please enter the port of the multiplex server".question
-puts "Skipping and using 8000".bad
 port = 8000
+puts "Skipping and using #{port}".bad
 
 puts "Opening control socket".good
 begin
