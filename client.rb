@@ -7,7 +7,9 @@ require 'socket'
 
 def pickFile
 	puts "Please select a file to download".question
-	puts "You can use ls, cd, and pwd for filesystem navigation.".good
+	puts "You can use ls, cd, and pwd for filesystem navigation, and exit to close.".good
+	puts "Type \"download filename\" when you have selected a file for download".good
+	puts "Directory downloads are not yet supported".good
 	loop {
 		command = ""
 		until command.split(" ")[0] == "download"
@@ -57,7 +59,7 @@ end
 
 def close
 	puts "Closing network connections".good
-	@@control_socket.puts("done")
+	@@control_socket.puts("exit")
 	puts "Exiting Multiplex client".good
 	exit 0
 end
@@ -65,12 +67,12 @@ end
 puts "Loading Multiplex client ".good + "-- proof of concept code - version 0.0.1".teal
 
 puts "Please enter the IP address of the multiplex server".question
-puts "Skipping and using 127.0.0.1".bad
-server = "127.0.0.1"
+puts "Skipping and using 192.210.217.180".bad
+server = "192.210.217.180"
 
 puts "Please enter the port of the multiplex server".question
 puts "Skipping and using 8000".bad
-port = "8000"
+port = 8000
 
 puts "Opening control socket".good
 begin
@@ -88,3 +90,32 @@ puts "Downloading file size".good
 size = @@control_socket.gets.to_i
 puts "Size of #{file} is #{size} bytes (#{(size / 1024.0 / 1024.0).round(1)}MB, #{(size / 1024.0 / 1024.0 / 1024.0).round(1)}GB)".good
 puts "Beginning setup of multiplexed connections".good
+
+puts "Please enter the IP addresses to bind to".question
+puts "Skipping and using 192.168.64.3 and 192.168.1.4".bad
+ips = ["192.168.64.3","192.168.1.4"]
+
+puts "Binding all sockets to IPs".good
+
+@@control_socket.puts(ips.size)
+sockets = []
+sleep(1)
+begin
+	ips.each do |ip|
+		lhost = Socket.pack_sockaddr_in(0, ip)
+		rhost = Socket.pack_sockaddr_in(port, server)
+		socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+		puts "Binding socket to #{ip}".good
+		socket.bind(lhost)
+		puts "Success.  Connecting to #{server}".good
+		socket.connect(rhost)
+		sockets << socket
+	end
+rescue
+	puts "An unknown error occured while trying to bind to the IPs.".bad
+	puts "This could mean you need to run this as root.".bad
+	exit(0)
+end
+
+puts "All multiplex sockets bound to IPs".good
+

@@ -3,7 +3,7 @@
 require 'socket'
 require './colors.rb'
 
-server = TCPServer.new("0.0.0.0", 8000)
+server = TCPServer.new("0.0.0.0", 80)
 
 control_socket = server.accept
 
@@ -39,7 +39,17 @@ loop{
 		end
 	end
 	break if command == "done"
+	exit(0) if command == "exit"
 }
 
 file = control_socket.gets.chomp
 control_socket.puts("#{File.size(file)}")
+
+sockets = []
+control_socket.gets.to_i.times do |i|
+	puts "waiting for a multiplex socket"
+	sockets << server.accept
+	puts "got a multiplex socket"
+end
+
+
