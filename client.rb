@@ -100,6 +100,9 @@ puts "Binding all sockets to IPs".good
 @@control_socket.puts(ips.size)
 sockets = []
 sleep(1)
+
+# nothing below here works due to routing issue
+
 begin
 	ips.each do |ip|
 		lhost = Socket.pack_sockaddr_in(0, ip)
