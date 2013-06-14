@@ -12,9 +12,7 @@ The current design involves threaded downloader workers that grab the next chunk
 Current status
 --------------
 
-Having routing problems.
-
-My "server.rb" and "client.rb" files will probably be rewritten once I get everything to work to be a bit better designed.  The @@control_socket is my way of negotiating between the server and client.  My current workflow is to run ./server on the server and ./client on the client, with the server ip and interface ips written into the client for now.
+Routing issue solved, re-writing much of it to be more OO.
 
 Usage
 -----

@@ -101,13 +101,26 @@ puts "Binding all sockets to IPs".good
 sockets = []
 sleep(1)
 
-# nothing below here works due to routing issue
+
+
+
+# vim /etc/iproute2/rt_tables
+# added 128	multiplex0 and 129 multiplex1
+# ip route add default via 10.0.2.2 table multiplex0 # where 10.0.2.2 is the IP of one of the interfaces
+# ip route add default via 192.168.1.1 table multiplex1	# the other interface IP
+# ip rule add from 10.0.0.0/16 table multiplex0 # CIDR notation for the subnet that the interface for multiplex0 table is on
+# ip rule add from 192.168.1.0/24 table multiplex1
+# ip route flush cache
+
+
+
+
 
 begin
 	ips.each do |ip|
 		lhost = Socket.pack_sockaddr_in(0, ip)
 		rhost = Socket.pack_sockaddr_in(port, server)
-		socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+		socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 		puts "Binding socket to #{ip}".good
 		socket.bind(lhost)
 		puts "Success.  Connecting to #{server}".good
