@@ -1,8 +1,7 @@
 #!/usr/bin/ruby
 
 require 'socket'
-require './colors.rb'
-require './multiplexity.rb'
+require './multiplexity_server.rb'
 
 server = TCPServer.new("0.0.0.0", 80)
 loop {

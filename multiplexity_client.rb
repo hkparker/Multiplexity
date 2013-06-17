@@ -1,9 +1,13 @@
 require './colors.rb'
+require './buffer.rb'
+require './chunk.rb'
+require 'socket'
 
 class MultiplexityClient
 	def initialize
-	
+		
 	end
+	
 	def handshake
 		@socket_count = 0
 		@server.puts "HELLO Multiplexity"
@@ -11,6 +15,7 @@ class MultiplexityClient
 		@server.puts "SOCKETS #{@socket_count}"
 		self.setup_multiplex if @server.gets.chomp == "SOCKETS OK"
 	end
+	
 	def setup_multiplex
 		
 	end
@@ -28,7 +33,7 @@ class MultiplexityClient
 		# this method will return a filename that is able to be downloaded
 	end
 		
-	def process_command(command)		# this should really be a server method
+	def process_command(command)
 		case command
 			when "clear"
 				system "clear"
@@ -42,7 +47,6 @@ class MultiplexityClient
 		end
 	end
 	
-
 	
 	def shutdown
 		# close network connections and exit

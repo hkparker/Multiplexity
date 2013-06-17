@@ -5,6 +5,7 @@ class MultiplexityServer
 		@client = client
 		self.handshake
 	end
+	
 	def handshake
 		@client.close if @client.gets.chomp != "HELLO Multiplexity"
 		@client.puts "HELLO Client"
@@ -14,29 +15,36 @@ class MultiplexityServer
 		@client.puts "SOCKETS OK"
 		self.setup_multiplex
 	end
+	
 	def setup_multiplex
 		# this method ensures that all sockets are open correctly and that multiplex transfers are now ready.  hand over to transfer
+		# probably going to need an array of sockets.  then a thread for each socket that waits for the socket to ask for the next chunk then gives it
 	end
-	def something
+	
+	def choose_file
 		# a method to transfer files.
-		# loop {process_command server.gets} ... or something
+		# after multiplex is setup have a method that return which file to server
+		# this method will loop commands with client until the download command is selected
+		# it will return to the client if that file is ok to download, and if so start serving it
 	end
 	
 	def process_command(command)
 		command = command.split(" ")
 		case command[0]
 			when "ls"
-				list_files command[1]
+				list_files
 			when "cd"
 				change_dir command[1]
 			when "pwd"
 				print_dir
 			else
 				@client.puts "That was not a recognized command".bad
+				@client.puts "fin"
 		end
 	end
 	
 	def list_files
+		@client.puts "Files and directories in current directory:".good
 		files = Dir.entries(Dir.getwd)
 		files.each do |file|
 			file += "/" if Dir.exists?(file)
@@ -45,11 +53,20 @@ class MultiplexityServer
 		@client.puts "fin"
 	end
 	
-	def change_dir
-	
+	def change_dir(dir)
+		begin
+			Dir.chdir(dir)
+			@client.puts("Changed directory to #{new_dir}".good)
+			@client.puts "fin"
+		rescue
+			@client.puts("Unable to change directory to #{new_dir}".bad)
+			@client.puts "fin"
+		end
 	end
 	
 	def print_dir
-	
+		@client.puts "The current working directory is:".good
+		@client.puts(Dir.pwd)
+		@client.puts "fin"
 	end
 end

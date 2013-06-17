@@ -1,4 +1,4 @@
-Multiplexing file transfers
+Multiplexity
 ===========================
 
 The goal of this project is to be able to download a file from a server using sockets on multiple networking interfaces (and networks) while utilizing as much of the avaliable bandwidth on all interfaces as possible.
