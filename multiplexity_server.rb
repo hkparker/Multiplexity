@@ -1,6 +1,7 @@
 require './colors.rb'
 
 class MultiplexityServer
+	@@used_ports = []
 	def initialize(client)
 		@client = client
 		self.handshake
@@ -17,11 +18,15 @@ class MultiplexityServer
 	end
 	
 	def setup_multiplex
+		# choose a random port and send it back to the client. skip for now.
 		# this method ensures that all sockets are open correctly and that multiplex transfers are now ready.  hand over to transfer
 		# probably going to need an array of sockets.  then a thread for each socket that waits for the socket to ask for the next chunk then gives it
+		
+		#once multiplexing is setup, now what?
 	end
 	
 	def choose_file
+		loop{ process_command(@client.gets.chomp)}
 		# a method to transfer files.
 		# after multiplex is setup have a method that return which file to server
 		# this method will loop commands with client until the download command is selected

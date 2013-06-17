@@ -4,8 +4,8 @@ require './chunk.rb'
 require 'socket'
 
 class MultiplexityClient
-	def initialize
-		
+	def initialize(socket)
+		@server = socket
 	end
 	
 	def handshake
@@ -13,11 +13,16 @@ class MultiplexityClient
 		@server.puts "HELLO Multiplexity"
 		@server.close if @server.gets.chomp != "HELLO Client"
 		@server.puts "SOCKETS #{@socket_count}"
-		self.setup_multiplex if @server.gets.chomp == "SOCKETS OK"
+		if @server.gets.chomp == "SOCKETS OK"
+			true
+		else
+			false
+		end
 	end
 	
 	def setup_multiplex
-		
+		# do this later, using another port
+		#self.choose_file
 	end
 	
 	def get_command
@@ -30,6 +35,7 @@ class MultiplexityClient
 	end
 	
 	def choose_file
+		loop{ process_command(get_command) }
 		# this method will return a filename that is able to be downloaded
 	end
 		
