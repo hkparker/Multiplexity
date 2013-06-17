@@ -51,5 +51,3 @@ control_socket.gets.to_i.times do |i|
 	sockets << server.accept
 	puts "got a multiplex socket"
 end
-
-
