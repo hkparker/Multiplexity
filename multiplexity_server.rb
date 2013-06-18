@@ -23,6 +23,7 @@ class MultiplexityServer
 		# probably going to need an array of sockets.  then a thread for each socket that waits for the socket to ask for the next chunk then gives it
 		
 		#once multiplexing is setup, now what?
+		self.choose_file
 	end
 	
 	def choose_file

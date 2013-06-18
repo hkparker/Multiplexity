@@ -21,12 +21,14 @@ rescue
 end
 
 
-
-
-
-
-# get info here, pass open socket to initialize
 client = MultiplexityClient.new(socket)
-# then work from here
+
+# get information on interfaces, setup routing rules
+
 client.handshake
 client.setup_multiplex
+
+loop {
+	command = client.get_command
+	client.process_command command
+}
