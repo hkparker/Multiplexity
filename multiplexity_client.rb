@@ -47,14 +47,17 @@ class MultiplexityClient
 				shutdown
 			else
 				@server.puts command
-				until @server.gets == "fin"
-					puts @server.gets
-				end
+				loop {
+					line = @server.gets
+					break if line.chomp == "fin"
+					puts line
+				}
 		end
 	end
 	
 	
 	def shutdown
+		exit 0
 		# close network connections and exit
 	end
 	

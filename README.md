@@ -12,7 +12,7 @@ The current design involves threaded downloader workers that grab the next chunk
 Current status
 --------------
 
-Now that I have worked out all of the PoC stuff I'm re-writing everything to be better designed.  At this point expect everything to bo completely non-functional, I'm hoping to have useful code in about a month.
+Now that I have worked out all of the PoC stuff I'm re-writing everything to be better designed.  At this point expect everything to be completely non-functional, I'm hoping to have useful code in about a month.
 
 Usage
 -----

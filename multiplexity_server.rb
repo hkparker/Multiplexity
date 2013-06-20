@@ -27,7 +27,10 @@ class MultiplexityServer
 	end
 	
 	def choose_file
-		loop{ process_command(@client.gets.chomp)}
+		loop{
+			command = @client.gets.chomp
+			process_command(command)
+		}
 		# a method to transfer files.
 		# after multiplex is setup have a method that return which file to server
 		# this method will loop commands with client until the download command is selected
@@ -41,6 +44,8 @@ class MultiplexityServer
 				list_files
 			when "cd"
 				change_dir command[1]
+			when "size"
+				show_size command[1]
 			when "pwd"
 				print_dir
 			else
@@ -62,10 +67,10 @@ class MultiplexityServer
 	def change_dir(dir)
 		begin
 			Dir.chdir(dir)
-			@client.puts("Changed directory to #{new_dir}".good)
+			@client.puts("Changed directory to #{dir}".good)
 			@client.puts "fin"
 		rescue
-			@client.puts("Unable to change directory to #{new_dir}".bad)
+			@client.puts("Unable to change directory to #{dir}".bad)
 			@client.puts "fin"
 		end
 	end
@@ -74,5 +79,17 @@ class MultiplexityServer
 		@client.puts "The current working directory is:".good
 		@client.puts(Dir.pwd)
 		@client.puts "fin"
+	end
+	
+	def show_size(file)
+		@client.puts "File size for #{file}:".good
+		if FileTest.readable?(file)	# also need to make sure file isn't null or an empty string
+			size = File.size(file)
+			@client.puts "#{(size / 1024.0 / 1024.0).round(1)} MB, #{(size / 1024.0 / 1024.0 / 1024.0).round(1)} GB"
+			@client.puts "fin"
+		else
+			@client.puts "The file could not be read".bad
+			@client.puts "fin"
+		end
 	end
 end
