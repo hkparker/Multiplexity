@@ -38,4 +38,8 @@ class String
 	def question
 		"["+"*".purple+"] " + self
 	end
+	
+	def executing
+		"Executing: ".red + self
+	end
 end
