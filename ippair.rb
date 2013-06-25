@@ -1,5 +1,6 @@
 class IPPair
-	def initialize(address, gateway)
+	def initialize(interface, address, gateway)
+		@interface = interface
 		@address = address
 		@gateway = gateway
 	end
@@ -10,5 +11,17 @@ class IPPair
 	
 	def gateway
 		@gateway
+	end
+	
+	def interface
+		@interface
+	end
+	
+	def add_table(table)
+		@table = table
+	end
+	
+	def table
+		@table
 	end
 end
