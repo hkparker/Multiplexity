@@ -6,23 +6,20 @@ require 'socket'
 class MultiplexityClient
 	def initialize(socket)
 		@server = socket
+		@multiplex_sockets = []
 	end
 	
 	def handshake
-		@socket_count = 0
 		@server.puts "HELLO Multiplexity"
 		@server.close if @server.gets.chomp != "HELLO Client"
-		@server.puts "SOCKETS #{@socket_count}"
-		if @server.gets.chomp == "SOCKETS OK"
-			true
-		else
-			false
-		end
 	end
 	
-	def setup_multiplex
-		# do this later, using another port
-		#self.choose_file
+	def setup_multiplex(bind_ips, server)
+		@server.puts "SOCKETS #{bind_ips.size}"
+		multilplex_port = @server.gets.to_i
+		bind_ips.each do |ip|
+			@multiplex_sockets << TCPSocket.open(server, multiplex_port)
+		end
 	end
 	
 	def get_command

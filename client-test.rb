@@ -141,11 +141,14 @@ def setup_routes
 	end
 	puts "Routes added to routing tables".good
 	puts "Now creating routing rules to force the use of these tables".good
+	bind_ips = []
 	routes.each do |route|
 		execute "sudo ip rule add from #{route.address} table #{route.table}"
+		bind_ips << route.address
 	end
 	puts "Flushing routing cache".good
 	execute "sudo ip route flush cache"
+	bind_ips
 end
 
 puts "Loading Multiplex client ".good
@@ -153,7 +156,9 @@ env_check
 puts "Before we connect to a server we need to setup routing rules".good
 puts "If you have already setup source based routing, you can skip this step".good
 puts "Would you like to setup routing rules now?".question
-setup_routes if get_bool == "y"
+if get_bool == "y"
+	bind_ips = setup_routes
+end
 puts "Kernel ready to route multiplexed connections".good
 puts "Please enter the IP address of the multiplex server".question
 server = get_ip
@@ -164,13 +169,16 @@ rescue
 	puts "Failed to open control socket, please check your server information and try again".bad
 	exit 0
 end
-
+puts "Creating new client object"
 client = MultiplexityClient.new(socket)
-
+puts "Beginning handshake with server"
 client.handshake
-client.setup_multiplex
+puts "Opening multiplex sockets with server"
+sockets = client.setup_multiplex(bind_ips, server)
 
-loop {
-	command = client.get_command
-	client.process_command command
-}
+puts "Multiplex connections setup"
+
+#loop {
+#	command = client.get_command
+#	client.process_command command
+#}

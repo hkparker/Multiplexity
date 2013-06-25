@@ -4,26 +4,25 @@ class MultiplexityServer
 	@@used_ports = []
 	def initialize(client)
 		@client = client
+		@multiplex_port = 8001
+		@server = TCPServer.new("0.0.0.0", @multiplex_port)
+		@multiplex_sockets = []
 		self.handshake
 	end
 	
 	def handshake
 		@client.close if @client.gets.chomp != "HELLO Multiplexity"
 		@client.puts "HELLO Client"
-		socket_count = @client.gets.chomp
-		@client.close if (socket_count.slice! "SOCKETS ") != "SOCKETS "
-		socket_count = socket_count.to_i
-		@client.puts "SOCKETS OK"
 		self.setup_multiplex
 	end
 	
 	def setup_multiplex
-		# choose a random port and send it back to the client. skip for now.
-		# this method ensures that all sockets are open correctly and that multiplex transfers are now ready.  hand over to transfer
-		# probably going to need an array of sockets.  then a thread for each socket that waits for the socket to ask for the next chunk then gives it
-		
-		#once multiplexing is setup, now what?
-		self.choose_file
+		socket_count = @client.gets.to_i
+		@client.puts @multiplex_port
+		socket_count.times do |i|
+			@multiplex_sockets << @server.accept
+		end
+		#self.choose_file
 	end
 	
 	def choose_file
