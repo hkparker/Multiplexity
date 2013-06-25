@@ -16,7 +16,7 @@ class MultiplexityClient
 	
 	def setup_multiplex(bind_ips, server)
 		@server.puts "SOCKETS #{bind_ips.size}"
-		multilplex_port = @server.gets.to_i
+		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
 			@multiplex_sockets << TCPSocket.open(server, multiplex_port)
 		end
@@ -51,7 +51,6 @@ class MultiplexityClient
 				}
 		end
 	end
-	
 	
 	def shutdown
 		exit 0

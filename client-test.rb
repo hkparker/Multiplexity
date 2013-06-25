@@ -155,9 +155,18 @@ puts "Loading Multiplex client ".good
 env_check
 puts "Before we connect to a server we need to setup routing rules".good
 puts "If you have already setup source based routing, you can skip this step".good
-puts "Would you like to setup routing rules now?".question
-if get_bool == "y"
+puts "Would you like to setup routing rules now? (y/n)".question
+table_setup = get_bool
+bind_ips = []
+if table_setup == "y"
 	bind_ips = setup_routes
+elsif table_setup == "n"
+	puts "How many IP addresses would you like to bind to?".question
+	ip_count = get_int
+	ip_count.times do |i|
+		puts "Please enter an IP to bind to".question
+		bind_ips << get_ip
+	end
 end
 puts "Kernel ready to route multiplexed connections".good
 puts "Please enter the IP address of the multiplex server".question
@@ -169,14 +178,15 @@ rescue
 	puts "Failed to open control socket, please check your server information and try again".bad
 	exit 0
 end
-puts "Creating new client object"
+puts "Creating new client object".good
 client = MultiplexityClient.new(socket)
-puts "Beginning handshake with server"
+puts "Beginning handshake with server".good
 client.handshake
-puts "Opening multiplex sockets with server"
+puts "Opening multiplex sockets with server".good
 sockets = client.setup_multiplex(bind_ips, server)
+puts "Multiplex connections setup".good
 
-puts "Multiplex connections setup"
+
 
 #loop {
 #	command = client.get_command
