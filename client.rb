@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require './multiplexity_client.rb'
-require './ippair.rb'
+require './route.rb'
 require 'socket'
 
 port = 8000
