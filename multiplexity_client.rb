@@ -18,7 +18,13 @@ class MultiplexityClient
 		@server.puts "SOCKETS #{bind_ips.size}"
 		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
-			@multiplex_sockets << TCPSocket.open(server, multiplex_port)
+			puts "Connecting to #{server} on port #{multiplex_port} from ip address #{ip}"
+			lhost = Socket.pack_sockaddr_in(0, ip)
+			rhost = Socket.pack_sockaddr_in(multiplex_port, server)
+			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+			socket.bind(lhost)
+			socket.connect(rhost)
+			@multiplex_sockets << socket
 		end
 	end
 	

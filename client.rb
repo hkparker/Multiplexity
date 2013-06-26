@@ -1,137 +1,194 @@
 #!/usr/bin/env ruby
 
-require './buffer.rb'
-require './chunk.rb'
-require './colors.rb'
+require './multiplexity_client.rb'
+require './ippair.rb'
 require 'socket'
 
-def pickFile
-	puts "Please select a file to download".question
-	puts "You can use ls, cd, and pwd for filesystem navigation, and exit to close.".good
-	puts "Type \"download filename\" when you have selected a file for download".good
-	puts "Directory downloads are not yet supported".good
-	loop {
-		command = ""
-		until command.split(" ")[0] == "download"
-			print ">"
-			command = gets
-			listFiles if command.chomp == "ls"
-			changeDir(command) if command[0..1] == "cd"
-			printDir if command.chomp == "pwd"
-			system "clear" if command.chomp == "clear"
-			close if command.chomp == "exit"
+port = 8000
+
+def env_check
+	puts "Preforming environmental check".good
+	puts "Checking for routing table file".good
+	$route_file = "/etc/iproute2/rt_tables"
+	if File.exists?($route_file) == false
+		puts "Could not find #{$route_file} on your system".bad
+		puts "Please enter another file to use".question
+		file = $route_file
+		until File.exists?(file)
+			file = get_string
 		end
-		file = command.split(" ")[1]
-		if canDownload(file) == true
-			@@control_socket.puts("done")
-			return file
-		else
-			puts "The choosen file does not exist or cannot be read.".bad
-			puts "Directory downloads are not yet supported".bad
-		end
-	}
+		$route_file = file
+	end
+	puts "Checking for ip utility".good
+	if `which ip` == ""
+		puts "ip utility not found".bad
+		puts "This application requires a unix-like operating system with the ip utility".bad
+		exit 0
+	end
+	puts "Environmental check complete".good
 end
 
-def listFiles
-	puts "Files and directories in current directory:".good
-	@@control_socket.puts("ls")
-	@@control_socket.gets.to_i.times do |i|
-		puts @@control_socket.gets
+def is_ip?(address)	# from IPAddr standard library
+	if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ address
+		return $~.captures.all? {|i| i.to_i < 256}
+	end
+	return false
+end
+
+def get_ip
+	address = ""
+	until is_ip?(address)
+		print ">"
+		address = STDIN.gets.chomp
+	end
+	address
+end
+
+def get_bool
+	choice = ""
+	until choice == "y" or choice == "n"
+		print ">"
+		choice = STDIN.gets.chomp
+	end
+	choice
+end
+
+def is_digit?(string)
+	begin
+		Float(string)
+	rescue
+		false
+	else
+		true
 	end
 end
 
-def changeDir(dir)
-	@@control_socket.puts(dir)
-	puts @@control_socket.gets
+def get_int
+	int = ""
+	until is_digit?(int) == true
+		print ">"
+		int = STDIN.gets.chomp
+	end
+	int.to_i
 end
 
-def printDir
-	@@control_socket.puts("pwd")
-	puts @@control_socket.gets
+def get_string
+	string = ""
+	until string != ""
+		print ">"
+		string = STDIN.gets.chomp
+	end
+	string
 end
 
-def canDownload(file)
-	@@control_socket.puts("check #{file}")
-	result = @@control_socket.gets.chomp
-	return false if result == "false"
-	return true if result == "true"
+def execute(command)
+	puts command.executing
+	system command
 end
 
-def close
-	puts "Closing network connections".good
-	@@control_socket.puts("exit")
-	puts "Exiting Multiplex client".good
-	exit 0
+def get_routes
+	puts "How many network interfaces would you like to multiplex across?".question
+	route_list = []
+	table_count = get_int
+	table_count.times do |i|
+		puts "Interface #{i+1}".yellow.good
+		puts "Please enter the name of the interface".question
+		interface = get_string
+		puts "Please enter the IP address of #{interface}".question
+		address = get_ip
+		puts "Please enter the default gateway for #{interface}".question
+		gateway = get_ip
+		route_list << Route.new(interface, address, gateway)
+	end
+	puts "To confirm:".good
+	route_list.each do |pair|
+		puts "#{pair.interface} has an IP address of #{pair.address} and uses #{pair.gateway} as its default gateway"
+	end
+	puts "Is this correct?".question
+	correct = get_bool
+	if correct == "y"
+		return table_count, route_list
+	elsif correct == "n"
+		puts "Thats ok, lets try again".bad
+		return nil, nil
+	end
+end
+
+def setup_routes
+	puts "Setting up source based routing".good
+	puts "Please join all networks you plan to use now".good
+	puts "Press enter once you have an IP address on each network".good
+	STDIN.gets
+	routes = nil
+	until routes != nil
+		table_count, routes = get_routes
+	end
+	puts "Now we need to create a routing rule for each interface".good
+	puts "Backing up your old routing table configuration".good
+	execute "sudo cp #{$route_file} #{$route_file}.backup"
+	puts "Creating #{table_count} new routing tables".good
+	table_count.times do |i|
+		execute "sudo sh -c \"echo '#{128+i}\tmultiplex#{i}' >> #{$route_file}\""
+	end
+	puts "Routing tables created".good
+	puts "Now adding routes for these tables".good
+	i = 0
+	routes.each do |route|
+		table = "multiplex#{i}"
+		route.add_table(table)
+		execute "sudo ip route add default via #{route.gateway} dev #{route.interface} table #{route.table}"
+		i += 1
+	end
+	puts "Routes added to routing tables".good
+	puts "Now creating routing rules to force the use of these tables".good
+	bind_ips = []
+	routes.each do |route|
+		execute "sudo ip rule add from #{route.address} table #{route.table}"
+		bind_ips << route.address
+	end
+	puts "Flushing routing cache".good
+	execute "sudo ip route flush cache"
+	bind_ips
 end
 
 puts "Loading Multiplex client ".good
-
+env_check
+puts "Before we connect to a server we need to setup routing rules".good
+puts "If you have already setup source based routing, you can skip this step".good
+puts "Would you like to setup routing rules now? (y/n)".question
+table_setup = get_bool
+bind_ips = []
+if table_setup == "y"
+	bind_ips = setup_routes
+elsif table_setup == "n"
+	puts "How many IP addresses would you like to bind to?".question
+	ip_count = get_int
+	ip_count.times do |i|
+		puts "Please enter an IP to bind to".question
+		bind_ips << get_ip
+	end
+end
+puts "Kernel ready to route multiplexed connections".good
 puts "Please enter the IP address of the multiplex server".question
-puts "Skipping and using 192.210.217.180".bad
-server = "192.210.217.180"
-
-puts "Please enter the port of the multiplex server".question
-port = 8000
-puts "Skipping and using #{port}".bad
-
+server = get_ip
 puts "Opening control socket".good
 begin
-	@@control_socket = TCPSocket.open(server, port)
+	socket = TCPSocket.open(server, port)
 rescue
 	puts "Failed to open control socket, please check your server information and try again".bad
 	exit 0
 end
-puts "Control socket open".good
-puts "Starting file selection dialog".good
-file = pickFile
-puts "File selected for download: #{file}".good
-puts "Downloading file size".good
-@@control_socket.puts(file)
-size = @@control_socket.gets.to_i
-puts "Size of #{file} is #{size} bytes (#{(size / 1024.0 / 1024.0).round(1)}MB, #{(size / 1024.0 / 1024.0 / 1024.0).round(1)}GB)".good
-puts "Beginning setup of multiplexed connections".good
-
-puts "Please enter the IP addresses to bind to".question
-puts "Skipping and using 192.168.64.3 and 192.168.1.4".bad
-ips = ["192.168.64.3","192.168.1.4"]
-
-puts "Binding all sockets to IPs".good
-
-@@control_socket.puts(ips.size)
-sockets = []
-sleep(1)
+puts "Creating new client object".good
+client = MultiplexityClient.new(socket)
+puts "Beginning handshake with server".good
+client.handshake
+puts "Opening multiplex sockets with server".good
+sockets = client.setup_multiplex(bind_ips, server)
+puts "Multiplex connections setup".good
 
 
 
-
-# vim /etc/iproute2/rt_tables
-# added 128	multiplex0 and 129 multiplex1
-# ip route add default via 10.0.2.2 table multiplex0 # where 10.0.2.2 is the IP of one of the interfaces
-# ip route add default via 192.168.1.1 table multiplex1	# the other interface IP
-# ip rule add from 10.0.0.0/16 table multiplex0 # CIDR notation for the subnet that the interface for multiplex0 table is on
-# ip rule add from 192.168.1.0/24 table multiplex1
-# ip route flush cache
-
-
-
-
-
-begin
-	ips.each do |ip|
-		lhost = Socket.pack_sockaddr_in(0, ip)
-		rhost = Socket.pack_sockaddr_in(port, server)
-		socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-		puts "Binding socket to #{ip}".good
-		socket.bind(lhost)
-		puts "Success.  Connecting to #{server}".good
-		socket.connect(rhost)
-		sockets << socket
-	end
-rescue
-	puts "An unknown error occured while trying to bind to the IPs.".bad
-	puts "This could mean you need to run this as root.".bad
-	exit(0)
-end
-
-puts "All multiplex sockets bound to IPs".good
-
+#loop {
+#	command = client.get_command
+#	client.process_command command
+#}
