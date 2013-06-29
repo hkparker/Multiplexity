@@ -186,11 +186,12 @@ puts "Opening multiplex sockets with server".good
 sockets = client.setup_multiplex(bind_ips, server)
 puts "Multiplex connections setup".good
 puts "Now entering file selection dialog".good
-client.choose_file
+puts "Avaliablle commands are:".good
+file = client.choose_file
+puts "File #{file} has been successfully choosen.".good
+client.process_command("size #{file}")
 # later ask if they would like to upload or download, go from there
-
-
-#loop {
-#	command = client.get_command
-#	client.process_command command
-#}
+puts "Waiting for server to be ready to serve file".good
+socket.gets
+puts "Server is ready.  Forking new threads for each interface...".good
+client.download file

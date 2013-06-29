@@ -26,14 +26,20 @@ class MultiplexityServer
 	end
 	
 	def choose_file
-		loop{
+		done = ""
+		until done == "done"
 			command = @client.gets.chomp
-			process_command(command)
-		}
-		# a method to transfer files.
-		# after multiplex is setup have a method that return which file to server
-		# this method will loop commands with client until the download command is selected
-		# it will return to the client if that file is ok to download, and if so start serving it
+			done = process_command(command)
+		end
+		process_command(@client.gets.chomp)
+		# do things to setup threaded server.  Fork a new thread for each multiplex socket that listens then gets send it the return value from get_next_chunk
+		@client.puts "ready"
+	end
+	
+	def check_file file
+		valid = (FileTest.readable?(file) and (Dir.exists?(file) != true))
+		@client.puts "#{valid}"
+		return "done" if valid == true
 	end
 	
 	def process_command(command)
@@ -47,6 +53,8 @@ class MultiplexityServer
 				show_size command[1]
 			when "pwd"
 				print_dir
+			when "check"
+				check_file command[1]
 			else
 				@client.puts "That was not a recognized command".bad
 				@client.puts "fin"
@@ -82,7 +90,7 @@ class MultiplexityServer
 	
 	def show_size(file)
 		@client.puts "File size for #{file}:".good
-		if FileTest.readable?(file)	# also need to make sure file isn't null or an empty string
+		if file != nil and file != "" and FileTest.readable?(file)
 			size = File.size(file)
 			i = 0
 			loop {

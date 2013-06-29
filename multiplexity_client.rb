@@ -36,14 +36,31 @@ class MultiplexityClient
 		command
 	end
 	
+	def check_file(file)
+		@server.puts "check #{file}"
+		if @server.gets.chomp == "true"
+			true
+		else
+			false
+		end
+	end
+	
 	def choose_file
 		command = ""
-		until command[0..7] == "download"
+		loop {
 			command = get_command
-			process_command command
-		end
-		
-		# this method will return a filename that is able to be downloaded
+			if command[0..7] != "download"
+				process_command command
+			else
+				file = command.split(" ")[1]
+				if file != nil and file != ""
+					status = check_file file
+					if status == true
+						return file
+					end
+				end
+			end
+		}
 	end
 		
 	def process_command(command)
@@ -60,6 +77,22 @@ class MultiplexityClient
 					puts line
 				}
 		end
+	end
+	
+	def download(file)
+		@multiplex_sockets.each do |socket|
+			Thread.new{get_next_chunk(socket)}
+			sleep(1)
+		end
+		puts "#{Thread.list.size-1} threads started just now"
+		Thread.list.each do |thread|
+			thread.join if thread != Thread.current
+		end
+		puts "all threads stopped"
+	end
+	
+	def get_next_chunk(socket)
+		sleep(10)
 	end
 	
 	def shutdown
