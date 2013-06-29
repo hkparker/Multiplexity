@@ -84,7 +84,27 @@ class MultiplexityServer
 		@client.puts "File size for #{file}:".good
 		if FileTest.readable?(file)	# also need to make sure file isn't null or an empty string
 			size = File.size(file)
-			@client.puts "#{(size / 1024.0 / 1024.0).round(1)} MB, #{(size / 1024.0 / 1024.0 / 1024.0).round(1)} GB"
+			i = 0
+			loop {
+				until size < 1024
+					size = (size / 1024).round(1)
+					i += 1
+				end
+				break
+			}
+			case i
+				when 0
+					suffix = "bytes"
+				when 1
+					suffix = "KB"
+				when 2
+					suffix = "MB"
+				when 3
+					suffix = "GB"
+				when 4
+					suffix = "TB"
+			end
+			@client.puts "#{size} #{suffix}"
 			@client.puts "fin"
 		else
 			@client.puts "The file could not be read".bad
