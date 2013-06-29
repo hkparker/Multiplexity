@@ -15,7 +15,7 @@ class MultiplexityClient
 	end
 	
 	def setup_multiplex(bind_ips, server)
-		@server.puts "SOCKETS #{bind_ips.size}"
+		@server.puts bind_ips.size
 		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
 			puts "Connecting to #{server} on port #{multiplex_port} from ip address #{ip}"

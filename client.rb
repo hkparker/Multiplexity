@@ -104,7 +104,7 @@ def get_routes
 	route_list.each do |pair|
 		puts "#{pair.interface} has an IP address of #{pair.address} and uses #{pair.gateway} as its default gateway"
 	end
-	puts "Is this correct?".question
+	puts "Is this correct? (y/n)".question
 	correct = get_bool
 	if correct == "y"
 		return table_count, route_list
