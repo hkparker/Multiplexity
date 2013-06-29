@@ -19,13 +19,10 @@ class MultiplexityServer
 	def setup_multiplex
 		socket_count = @client.gets.to_i
 		@client.puts @multiplex_port
-		puts "expecting #{socket_count} sockets"
 		socket_count.to_i.times do |i|
 			@multiplex_sockets << @server.accept
-			puts "recieved a connection"
 		end
-		puts "recieved all connections"
-		#self.choose_file
+		self.choose_file
 	end
 	
 	def choose_file

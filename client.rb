@@ -185,7 +185,9 @@ client.handshake
 puts "Opening multiplex sockets with server".good
 sockets = client.setup_multiplex(bind_ips, server)
 puts "Multiplex connections setup".good
-
+puts "Now entering file selection dialog".good
+client.choose_file
+# later ask if they would like to upload or download, go from there
 
 
 #loop {

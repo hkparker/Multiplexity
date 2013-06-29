@@ -18,7 +18,6 @@ class MultiplexityClient
 		@server.puts bind_ips.size
 		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
-			puts "Connecting to #{server} on port #{multiplex_port} from ip address #{ip}"
 			lhost = Socket.pack_sockaddr_in(0, ip)
 			rhost = Socket.pack_sockaddr_in(multiplex_port, server)
 			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
@@ -38,7 +37,12 @@ class MultiplexityClient
 	end
 	
 	def choose_file
-		loop{ process_command(get_command) }
+		command = ""
+		until command[0..7] == "download"
+			command = get_command
+			process_command command
+		end
+		
 		# this method will return a filename that is able to be downloaded
 	end
 		
