@@ -3,6 +3,7 @@ require './colors.rb'
 class MultiplexityServer
 	@@used_ports = []
 	def initialize(client)
+		@id = 0
 		@client = client
 		@multiplex_port = 8001
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
@@ -32,14 +33,47 @@ class MultiplexityServer
 			done = process_command(command)
 		end
 		process_command(@client.gets.chomp)
-		# do things to setup threaded server.  Fork a new thread for each multiplex socket that listens then gets send it the return value from get_next_chunk
+		self.serve_file
+	end
+	
+	def serve_file
+		@multiplex_sockets.each do |socket|
+			Thread.new{serve_chunk(socket)}
+		end
+		@file = File.open(@download_file, 'rb')
 		@client.puts "ready"
+		Thread.list.each do |thread|
+			thread.join if thread != Thread.current
+		end
+	end
+	
+	def serve_chunk(socket)
+		loop {
+			socket.gets
+			size = get_size
+			break if size == 0
+			socket.puts size
+			socket.puts get_id
+			socket.write(@file.read(size))
+		}
+	end
+	
+	def get_size
+		return 1024*1024*10
+	end
+	
+	def get_id
+		@id += 1
+		@id
 	end
 	
 	def check_file file
 		valid = (FileTest.readable?(file) and (Dir.exists?(file) != true))
 		@client.puts "#{valid}"
-		return "done" if valid == true
+		if valid == true
+			@download_file = file
+			return "done"
+		end
 	end
 	
 	def process_command(command)

@@ -80,19 +80,27 @@ class MultiplexityClient
 	end
 	
 	def download(file)
+		@buffer = Buffer.new(file)
 		@multiplex_sockets.each do |socket|
 			Thread.new{get_next_chunk(socket)}
-			sleep(1)
 		end
-		puts "#{Thread.list.size-1} threads started just now"
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
-		puts "all threads stopped"
 	end
 	
 	def get_next_chunk(socket)
-		sleep(10)
+		loop {
+			socket.puts "NEXT"
+			size = socket.gets.to_i
+			break if size == 0
+			id = socket.gets.to_i
+			@buffer.insert(Chunk.new(id,socket.read(size)))
+		}
+	end
+	
+	def verify_file(file)
+		# md5 the local file, compare to asking the server
 	end
 	
 	def shutdown

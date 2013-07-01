@@ -187,11 +187,30 @@ sockets = client.setup_multiplex(bind_ips, server)
 puts "Multiplex connections setup".good
 puts "Now entering file selection dialog".good
 puts "Avaliablle commands are:".good
+puts "\tls - list files"
+puts "\tpwd - print working directory"
+puts "\tcd <dir> - change directory"
+puts "\tsize <file> - check the size of a file"
+puts "\tclean - clear the terminal"
+puts "\texit - exits multiplexity"
 file = client.choose_file
 puts "File #{file} has been successfully choosen.".good
 client.process_command("size #{file}")
-# later ask if they would like to upload or download, go from there
 puts "Waiting for server to be ready to serve file".good
 socket.gets
-puts "Server is ready.  Forking new threads for each interface...".good
+puts "Server is ready.  Downlading file".good
 client.download file
+puts "The file has been downloaded".good
+puts "Check file integrity?"
+choice = get_bool
+if choice == "y"
+	client.verify_file file
+	# get the md5 then md5 the downloaded file, compare
+end
+puts "Keep routing tables?"
+choice = get_bool
+if choice == "n"
+	# delete routes
+end
+puts "Closing multiplexity".good
+# close sockets

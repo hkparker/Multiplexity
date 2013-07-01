@@ -1,7 +1,8 @@
 class Buffer
-	def initialize
+	def initialize(file)
 		@chunkArray = []
 		@fileTop = 0
+		@file = File.open(file, 'w')
 	end
 	def checkNext(newChunk, i)
 		if newChunk.return("id") > @chunkArray[i].return("id") && newChunk.return("id") < @chunkArray[i+1].return("id")
@@ -29,7 +30,7 @@ class Buffer
 		if @chunkArray[0].return("id") == @fileTop+1
 			toDump = @chunkArray.shift(safeCount)
 			@fileTop = toDump[-1].return("id")
-			#@@file.concat(toDump) dump to file here (perhaps open file in object, exists as instance variable, filename passed in initialize)
+			@file.write(toDump)
 		end
 	end
 end
