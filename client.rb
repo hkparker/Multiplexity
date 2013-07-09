@@ -199,7 +199,7 @@ puts "File #{file} has been successfully choosen.".good
 client.process_command("size #{file}")
 puts "Waiting for server to be ready to serve file".good
 socket.gets
-puts "Server is ready.  Downlading file".good
+puts "Server is ready.  Downloading file".good
 client.download file
 puts "The file has been downloaded".good
 puts "Check file integrity?"

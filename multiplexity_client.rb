@@ -7,6 +7,7 @@ class MultiplexityClient
 	def initialize(socket)
 		@server = socket
 		@multiplex_sockets = []
+		@id = 1
 	end
 	
 	def handshake
@@ -91,11 +92,18 @@ class MultiplexityClient
 	
 	def get_next_chunk(socket)
 		loop {
-			socket.puts "NEXT"
+			chunk_id = @id
+			@id += 1
+			loop{
+				socket.puts "#{chunk_id}"
+				res = socket.gets
+				puts "got #{res} !!!!"
+				break if res == "ok"
+				sleep(0.1)
+			}
 			size = socket.gets.to_i
 			break if size == 0
-			id = socket.gets.to_i
-			@buffer.insert(Chunk.new(id,socket.read(size)))
+			@buffer.insert(Chunk.new(chunk_id,socket.read(size)))
 		}
 	end
 	

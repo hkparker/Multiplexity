@@ -17,6 +17,7 @@ Usage
 Todo
 ----
 
+More options for save location
 File uploads
 Directory transfers
 SSL sockets for everything

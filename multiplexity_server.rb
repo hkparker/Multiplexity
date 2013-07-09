@@ -3,7 +3,7 @@ require './colors.rb'
 class MultiplexityServer
 	@@used_ports = []
 	$chunk_size = 1024*1024
-	@id = 0
+	@last_chunk = 0
 	def initialize(client)
 		@id = 0
 		@client = client
@@ -52,11 +52,22 @@ class MultiplexityServer
 	
 	def serve_chunk(socket)
 		loop {
-			socket.gets
+			loop{
+				id = socket.gets.to_i
+				puts "I've been asked for #{id} and am waiting for #{@last_chunk+1}"
+				if id == @last_chunk+1
+					puts "OK!!!!!!!!"
+					socket.puts "ok"
+					@last_chunk += 1
+					break
+				else
+					socket.puts "wait"
+					puts "someone has to wait"
+				end
+			}
 			size = get_size
 			socket.puts size
 			break if size == 0
-			socket.puts get_id
 			socket.write(@file.read(size))
 		}
 	end
@@ -70,11 +81,6 @@ class MultiplexityServer
 			@file_remaining = 0
 		end
 		size
-	end
-	
-	def get_id
-		@id += 1
-		@id
 	end
 	
 	def check_file file

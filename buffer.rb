@@ -32,7 +32,6 @@ class Buffer
 			toDump = @chunkArray.shift(safeCount)
 			@fileTop = toDump[-1].return("id")
 			toDump.each do |out_chunk|
-				puts "WRITING CHUNK #{out_chunk.return("id")} TO FILE"
 				@file.write(out_chunk.return("data"))
 			end
 		end
