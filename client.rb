@@ -23,6 +23,7 @@ def env_check
 	if `which ip` == ""
 		puts "ip utility not found".bad
 		puts "This application requires a unix-like operating system with the ip utility".bad
+		# allow them to instead use their own source based routing, and have it auto detect pf for bsd and use that
 		exit 0
 	end
 	puts "Environmental check complete".good
@@ -186,7 +187,7 @@ puts "Opening multiplex sockets with server".good
 sockets = client.setup_multiplex(bind_ips, server)
 puts "Multiplex connections setup".good
 puts "Now entering file selection dialog".good
-puts "Avaliablle commands are:".good
+puts "Avaliable commands are:".good
 puts "\tls - list files"
 puts "\tpwd - print working directory"
 puts "\tcd <dir> - change directory"

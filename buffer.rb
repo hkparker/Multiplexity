@@ -1,3 +1,4 @@
+
 class Buffer
 	def initialize(file)
 		@chunkArray = []
@@ -30,7 +31,10 @@ class Buffer
 		if @chunkArray[0].return("id") == @fileTop+1
 			toDump = @chunkArray.shift(safeCount)
 			@fileTop = toDump[-1].return("id")
-			@file.write(toDump)
+			toDump.each do |out_chunk|
+				puts "WRITING CHUNK #{out_chunk.return("id")} TO FILE"
+				@file.write(out_chunk.return("data"))
+			end
 		end
 	end
 end

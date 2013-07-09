@@ -2,6 +2,8 @@ require './colors.rb'
 
 class MultiplexityServer
 	@@used_ports = []
+	$chunk_size = 1024*1024
+	@id = 0
 	def initialize(client)
 		@id = 0
 		@client = client
@@ -37,6 +39,7 @@ class MultiplexityServer
 	end
 	
 	def serve_file
+		@file_remaining = File.size(@download_file)
 		@multiplex_sockets.each do |socket|
 			Thread.new{serve_chunk(socket)}
 		end
@@ -51,15 +54,22 @@ class MultiplexityServer
 		loop {
 			socket.gets
 			size = get_size
-			break if size == 0
 			socket.puts size
+			break if size == 0
 			socket.puts get_id
 			socket.write(@file.read(size))
 		}
 	end
 	
 	def get_size
-		return 1024*1024*10
+		if (@file_remaining - $chunk_size) > 0
+			size = $chunk_size
+			@file_remaining = @file_remaining - $chunk_size
+		else
+			size = @file_remaining
+			@file_remaining = 0
+		end
+		size
 	end
 	
 	def get_id
@@ -122,31 +132,21 @@ class MultiplexityServer
 		@client.puts "fin"
 	end
 	
+	def format_bytes(bytes)
+		i = 0
+		until bytes < 1024
+			bytes = (bytes / 1024).round(1)
+			i += 1
+		end
+		suffixes = ["bytes","KB","MB","GB","TB"]
+		"#{bytes} #{suffixes[i]}"
+	end
+	
 	def show_size(file)
 		@client.puts "File size for #{file}:".good
 		if file != nil and file != "" and FileTest.readable?(file)
-			size = File.size(file)
-			i = 0
-			loop {
-				until size < 1024
-					size = (size / 1024).round(1)
-					i += 1
-				end
-				break
-			}
-			case i
-				when 0
-					suffix = "bytes"
-				when 1
-					suffix = "KB"
-				when 2
-					suffix = "MB"
-				when 3
-					suffix = "GB"
-				when 4
-					suffix = "TB"
-			end
-			@client.puts "#{size} #{suffix}"
+			size = format_bytes(File.size(file))
+			@client.puts size
 			@client.puts "fin"
 		else
 			@client.puts "The file could not be read".bad
