@@ -67,8 +67,8 @@ class MultiplexityServer
 						told += 1
 					end
 					chunk_size = get_size
-					puts "sending chunk #{@id}"
 					worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
+					puts "sending chunk #{@id} to worker"
 					@id += 1
 				end
 			end

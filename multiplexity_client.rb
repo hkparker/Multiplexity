@@ -91,19 +91,13 @@ class MultiplexityClient
 	end
 	
 	def get_next_chunk(socket)
-		puts "Download thread started"
 		loop {
-			puts "grabbing an id"
 			chunk_id = socket.gets.to_i
-			puts "the id was #{chunk_id}"
 			break if chunk_id == 0
-			puts "getting the size"
 			chunk_size = socket.gets.to_i
-			puts "the size was #{chunk_size}"
 			chunk_data = socket.read(chunk_size)
-			puts "got the chunk data"
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
-			puts "added to the buffer"
+			puts "added chunk #{chunk_id} with a size of #{chunk_size} to the buffer"
 		}
 	end
 	
