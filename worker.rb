@@ -1,22 +1,33 @@
+require './chunk.rb'
+
 class Worker
 	def initialize(socket)
 			@socket = socket
 			@ready = false
+			@chunk = nil
 	end
 	
 	def start
-		
-		# get NEXT reequest
-		# set ready
-		# get next chunk object
-		# if instead you got a 0 close the socket
-		# otherwise send the id
-		# then send the chunk
-		# then wait for a next request
+		loop{
+			@ready = true
+			sleep(0.1) until @chunk != nil
+			if @chunk == 0
+				@socket.puts 0
+				break
+			end
+			# send the id
+			# send the size
+			# then send the chunk
+			@chunk = nil
+		}
 	end
 	
 	def ready
 		@ready
+	end
+	
+	def get_chunk(chunk)
+		@chunk = chunk
 	end
 	
 end

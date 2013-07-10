@@ -91,7 +91,12 @@ class MultiplexityClient
 	end
 	
 	def get_next_chunk(socket)
-		socket.puts "NEXT"
+		loop {
+			chunk_id = socket.gets.to_i
+			break if chunk_id == 0
+			chunk_size = socket.gets.to_i
+			chunk_data = socket.read(size)
+		}
 		# this method should terminate when there are no new chunks
 	end
 	

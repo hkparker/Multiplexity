@@ -59,11 +59,10 @@ class MultiplexityServer
 		loop {
 			@workers.each do |worker|
 				if worker.ready == true
-					if @file_remaining == 0
-						
-					end
-					Chunk.new(@id,@file.read(get_size))
-					# send this chunk to the worker
+		#			if @file_remaining == 0
+		#				worker.get_chunk(0)
+		#			end
+					worker.get_chunk(Chunk.new(@id,@file.read(get_size)))
 				end
 			end
 		}
