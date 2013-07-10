@@ -91,20 +91,8 @@ class MultiplexityClient
 	end
 	
 	def get_next_chunk(socket)
-		loop {
-			chunk_id = @id
-			@id += 1
-			loop{
-				socket.puts "#{chunk_id}"
-				res = socket.gets
-				puts "got #{res} !!!!"
-				break if res == "ok"
-				sleep(0.1)
-			}
-			size = socket.gets.to_i
-			break if size == 0
-			@buffer.insert(Chunk.new(chunk_id,socket.read(size)))
-		}
+		socket.puts "NEXT"
+		# this method should terminate when there are no new chunks
 	end
 	
 	def verify_file(file)

@@ -1,15 +1,18 @@
 require './colors.rb'
+require './worker.rb'
+require './chunk.rb'
 
 class MultiplexityServer
 	@@used_ports = []
-	$chunk_size = 1024*1024
-	@last_chunk = 0
 	def initialize(client)
-		@id = 0
+		@id = 1
 		@client = client
 		@multiplex_port = 8001
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
+		@workers = []
+		@chunk_size = 1024*1024
+		@last_chunk = 0	
 		self.handshake
 	end
 	
@@ -41,41 +44,35 @@ class MultiplexityServer
 	def serve_file
 		@file_remaining = File.size(@download_file)
 		@multiplex_sockets.each do |socket|
-			Thread.new{serve_chunk(socket)}
+			@workers << Worker.new(socket)
+			Thread.new{Worker.start}
 		end
 		@file = File.open(@download_file, 'rb')
+		Thread.new{serve_chunk}
 		@client.puts "ready"
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
 	end
 	
-	def serve_chunk(socket)
+	def serve_chunk
 		loop {
-			loop{
-				id = socket.gets.to_i
-				puts "I've been asked for #{id} and am waiting for #{@last_chunk+1}"
-				if id == @last_chunk+1
-					puts "OK!!!!!!!!"
-					socket.puts "ok"
-					@last_chunk += 1
-					break
-				else
-					socket.puts "wait"
-					puts "someone has to wait"
+			@workers.each do |worker|
+				if worker.ready == true
+					if @file_remaining == 0
+						
+					end
+					Chunk.new(@id,@file.read(get_size))
+					# send this chunk to the worker
 				end
-			}
-			size = get_size
-			socket.puts size
-			break if size == 0
-			socket.write(@file.read(size))
+			end
 		}
 	end
 	
 	def get_size
-		if (@file_remaining - $chunk_size) > 0
-			size = $chunk_size
-			@file_remaining = @file_remaining - $chunk_size
+		if (@file_remaining - @chunk_size) > 0
+			size = @chunk_size
+			@file_remaining = @file_remaining - @chunk_size
 		else
 			size = @file_remaining
 			@file_remaining = 0
