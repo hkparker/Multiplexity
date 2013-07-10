@@ -44,8 +44,9 @@ class MultiplexityServer
 	def serve_file
 		@file_remaining = File.size(@download_file)
 		@multiplex_sockets.each do |socket|
-			@workers << Worker.new(socket)
-			Thread.new{Worker.start}
+			worker = Worker.new(socket)
+			@workers << worker
+			Thread.new{worker.start}
 		end
 		@file = File.open(@download_file, 'rb')
 		Thread.new{serve_chunk}
@@ -56,13 +57,19 @@ class MultiplexityServer
 	end
 	
 	def serve_chunk
+		told = 0
 		loop {
+			break if told == @workers.size
 			@workers.each do |worker|
 				if worker.ready == true
-		#			if @file_remaining == 0
-		#				worker.get_chunk(0)
-		#			end
-					worker.get_chunk(Chunk.new(@id,@file.read(get_size)))
+					if @file_remaining == 0
+						worker.get_chunk(0)
+						told += 1
+					end
+					chunk_size = get_size
+					puts "sending chunk #{@id}"
+					worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
+					@id += 1
 				end
 			end
 		}

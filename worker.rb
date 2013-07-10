@@ -10,14 +10,15 @@ class Worker
 	def start
 		loop{
 			@ready = true
-			sleep(0.1) until @chunk != nil
+			sleep(0.01) until @chunk != nil
+			@ready = false
 			if @chunk == 0
 				@socket.puts 0
 				break
 			end
-			# send the id
-			# send the size
-			# then send the chunk
+			@socket.puts @chunk.return("id")
+			@socket.puts @size
+			@socket.write(@chunk.return("data"))
 			@chunk = nil
 		}
 	end
@@ -26,8 +27,9 @@ class Worker
 		@ready
 	end
 	
-	def get_chunk(chunk)
+	def get_chunk(chunk, size)
 		@chunk = chunk
+		@size = size
 	end
 	
 end
