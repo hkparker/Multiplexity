@@ -70,6 +70,7 @@ class MultiplexityServer
 					worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
 					puts "sending chunk #{@id} to worker"
 					@id += 1
+					sleep(1)
 				end
 			end
 		}
