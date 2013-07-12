@@ -17,9 +17,14 @@ Usage
 Todo
 ----
 
+Use ruby better (instance variable assessors and such)
+
 More options for save location
+
 File uploads
+
 Directory transfers
+
 SSL sockets for everything
 
 License
