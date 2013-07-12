@@ -10,22 +10,13 @@ class Worker
 	def start
 		loop{
 			@ready = true
-			puts "Ready"
-			loop {
-				if @chunk != nil
-					puts "chunk is now full, lets no longer be ready"
-					@ready = false
-					break
-				end
-			}
+			sleep(0.01) until @chunk != nil
 			if @chunk == 0
-				puts "The chunk was 0, so lets close this thread"
 				@socket.puts 0
 				break
 			end
 			@socket.puts @chunk.return("id")
 			@socket.puts @size
-			puts "sending the actual data"
 			@socket.write(@chunk.return("data"))
 			@chunk = nil
 		}
@@ -33,6 +24,10 @@ class Worker
 	
 	def ready
 		@ready
+	end
+	
+	def not_ready
+		@ready = false
 	end
 	
 	def get_chunk(chunk, size)

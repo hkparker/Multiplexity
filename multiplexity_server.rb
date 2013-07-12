@@ -59,18 +59,19 @@ class MultiplexityServer
 	def serve_chunk
 		told = 0
 		loop {
+			puts told
 			break if told == @workers.size
 			@workers.each do |worker|
 				if worker.ready == true
 					if @file_remaining == 0
 						worker.get_chunk(0)
 						told += 1
+					else
+						chunk_size = get_size
+						worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
+						@id += 1
+						worker.not_ready
 					end
-					chunk_size = get_size
-					worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
-					puts "sending chunk #{@id} to worker"
-					@id += 1
-					sleep(1)
 				end
 			end
 		}
