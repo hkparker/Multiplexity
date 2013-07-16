@@ -13,7 +13,6 @@ class Worker
 			sleep(0.01) until @chunk != nil
 			if @chunk == 0
 				@socket.puts 0
-				puts "Worker.start is all done"
 				break
 			end
 			@socket.puts @chunk.return("id")

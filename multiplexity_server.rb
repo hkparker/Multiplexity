@@ -54,16 +54,24 @@ class MultiplexityServer
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
+		puts "Ok we served it and thats great now what?"
 	end
 	
 	def serve_chunk
-		until @file_remaining == 0
+		told = 0
+		until told == @workers.size
 			@workers.each do |worker|
 				if worker.ready == true
-					chunk_size = get_size
-					worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
-					@id += 1
-					worker.not_ready
+					if @file_remaining > 0
+						chunk_size = get_size
+						worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
+						@id += 1
+						worker.not_ready
+					else
+						worker.get_chunk(0,0)
+						worker.not_ready
+						told += 1
+					end
 				end
 			end
 		end

@@ -97,7 +97,6 @@ class MultiplexityClient
 			chunk_size = socket.gets.to_i
 			chunk_data = socket.read(chunk_size)
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
-			puts "added chunk #{chunk_id} with a size of #{chunk_size} to the buffer"
 		}
 	end
 	
