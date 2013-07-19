@@ -2,6 +2,7 @@ require './colors.rb'
 require './buffer.rb'
 require './chunk.rb'
 require 'socket'
+require 'zlib'
 
 class MultiplexityClient
 	def initialize(socket)
@@ -97,11 +98,15 @@ class MultiplexityClient
 			chunk_size = socket.gets.to_i
 			chunk_data = socket.read(chunk_size)
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
+			puts "Added chunk #{chunk_id}"
 		}
 	end
 	
 	def verify_file(file)
-		# md5 the local file, compare to asking the server
+		@server.puts "VERIFY"
+		remote_crc = @server.gets.to_i
+		local_crc = Zlib::crc32(File.read(file))
+		remote_crc == local_crc
 	end
 	
 	def shutdown

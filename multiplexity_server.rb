@@ -1,6 +1,7 @@
 require './colors.rb'
 require './worker.rb'
 require './chunk.rb'
+require 'zlib'
 
 class MultiplexityServer
 	@@used_ports = []
@@ -54,7 +55,15 @@ class MultiplexityServer
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
-		puts "Ok we served it and thats great now what?"
+		self.verify
+	end
+	
+	def verify
+		check = @client.gets.chomp
+		if check == "VERIFY"
+			hash = Zlib::crc32(File.read(@download_file))
+			@client.puts hash
+		end
 	end
 	
 	def serve_chunk

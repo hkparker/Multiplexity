@@ -205,8 +205,14 @@ puts "The file has been downloaded".good
 puts "Check file integrity?"
 choice = get_bool
 if choice == "y"
-	client.verify_file file
-	# get the md5 then md5 the downloaded file, compare
+	success = client.verify_file file
+else
+	socket.puts "NO VERIFY"
+end
+if success == true
+	puts "CRC match, the file was download successfully".good
+else
+	puts "CRC mismatch, the file was corrupt during download".bad
 end
 puts "Keep routing tables?"
 choice = get_bool
@@ -214,4 +220,4 @@ if choice == "n"
 	# delete routes
 end
 puts "Closing multiplexity".good
-# close sockets
+client.shutdown
