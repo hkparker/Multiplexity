@@ -23,7 +23,7 @@ def env_check
 	if `which ip` == ""
 		puts "ip utility not found".bad
 		puts "This application requires a unix-like operating system with the ip utility".bad
-		# allow them to instead use their own source based routing, and have it auto detect pf for bsd and use that
+		# allow them to instead use their own source based routing, and have it auto detect pf for bsd and use that.  One for mac too, maybe pass a hash of labled commands?
 		exit 0
 	end
 	puts "Environmental check complete".good
@@ -217,7 +217,8 @@ end
 puts "Keep routing tables?"
 choice = get_bool
 if choice == "n"
-	# delete routes
+	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"
+	execute "sudo ip route fluch cache"
 end
 puts "Closing multiplexity".good
-client.shutdown
+#client.shutdown

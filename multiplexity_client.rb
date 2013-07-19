@@ -86,9 +86,37 @@ class MultiplexityClient
 		@multiplex_sockets.each do |socket|
 			Thread.new{get_next_chunk(socket)}
 		end
+		#$done = false
+		#screen = Thread.new(draw_screen)
 		Thread.list.each do |thread|
-			thread.join if thread != Thread.current
+			thread.join if thread != (Thread.current or screen)
 		end
+		#$done = true
+	end
+	
+	def draw_screen
+		loop {
+			break if $done == true
+			system "clear"
+			puts "Multiplexity".teal
+			puts
+			puts "Currently downloading: ".green + ""
+			puts
+			puts "Buffer:".green
+			puts "\tChunks:\t" + "".yellow
+			puts "\tSize:\t" + "".yellow
+			puts
+			puts "Interface speeds:".green
+			puts "\teth0: " + "/s".yellow
+			puts "\teth0: " + "/s".yellow
+			puts "\teth0: " + "/s".yellow
+			puts "\teth0: " + "/s".yellow
+			puts
+			puts "Pool speed: ".green + "/s".yellow
+			puts
+			puts "Progress: ".green + "%".yellow
+			sleep 0.5
+		}
 	end
 	
 	def get_next_chunk(socket)
@@ -98,7 +126,6 @@ class MultiplexityClient
 			chunk_size = socket.gets.to_i
 			chunk_data = socket.read(chunk_size)
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
-			puts "Added chunk #{chunk_id}"
 		}
 	end
 	
@@ -111,7 +138,10 @@ class MultiplexityClient
 	
 	def shutdown
 		exit 0
-		# close network connections and exit
+		@multiplex_sockets.each do |socket|
+			socket.close
+		end
+		@server.close
 	end
 	
 end

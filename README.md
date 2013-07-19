@@ -14,10 +14,15 @@ Usage
 
 
 
+Requirements
+------------
+
+Ruby >= 1.9.1
+
 Todo
 ----
 
-Use ruby better (instance variable assessors and such)
+Use ruby better (instance variable assessors and such), redesign and rewrite a few things
 
 More options for save location
 
@@ -26,6 +31,8 @@ File uploads
 Directory transfers
 
 SSL sockets for everything
+
+Switch many options to command line flags
 
 License
 -------
