@@ -218,7 +218,7 @@ puts "Keep routing tables?"
 choice = get_bool
 if choice == "n"
 	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"
-	execute "sudo ip route fluch cache"
+	execute "sudo ip route flush cache"
 end
 puts "Closing multiplexity".good
 #client.shutdown

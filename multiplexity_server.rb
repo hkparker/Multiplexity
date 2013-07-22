@@ -75,10 +75,10 @@ class MultiplexityServer
 						chunk_size = get_size
 						worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
 						@id += 1
-						worker.not_ready
+						worker.ready = false
 					else
 						worker.get_chunk(0,0)
-						worker.not_ready
+						worker.ready = false
 						told += 1
 					end
 				end

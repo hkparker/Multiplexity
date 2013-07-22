@@ -1,6 +1,7 @@
 require './chunk.rb'
 
 class Worker
+	attr_accessor :ready
 	def initialize(socket)
 			@socket = socket
 			@ready = false
@@ -15,19 +16,11 @@ class Worker
 				@socket.puts 0
 				break
 			end
-			@socket.puts @chunk.return("id")
+			@socket.puts @chunk.id
 			@socket.puts @size
-			@socket.write(@chunk.return("data"))
+			@socket.write(@chunk.data)
 			@chunk = nil
 		}
-	end
-	
-	def ready
-		@ready
-	end
-	
-	def not_ready
-		@ready = false
 	end
 	
 	def get_chunk(chunk, size)
