@@ -83,50 +83,63 @@ class MultiplexityClient
 	
 	def download(file)
 		@buffer = Buffer.new(file)
+		@speeds = []
+		i = 0
 		@multiplex_sockets.each do |socket|
-			Thread.new{get_next_chunk(socket)}
+			Thread.new{get_next_chunk(socket, i)}
+			i += 1
 		end
-		#$done = false
-		#screen = Thread.new(draw_screen)
 		Thread.list.each do |thread|
 			thread.join if thread != (Thread.current or screen)
 		end
-		#$done = true
 	end
 	
 	def draw_screen
-		loop {
-			break if $done == true
-			system "clear"
-			puts "Multiplexity".teal
-			puts
-			puts "Currently downloading: ".green + ""
-			puts
-			puts "Buffer:".green
-			puts "\tChunks:\t" + "".yellow
-			puts "\tSize:\t" + "".yellow
-			puts
-			puts "Interface speeds:".green
-			puts "\teth0: " + "/s".yellow
-			puts "\teth0: " + "/s".yellow
-			puts "\teth0: " + "/s".yellow
-			puts "\teth0: " + "/s".yellow
-			puts
-			puts "Pool speed: ".green + "/s".yellow
-			puts
-			puts "Progress: ".green + "%".yellow
-			sleep 0.5
-		}
+		system "clear"
+		puts "Multiplexity".teal
+		puts
+		puts "Currently downloading: ".green + "#{@buffer.filename}"
+		puts
+		puts "Buffer:".green
+		puts "\tChunks:\t" + "#{@buffer.count}".yellow
+		puts "\tSize:\t" + "#{format_bytes(@buffer.size)}".yellow
+		puts
+		puts "Interface speeds:".green
+		i = 0
+		total_speed = 0
+		@speeds.each do |speed|
+			speed = 0 if speed == nil
+			puts "\tWorker #{i}: " + "#{format_bytes(speed)}/s".yellow
+			i += 1
+			total_speed += speed
+		end
+		puts
+		puts "Pool speed: ".green + "#{format_bytes(total_speed)}/s".yellow
+		puts
+		puts "Progress: ".green + "%".yellow
 	end
 	
-	def get_next_chunk(socket)
+	def format_bytes(bytes)
+		i = 0
+		until bytes < 1024
+			bytes = (bytes / 1024).round(1)
+			i += 1
+		end
+		suffixes = ["bytes","KB","MB","GB","TB"]
+		"#{bytes} #{suffixes[i]}"
+	end
+	
+	def get_next_chunk(socket, id)
 		loop {
+			draw_screen
 			chunk_id = socket.gets.to_i
 			break if chunk_id == 0
 			chunk_size = socket.gets.to_i
+			start = Time.now
 			chunk_data = socket.read(chunk_size)
+			time = Time.now - start
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
-			puts chunk_id
+			@speeds[id] = chunk_size / time
 		}
 	end
 	

@@ -1,9 +1,12 @@
 class Buffer
+	attr_accessor :filename
 	def initialize(file)
 		@chunkArray = []
 		@fileTop = 0
 		@file = File.open(file, 'w')
+		@filename = file
 	end
+	
 	def checkNext(newChunk, i)
 		if newChunk.id > @chunkArray[i].id && newChunk.id < @chunkArray[i+1].id
 			@chunkArray.insert(i+1, newChunk)
@@ -11,6 +14,7 @@ class Buffer
 		end
 		checkNext(newChunk, i+1)
 	end
+	
 	def insert(newChunk)
 		if @chunkArray.size == 0 || newChunk.id > @chunkArray[-1].id
 			@chunkArray << newChunk
@@ -21,10 +25,12 @@ class Buffer
 		end
 		self.dump
 	end
+	
 	def countChunks(i)		
 		return i+1 if @chunkArray.size == i+1 || @chunkArray[i].id != @chunkArray[i+1].id-1
 		countChunks(i+1)
 	end
+	
 	def dump
 		safeCount = countChunks(0)
 		if @chunkArray[0].id == @fileTop+1
@@ -34,5 +40,17 @@ class Buffer
 				@file.write(out_chunk.data)
 			end
 		end
+	end
+	
+	def size
+		size = 0
+		@chunkArray.each do |chunk|
+			size += chunk.data.size
+		end
+		size
+	end
+	
+	def count
+		@chunkArray.size
 	end
 end

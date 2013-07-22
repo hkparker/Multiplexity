@@ -202,19 +202,19 @@ socket.gets
 puts "Server is ready.  Downloading file".good
 client.download file
 puts "The file has been downloaded".good
-puts "Check file integrity?"
+puts "Would you like to check the file integrity?".question
 choice = get_bool
 if choice == "y"
 	success = client.verify_file file
+	if success == true
+		puts "CRC match, the file was download successfully".good
+	else
+		puts "CRC mismatch, the file was corrupt during download".bad
+	end
 else
 	socket.puts "NO VERIFY"
 end
-if success == true
-	puts "CRC match, the file was download successfully".good
-else
-	puts "CRC mismatch, the file was corrupt during download".bad
-end
-puts "Keep routing tables?"
+puts "Would you like to keep the multiplexity routing tables?".question
 choice = get_bool
 if choice == "n"
 	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"

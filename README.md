@@ -12,7 +12,7 @@ All the PoC stuff is done, just need to put it together.  At this point expect e
 Usage
 -----
 
-
+The server is the machine that has a publicly routable IP address, while the client is the machine whos interfaces are behind NAT.  You will be able to (once complete) upload and download from a server.
 
 Requirements
 ------------
@@ -22,9 +22,7 @@ Ruby >= 1.9.1
 Todo
 ----
 
-Use ruby better (instance variable assessors and such), redesign and rewrite a few things
-
-More options for save location
+More options for save location, handle duplicate filenames
 
 File uploads
 
