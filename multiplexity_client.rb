@@ -84,10 +84,8 @@ class MultiplexityClient
 	def download(file)
 		@buffer = Buffer.new(file)
 		@speeds = []
-		i = 0
-		@multiplex_sockets.each do |socket|
+		@multiplex_sockets.each_with_index do |socket, i|
 			Thread.new{get_next_chunk(socket, i)}
-			i += 1
 		end
 		Thread.list.each do |thread|
 			thread.join if thread != (Thread.current or screen)
@@ -140,6 +138,9 @@ class MultiplexityClient
 			time = Time.now - start
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
 			@speeds[id] = chunk_size / time
+			#puts "Chunk #{chunk_id} was just downloaded by worker #{id}"
+			#puts "@speeds: #{@speeds}"
+			#puts
 		}
 	end
 	
