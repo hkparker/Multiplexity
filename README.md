@@ -7,7 +7,7 @@ The goal of this project is to be able to upload or download a file to/from a se
 Current status
 --------------
 
-All the PoC stuff is done, just need to put it together.  At this point expect everything to be completely non-functional, I'm hoping to have useful code in about a month.
+You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  Not really ready for use yet.
 
 Usage
 -----
@@ -22,9 +22,13 @@ Ruby >= 1.9.1
 Todo
 ----
 
-More options for save location, handle duplicate filenames
+Clean up code, a lot
+
+Clean up experience (more options for save location, handle duplicate filenames, better exception handling, etc)
 
 File uploads
+
+Auto detect filewall and adjust syntax (support ipfw, pfctl, etc).  Better system for adding firewall modules.
 
 Directory transfers
 

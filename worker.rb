@@ -2,6 +2,7 @@ require './chunk.rb'
 
 class Worker
 	attr_accessor :ready
+	attr_writer :chunk
 	def initialize(socket)
 			@socket = socket
 			@ready = false
@@ -17,15 +18,9 @@ class Worker
 				break
 			end
 			@socket.puts @chunk.id
-			@socket.puts @size
+			@socket.puts @chunk.data.size
 			@socket.write(@chunk.data)
 			@chunk = nil
 		}
 	end
-	
-	def get_chunk(chunk, size)
-		@chunk = chunk
-		@size = size
-	end
-	
 end

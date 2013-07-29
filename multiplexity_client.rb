@@ -103,12 +103,10 @@ class MultiplexityClient
 		puts "\tSize:\t" + "#{format_bytes(@buffer.size)}".yellow
 		puts
 		puts "Interface speeds:".green
-		i = 0
 		total_speed = 0
-		@speeds.each do |speed|
+		@speeds.each_with_index do |speed, i|
 			speed = 0 if speed == nil
 			puts "\tWorker #{i}: " + "#{format_bytes(speed)}/s".yellow
-			i += 1
 			total_speed += speed
 		end
 		puts
@@ -138,9 +136,6 @@ class MultiplexityClient
 			time = Time.now - start
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
 			@speeds[id] = chunk_size / time
-			#puts "Chunk #{chunk_id} was just downloaded by worker #{id}"
-			#puts "@speeds: #{@speeds}"
-			#puts
 		}
 	end
 	

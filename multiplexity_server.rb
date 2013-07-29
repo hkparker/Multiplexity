@@ -12,7 +12,7 @@ class MultiplexityServer
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
 		@workers = []
-		@chunk_size = 1024*1024
+		@chunk_size = 1024*1024*3
 		@last_chunk = 0	
 		self.handshake
 	end
@@ -73,11 +73,11 @@ class MultiplexityServer
 				if worker.ready == true
 					if @file_remaining > 0
 						chunk_size = get_size
-						worker.get_chunk(Chunk.new(@id,@file.read(chunk_size)),chunk_size)
+						worker.chunk = Chunk.new(@id,@file.read(chunk_size))
 						@id += 1
 						worker.ready = false
 					else
-						worker.get_chunk(0,0)
+						worker.chunk = 0
 						worker.ready = false
 						told += 1
 					end

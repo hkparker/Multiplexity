@@ -6,7 +6,8 @@ require 'socket'
 
 port = 8000
 
-def env_check
+def env_check	# exit if something isn't met, otherwise return firewall object
+	# check ruby version
 	puts "Preforming environmental check".good
 	puts "Checking for routing table file".good
 	$route_file = "/etc/iproute2/rt_tables"
@@ -133,12 +134,10 @@ def setup_routes
 	end
 	puts "Routing tables created".good
 	puts "Now adding routes for these tables".good
-	i = 0
-	routes.each do |route|
+	routes.each_with_index do |route, i|
 		table = "multiplex#{i}"
 		route.add_table(table)
 		execute "sudo ip route add default via #{route.gateway} dev #{route.interface} table #{route.table}"
-		i += 1
 	end
 	puts "Routes added to routing tables".good
 	puts "Now creating routing rules to force the use of these tables".good
