@@ -1,9 +1,8 @@
 #!/usr/bin/env ruby
 
 require './multiplexity_client.rb'
-require './route.rb'
-require 'socket'
 require './firewalls.rb'
+require 'socket'
 
 port = 8000
 $route_file = "/etc/iproute2/rt_tables"
@@ -32,7 +31,7 @@ end
 
 def route_auto_config
 	write_verbose "Attempting to auto configure routing information".good
-	ip_config = {:detect_command => "ip", :class => Firewalls::IP}
+	ip_config = {:detect_command => "ip", :class => IPFirewall}
 	#ipfw_config = nil
 	#pfctl_config = nil
 	firewalls = [ip_config]
@@ -40,7 +39,7 @@ def route_auto_config
 		write_verbose "Checking for #{firewall[:detect_command]} on this system".good
 		if `which #{firewall[:detect_command]}` != ""
 			write_verbose "Detected #{firewall[:detect_command]} on this system".good
-			return firewall[:class].new
+			return firewall[:class]
 		end
 	end
 end
@@ -157,7 +156,7 @@ if get_bool
 		bind_ips = get_bind_ips
 	else
 		routes = get_env_config
-		firewall = config[:class].new(routes)
+		firewall = config.new(routes)
 		firewall.apply
 		bind_ips = firewall.get_bind_ips
 	end

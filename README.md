@@ -7,7 +7,7 @@ The goal of this project is to be able to upload or download a file to/from a se
 Current status
 --------------
 
-You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  Not really ready for use yet.
+You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  Currently I'm redoing how routes are setup in the beginning.
 
 Usage
 -----
@@ -28,7 +28,7 @@ Clean up experience (more options for save location, handle duplicate filenames,
 
 File uploads
 
-Auto detect filewall and adjust syntax (support ipfw, pfctl, etc).  Better system for adding firewall modules.
+Auto detect filewall and adjust syntax (support ipfw, pfctl, etc)
 
 Directory transfers
 

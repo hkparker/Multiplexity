@@ -33,7 +33,7 @@ class MultiplexityClient
 		command = ""
 		until command != ""
 			print ">"
-			command = gets.chomp
+			command = STDIN.gets.chomp
 		end
 		command
 	end
