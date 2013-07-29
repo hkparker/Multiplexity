@@ -3,34 +3,49 @@
 require './multiplexity_client.rb'
 require './route.rb'
 require 'socket'
+require './firewalls.rb'
 
 port = 8000
+$route_file = "/etc/iproute2/rt_tables"
 
-def env_check	# exit if something isn't met, otherwise return firewall object
-	# check ruby version
-	puts "Preforming environmental check".good
-	puts "Checking for routing table file".good
-	$route_file = "/etc/iproute2/rt_tables"
-	if File.exists?($route_file) == false
-		puts "Could not find #{$route_file} on your system".bad
-		puts "Please enter another file to use".question
-		file = $route_file
-		until File.exists?(file)
-			file = get_string
-		end
-		$route_file = file
-	end
-	puts "Checking for ip utility".good
-	if `which ip` == ""
-		puts "ip utility not found".bad
-		puts "This application requires a unix-like operating system with the ip utility".bad
-		# allow them to instead use their own source based routing, and have it auto detect pf for bsd and use that.  One for mac too, maybe pass a hash of labled commands?
-		exit 0
-	end
-	puts "Environmental check complete".good
+def write_verbose(string)
+	puts string if $verbose == true
 end
 
-def is_ip?(address)	# from IPAddr standard library
+def parse_args
+	ARGV.each do |arg|
+		$verbose = true if arg == "-v"
+	end
+end
+
+def env_check
+	write_verbose "Preforming environmental check".good
+	write_verbose "Checking Ruby version".good
+	if RUBY_VERSION.to_f < 1.9
+		puts "You appear to be using Ruby #{RUBY_VERSION}".bad
+		puts "Multiplexity requires Ruby >= 1.9.1".bad
+		exit 0
+	end
+	write_verbose "Ruby #{RUBY_VERSION} detected".good
+	write_verbose "Environmental check complete".good
+end
+
+def route_auto_config
+	write_verbose "Attempting to auto configure routing information".good
+	ip_config = {:detect_command => "ip", :class => Firewalls::IP}
+	#ipfw_config = nil
+	#pfctl_config = nil
+	firewalls = [ip_config]
+	firewalls.each do |firewall|
+		write_verbose "Checking for #{firewall[:detect_command]} on this system".good
+		if `which #{firewall[:detect_command]}` != ""
+			write_verbose "Detected #{firewall[:detect_command]} on this system".good
+			return firewall[:class].new
+		end
+	end
+end
+
+def is_ip?(address)
 	if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ address
 		return $~.captures.all? {|i| i.to_i < 256}
 	end
@@ -50,9 +65,13 @@ def get_bool
 	choice = ""
 	until choice == "y" or choice == "n"
 		print ">"
-		choice = STDIN.gets.chomp
+		choice = STDIN.gets.chomp.downcase
 	end
-	choice
+	if choice == "y"
+		true
+	elsif choice == "n"
+		false
+	end
 end
 
 def is_digit?(string)
@@ -83,91 +102,69 @@ def get_string
 	string
 end
 
-def execute(command)
-	puts command.executing
-	system command
-end
-
-def get_routes
+def get_env_config
 	puts "How many network interfaces would you like to multiplex across?".question
 	route_list = []
 	table_count = get_int
-	table_count.times do |i|
-		puts "Interface #{i+1}".yellow.good
-		puts "Please enter the name of the interface".question
-		interface = get_string
-		puts "Please enter the IP address of #{interface}".question
-		address = get_ip
-		puts "Please enter the default gateway for #{interface}".question
-		gateway = get_ip
-		route_list << Route.new(interface, address, gateway)
+	correct = false
+	until correct == true
+		table_count.times do |i|
+			puts "Interface #{i+1}".yellow.good
+			puts "Please enter the name of the interface".question
+			interface = get_string
+			puts "Please enter the IP address of #{interface}".question
+			ip_address = get_ip
+			puts "Please enter the default gateway for #{interface}".question
+			default_gateway = get_ip
+			route_list << {:interface => interface, :ip_address => ip_address, :default_gateway => default_gateway}
+		end
+		puts "To confirm:".good
+		route_list.each do |route|
+			puts "#{route[:interface]} has an IP address of #{route[:ip_address]} and uses #{route[:default_gateway]} as its default gateway"
+		end
+		puts "Is this correct?"
+		correct = true if get_bool
 	end
-	puts "To confirm:".good
-	route_list.each do |pair|
-		puts "#{pair.interface} has an IP address of #{pair.address} and uses #{pair.gateway} as its default gateway"
-	end
-	puts "Is this correct? (y/n)".question
-	correct = get_bool
-	if correct == "y"
-		return table_count, route_list
-	elsif correct == "n"
-		puts "Thats ok, lets try again".bad
-		return nil, nil
-	end
+	route_list
 end
 
-def setup_routes
-	puts "Setting up source based routing".good
-	puts "Please join all networks you plan to use now".good
-	puts "Press enter once you have an IP address on each network".good
-	STDIN.gets
-	routes = nil
-	until routes != nil
-		table_count, routes = get_routes
-	end
-	puts "Now we need to create a routing rule for each interface".good
-	puts "Backing up your old routing table configuration".good
-	execute "sudo cp #{$route_file} #{$route_file}.backup"
-	puts "Creating #{table_count} new routing tables".good
-	table_count.times do |i|
-		execute "sudo sh -c \"echo '#{128+i}\tmultiplex#{i}' >> #{$route_file}\""
-	end
-	puts "Routing tables created".good
-	puts "Now adding routes for these tables".good
-	routes.each_with_index do |route, i|
-		table = "multiplex#{i}"
-		route.add_table(table)
-		execute "sudo ip route add default via #{route.gateway} dev #{route.interface} table #{route.table}"
-	end
-	puts "Routes added to routing tables".good
-	puts "Now creating routing rules to force the use of these tables".good
+def get_bind_ips
 	bind_ips = []
-	routes.each do |route|
-		execute "sudo ip rule add from #{route.address} table #{route.table}"
-		bind_ips << route.address
-	end
-	puts "Flushing routing cache".good
-	execute "sudo ip route flush cache"
-	bind_ips
-end
-
-puts "Loading Multiplex client ".good
-env_check
-puts "Before we connect to a server we need to setup routing rules".good
-puts "If you have already setup source based routing, you can skip this step".good
-puts "Would you like to setup routing rules now? (y/n)".question
-table_setup = get_bool
-bind_ips = []
-if table_setup == "y"
-	bind_ips = setup_routes
-elsif table_setup == "n"
 	puts "How many IP addresses would you like to bind to?".question
 	ip_count = get_int
 	ip_count.times do |i|
 		puts "Please enter an IP to bind to".question
 		bind_ips << get_ip
 	end
+	bind_ips
 end
+
+puts "Multiplexity".good
+parse_args
+env_check
+puts "Would you like to setup routing rules now? (y/n)".question
+if get_bool
+	config = route_auto_config
+	if config == nil
+		puts "Unable to auto configure routing information".bad
+		puts "You can still use Multiplexity, but you must do all source based routing.".bad
+		puts "This means your operating system must already know to route packets to the correct interface/gateway.".bad
+		puts "Continue anyway? (y/n)".question
+		if get_bool == false
+			puts "Closing Multiplexity".good
+			exit 0
+		end
+		bind_ips = get_bind_ips
+	else
+		routes = get_env_config
+		firewall = config[:class].new(routes)
+		firewall.apply
+		bind_ips = firewall.get_bind_ips
+	end
+else
+	bind_ips = get_bind_ips
+end
+# Above here checked, below here unchecked.
 puts "Kernel ready to route multiplexed connections".good
 puts "Please enter the IP address of the multiplex server".question
 server = get_ip
@@ -202,8 +199,7 @@ puts "Server is ready.  Downloading file".good
 client.download file
 puts "The file has been downloaded".good
 puts "Would you like to check the file integrity?".question
-choice = get_bool
-if choice == "y"
+if get_bool
 	success = client.verify_file file
 	if success == true
 		puts "CRC match, the file was download successfully".good
@@ -213,11 +209,11 @@ if choice == "y"
 else
 	socket.puts "NO VERIFY"
 end
-puts "Would you like to keep the multiplexity routing tables?".question
-choice = get_bool
-if choice == "n"
-	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"
-	execute "sudo ip route flush cache"
-end
+# if defined? firewall != nil, ask to call firewall.restore_system
+#puts "Would you like to keep the multiplexity routing tables?".question
+#if get_bool == false
+#	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"
+#	execute "sudo ip route flush cache"
+#end
 puts "Closing multiplexity".good
 #client.shutdown
