@@ -1,17 +1,19 @@
 require './colors.rb'
 
-class IPFirewall
-	def initialize(routes)
-		@route_file = "/etc/iproute2/rt_tables"
-		@route_list = routes
-	end
-	
+class Firewall
 	def get_bind_ips
 		bind_ips = []
 		@route_list.each do |route|
 			bind_ips << route[:ip_address]
 		end
 		bind_ips
+	end
+end
+
+class IPFirewall < Firewall
+	def initialize(routes)
+		@route_file = "/etc/iproute2/rt_tables"
+		@route_list = routes
 	end
 
 	def apply

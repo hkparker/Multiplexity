@@ -119,6 +119,8 @@ class MultiplexityServer
 				print_dir
 			when "check"
 				check_file command[1]
+			when "?"
+				print_help
 			else
 				@client.puts "That was not a recognized command".bad
 				@client.puts "fin"
@@ -132,6 +134,23 @@ class MultiplexityServer
 			file += "/" if Dir.exists?(file)
 			@client.puts(file)
 		end
+		@client.puts "fin"
+	end
+	
+	def print_help
+		@client.puts "Avaliable commands are:".good
+		@client.puts "ls\t\t- list files"
+		@client.puts "lls\t\t- list local files"
+		@client.puts "pwd\t\t- print working directory"
+		@client.puts "lpwd\t\t- print local working directory"
+		@client.puts "cd <dir>\t- change directory"
+		@client.puts "lcd <dir>\t- change local directory"
+		@client.puts "size <file>\t- check the size of a file"
+		@client.puts "clear\t\t- clear the terminal"
+		@client.puts "download <file/directory>\t- download file/directory from server to client"
+		@client.puts "upload <file/directory>\t\t- upload file/direcoty from client to server"
+		@client.puts "?\t\t- print this message"
+		@client.puts "exit\t\t- exits multiplexity"
 		@client.puts "fin"
 	end
 	

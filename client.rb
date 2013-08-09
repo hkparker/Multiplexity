@@ -5,7 +5,6 @@ require './firewalls.rb'
 require 'socket'
 
 port = 8000
-$route_file = "/etc/iproute2/rt_tables"
 
 def write_verbose(string)
 	puts string if $verbose == true
@@ -138,6 +137,20 @@ def get_bind_ips
 	bind_ips
 end
 
+def shutdown(client)
+	puts "Closing multiplexity".good
+	client.shutdown if client != nil
+	if (defined? firewall) != nil
+		puts "Would you like to remove the multiplexity firewall rules?".question
+		if get_bool
+			write_verbose "Telling firewall to restore environment".good
+			firewall.restore_system
+		end
+	end
+	puts "Multiplexity closed.".good
+	exit 0
+end
+
 puts "Multiplexity".good
 parse_args
 env_check
@@ -163,32 +176,31 @@ if get_bool
 else
 	bind_ips = get_bind_ips
 end
-# Above here checked, below here unchecked.
-puts "Kernel ready to route multiplexed connections".good
 puts "Please enter the IP address of the multiplex server".question
 server = get_ip
-puts "Opening control socket".good
+write_verbose "Opening control socket".good
 begin
 	socket = TCPSocket.open(server, port)
 rescue
 	puts "Failed to open control socket, please check your server information and try again".bad
+	shutdown(nil)
+end
+write_verbose "Creating new client object".good
+client = MultiplexityClient.new(socket)
+write_verbose "Beginning handshake with server".good
+if client.handshake == false
+	puts "Client handshake failed".bad
+	puts "This most likely means the server is outdated".bad
+	puts "Something other than multiplexity might be listening on port #{port}".bad
+	shutdown(client)
 	exit 0
 end
-puts "Creating new client object".good
-client = MultiplexityClient.new(socket)
-puts "Beginning handshake with server".good
-client.handshake
-puts "Opening multiplex sockets with server".good
+
+
+
+write_verbose "Opening multiplex sockets with server".good
 sockets = client.setup_multiplex(bind_ips, server)
-puts "Multiplex connections setup".good
-puts "Now entering file selection dialog".good
-puts "Avaliable commands are:".good
-puts "\tls - list files"
-puts "\tpwd - print working directory"
-puts "\tcd <dir> - change directory"
-puts "\tsize <file> - check the size of a file"
-puts "\tclean - clear the terminal"
-puts "\texit - exits multiplexity"
+write_verbose "Multiplex connections setup".good
 file = client.choose_file
 puts "File #{file} has been successfully choosen.".good
 client.process_command("size #{file}")
@@ -208,11 +220,4 @@ if get_bool
 else
 	socket.puts "NO VERIFY"
 end
-# if defined? firewall != nil, ask to call firewall.restore_system
-#puts "Would you like to keep the multiplexity routing tables?".question
-#if get_bool == false
-#	execute "sudo mv /etc/iproute2/rt_tables.backup /etc/iproute2/rt_tables"
-#	execute "sudo ip route flush cache"
-#end
-puts "Closing multiplexity".good
-#client.shutdown
+shutdown(client)

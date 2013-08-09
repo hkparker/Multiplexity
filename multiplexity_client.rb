@@ -12,8 +12,17 @@ class MultiplexityClient
 	end
 	
 	def handshake
-		@server.puts "HELLO Multiplexity"
-		@server.close if @server.gets.chomp != "HELLO Client"
+		begin
+			@server.puts "HELLO Multiplexity"
+			response = @server.gets.chomp
+			if response == "HELLO Client"
+				return true
+			else
+				return false
+			end
+		rescue
+			return false
+		end
 	end
 	
 	def setup_multiplex(bind_ips, server)
@@ -147,7 +156,6 @@ class MultiplexityClient
 	end
 	
 	def shutdown
-		exit 0
 		@multiplex_sockets.each do |socket|
 			socket.close
 		end
