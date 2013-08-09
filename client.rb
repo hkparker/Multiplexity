@@ -31,8 +31,6 @@ end
 def route_auto_config
 	write_verbose "Attempting to auto configure routing information".good
 	ip_config = {:detect_command => "ip", :class => IPFirewall}
-	#ipfw_config = nil
-	#pfctl_config = nil
 	firewalls = [ip_config]
 	firewalls.each do |firewall|
 		write_verbose "Checking for #{firewall[:detect_command]} on this system".good
@@ -176,7 +174,7 @@ if get_bool
 else
 	bind_ips = get_bind_ips
 end
-puts "Please enter the IP address of the multiplex server".question
+puts "Please enter the IP address of the multiplexity server".question
 server = get_ip
 write_verbose "Opening control socket".good
 begin
@@ -196,6 +194,8 @@ if client.handshake == false
 	exit 0
 end
 
+
+puts "Connected to multiplexity server".good
 
 
 write_verbose "Opening multiplex sockets with server".good
