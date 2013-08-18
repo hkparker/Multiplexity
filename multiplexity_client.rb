@@ -29,13 +29,17 @@ class MultiplexityClient
 		@server.puts bind_ips.size
 		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
-			lhost = Socket.pack_sockaddr_in(0, ip)
-			rhost = Socket.pack_sockaddr_in(multiplex_port, server)
-			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-			socket.bind(lhost)
-			socket.connect(rhost)
-			@multiplex_sockets << socket
+			begin
+				lhost = Socket.pack_sockaddr_in(0, ip)
+				rhost = Socket.pack_sockaddr_in(multiplex_port, server)
+				socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+				socket.bind(lhost)
+				socket.connect(rhost)
+				@multiplex_sockets << socket
+			rescue
+			end
 		end
+		@multiplex_sockets.size
 	end
 	
 	def get_command

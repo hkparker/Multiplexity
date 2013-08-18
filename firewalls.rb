@@ -21,11 +21,8 @@ class IPFirewall < Firewall
 		@route_list.each_with_index do |route, i|
 			table_name = "multiplex#{i}"
 			system "sudo sh -c \"echo '#{128+i}\t#{table_name}' >> #{@route_file}\""
-			sleep 0.1
 			system "sudo ip route add default via #{route[:default_gateway]} dev #{route[:interface]} table #{table_name}"
-			sleep 0.1
 			system "sudo ip rule add from #{route[:ip_address]} table #{table_name}"
-			sleep 0.1
 		end
 		system "sudo ip route flush cache"
 	end

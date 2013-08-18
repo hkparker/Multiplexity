@@ -168,6 +168,7 @@ if get_bool
 	else
 		routes = get_env_config
 		firewall = config.new(routes)
+		write_verbose "Applying firewall rules".good
 		firewall.apply
 		bind_ips = firewall.get_bind_ips
 	end
@@ -193,15 +194,32 @@ if client.handshake == false
 	shutdown(client)
 	exit 0
 end
-
-
-puts "Connected to multiplexity server".good
-
-
 write_verbose "Opening multiplex sockets with server".good
-sockets = client.setup_multiplex(bind_ips, server)
+socket_count = client.setup_multiplex(bind_ips, server)
+if socket_count < bind_ips.size
+	puts "Not all multiplex sockets opened successfully".bad
+	puts "Attempted to open #{bind_ips.size} sockets, #{socket_count} sockets opened successfully".bad
+	puts "This could be caused by an incorrect IP address or port filtering on the network(s)".bad
+#	puts "Continue anyway? (y/n)".question
+	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
+#	shutdown(client) if get_bool == false
+	shutdown(client)
+	# just close for now
+end
 write_verbose "Multiplex connections setup".good
+puts "Connected to the Multiplexity server".good
+local_commands = ["lls","lpwd","lcd","clear","exit"]
+
+
+
+
 file = client.choose_file
+
+
+
+
+
+
 puts "File #{file} has been successfully choosen.".good
 client.process_command("size #{file}")
 puts "Waiting for server to be ready to serve file".good
