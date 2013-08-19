@@ -42,15 +42,6 @@ class MultiplexityClient
 		@multiplex_sockets.size
 	end
 	
-	def get_command
-		command = ""
-		until command != ""
-			print ">"
-			command = STDIN.gets.chomp
-		end
-		command
-	end
-	
 	def check_target_type(target)
 		@server.puts "check #{target}"
 		return @server.gets.chomp

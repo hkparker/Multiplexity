@@ -243,7 +243,7 @@ if socket_count < bind_ips.size
 end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
-loop {
+loop {	# this is very ugly and these blocks should be broken into smaller methods
 	local_commands = ["lls","lpwd","lcd","lsize","clear","exit"]
 	transfer_commands = ["download", "upload"]
 	command = get_string
@@ -274,14 +274,12 @@ loop {
 						else
 							socket.puts "NO VERIFY"
 						end
-						# maybe send a "all done" so we know we are done with verification
 					elsif type == "directory"
 						puts "Directory downloads are not yet supported, sorry".bad
-						# mkdir, cd, file.each client.download file
+						# mkdir target, cd target, file.each client.download file
 					else
 						puts "The selected file/directory could not be read".bad
 					end
-					#elsif available == dir, have check_dir CRC each file
 				else
 					puts "File cannot be blank".bad
 				end
