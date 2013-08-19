@@ -7,7 +7,7 @@ The goal of this project is to be able to upload or download a file to/from a se
 Current status
 --------------
 
-You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  Currently I'm redoing how routes are setup in the beginning.
+You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  I've just finished cleaning up the client flow, need to do ther server next.
 
 Usage
 -----
@@ -22,19 +22,17 @@ Ruby >= 1.9.1
 Todo
 ----
 
-Clean up code, a lot
+Clean up code
 
-Clean up experience (more options for save location, handle duplicate filenames, better exception handling, etc)
+Handle duplicate filenames
 
-File uploads
+Directory downloads
 
-Auto detect filewall and adjust syntax (support ipfw, pfctl, etc)
+File/directory uploads
 
-Directory transfers
+More firewall support
 
 SSL sockets for everything
-
-Switch many options to command line flags
 
 License
 -------

@@ -38,7 +38,7 @@ class MultiplexityServer
 			command = @client.gets.chomp
 			done = process_command(command)
 		end
-		process_command(@client.gets.chomp)
+		process_command(@client.gets.chomp)	# this is the size check right before download
 		self.serve_file
 	end
 	
@@ -98,11 +98,14 @@ class MultiplexityServer
 	end
 	
 	def check_file file
-		valid = (FileTest.readable?(file) and (Dir.exists?(file) != true))
-		@client.puts "#{valid}"
-		if valid == true
+		if (FileTest.readable?(file) and (Dir.exists?(file) != true))
+			@client.puts "file"
 			@download_file = file
 			return "done"
+		elsif Dir.exists?(file)
+			@client.puts "directory"
+		else
+			@client.puts "unavailable"
 		end
 	end
 	
@@ -128,7 +131,7 @@ class MultiplexityServer
 	end
 	
 	def list_files
-		@client.puts "Files and directories in current directory:".good
+		@client.puts "Files and directories in current remote directory:".good
 		files = Dir.entries(Dir.getwd)
 		files.each do |file|
 			file += "/" if Dir.exists?(file)
@@ -139,13 +142,14 @@ class MultiplexityServer
 	
 	def print_help
 		@client.puts "Avaliable commands are:".good
-		@client.puts "ls\t\t- list files"
+		@client.puts "ls\t\t- list remote files"
 		@client.puts "lls\t\t- list local files"
-		@client.puts "pwd\t\t- print working directory"
+		@client.puts "pwd\t\t- print remote working directory"
 		@client.puts "lpwd\t\t- print local working directory"
-		@client.puts "cd <dir>\t- change directory"
+		@client.puts "cd <dir>\t- change remote directory"
 		@client.puts "lcd <dir>\t- change local directory"
-		@client.puts "size <file>\t- check the size of a file"
+		@client.puts "size <file>\t- check the size of a remote file/directory"
+		@client.puts "lsize <file>\t- check the size of a local file/directory"
 		@client.puts "clear\t\t- clear the terminal"
 		@client.puts "download <file/directory>\t- download file/directory from server to client"
 		@client.puts "upload <file/directory>\t\t- upload file/direcoty from client to server"
@@ -157,16 +161,16 @@ class MultiplexityServer
 	def change_dir(dir)
 		begin
 			Dir.chdir(dir)
-			@client.puts("Changed directory to #{dir}".good)
+			@client.puts("Changed remote directory to #{dir}".good)
 			@client.puts "fin"
 		rescue
-			@client.puts("Unable to change directory to #{dir}".bad)
+			@client.puts("Unable to change remote directory to #{dir}".bad)
 			@client.puts "fin"
 		end
 	end
 	
 	def print_dir
-		@client.puts "The current working directory is:".good
+		@client.puts "The current remote working directory is:".good
 		@client.puts(Dir.pwd)
 		@client.puts "fin"
 	end

@@ -135,6 +135,41 @@ def get_bind_ips
 	bind_ips
 end
 
+def process_local_command(command,client)
+	case command.split(" ")[0]
+		when "lls"
+			puts "Files and directories in current local directory:".good
+			files = Dir.entries(Dir.getwd)
+			files.each do |file|
+				file += "/" if Dir.exists?(file)
+				puts file
+			end
+		when "lpwd"
+			puts "The current local working directory is:".good
+			puts Dir.pwd
+		when "lcd"
+			dir = command.split(" ")[1]
+			begin
+				Dir.chdir(dir)
+				puts "Changed local directory to #{dir}".good
+			rescue
+				puts "Unable to change local directory to #{dir}".bad
+			end
+		when "lsize"
+			file = command.split(" ")[1]
+			puts "File size for #{file}:".good
+			if file != nil and file != "" and FileTest.readable?(file)
+				puts client.format_bytes(File.size(file))
+			else
+				puts "The file could not be read".bad
+			end
+		when "clear"
+			system "clear"
+		when "exit"
+			shutdown(client)
+	end
+end
+
 def shutdown(client)
 	puts "Closing multiplexity".good
 	client.shutdown if client != nil
@@ -199,8 +234,8 @@ socket_count = client.setup_multiplex(bind_ips, server)
 if socket_count < bind_ips.size
 	puts "Not all multiplex sockets opened successfully".bad
 	puts "Attempted to open #{bind_ips.size} sockets, #{socket_count} sockets opened successfully".bad
-	puts "This could be caused by an incorrect IP address or port filtering on the network(s)".bad
-#	puts "Continue anyway? (y/n)".question
+	puts "This could be caused by an incorrect IP address, port filtering on the network(s), or bad firewall rules".bad
+#	puts "Continue with successful connections? (y/n)".question
 	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
 #	shutdown(client) if get_bool == false
 	shutdown(client)
@@ -208,34 +243,52 @@ if socket_count < bind_ips.size
 end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
-local_commands = ["lls","lpwd","lcd","clear","exit"]
-
-
-
-
-file = client.choose_file
-
-
-
-
-
-
-puts "File #{file} has been successfully choosen.".good
-client.process_command("size #{file}")
-puts "Waiting for server to be ready to serve file".good
-socket.gets
-puts "Server is ready.  Downloading file".good
-client.download file
-puts "The file has been downloaded".good
-puts "Would you like to check the file integrity?".question
-if get_bool
-	success = client.verify_file file
-	if success == true
-		puts "CRC match, the file was download successfully".good
+loop {
+	local_commands = ["lls","lpwd","lcd","lsize","clear","exit"]
+	transfer_commands = ["download", "upload"]
+	command = get_string
+	switch = command.split(" ")[0]
+	if local_commands.include? switch
+		process_local_command(command,client)
+	elsif transfer_commands.include? switch
+		case switch
+			when "download"
+				target = command.split(" ")[1]
+				if target != nil and target != ""
+					type = client.check_target_type target
+					if type == "file"
+						client.process_command("size #{target}")
+						write_verbose "Waiting for server to be ready to serve the file".good
+						socket.gets
+						client.download_file target
+						puts "Download complete".good
+						puts "Would you like to check the file integrity?".question
+						if get_bool
+							# make a 1 file at a time checker
+							success = client.verify_file target
+							if success == true
+								puts "CRC match, the file was download successfully".good
+							else
+								puts "CRC mismatch, the file was corrupt during download".bad
+							end
+						else
+							socket.puts "NO VERIFY"
+						end
+						# maybe send a "all done" so we know we are done with verification
+					elsif type == "directory"
+						puts "Directory downloads are not yet supported, sorry".bad
+						# mkdir, cd, file.each client.download file
+					else
+						puts "The selected file/directory could not be read".bad
+					end
+					#elsif available == dir, have check_dir CRC each file
+				else
+					puts "File cannot be blank".bad
+				end
+			when "upload"
+				puts "File uploads not working yet, sorry".bad
+		end
 	else
-		puts "CRC mismatch, the file was corrupt during download".bad
+		client.process_command command
 	end
-else
-	socket.puts "NO VERIFY"
-end
-shutdown(client)
+}

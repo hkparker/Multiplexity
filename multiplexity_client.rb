@@ -51,57 +51,32 @@ class MultiplexityClient
 		command
 	end
 	
-	def check_file(file)
-		@server.puts "check #{file}"
-		if @server.gets.chomp == "true"
-			true
-		else
-			false
-		end
-	end
-	
-	def choose_file
-		command = ""
-		loop {
-			command = get_command
-			if command[0..7] != "download"
-				process_command command
-			else
-				file = command.split(" ")[1]
-				if file != nil and file != ""
-					status = check_file file
-					if status == true
-						return file
-					end
-				end
-			end
-		}
+	def check_target_type(target)
+		@server.puts "check #{target}"
+		return @server.gets.chomp
 	end
 		
 	def process_command(command)
-		case command
-			when "clear"
-				system "clear"
-			when "exit"
-				shutdown
-			else
-				@server.puts command
-				loop {
-					line = @server.gets
-					break if line.chomp == "fin"
-					puts line
-				}
-		end
+		@server.puts command
+		loop {
+			line = @server.gets
+			break if line.chomp == "fin"
+			puts line
+		}
 	end
 	
-	def download(file)
+	def download_directory(dir)
+	
+	end
+	
+	def download_file(file)
 		@buffer = Buffer.new(file)
 		@speeds = []
 		@multiplex_sockets.each_with_index do |socket, i|
 			Thread.new{get_next_chunk(socket, i)}
 		end
 		Thread.list.each do |thread|
-			thread.join if thread != (Thread.current or screen)
+			thread.join if thread != (Thread.current)
 		end
 	end
 	
@@ -119,7 +94,7 @@ class MultiplexityClient
 		total_speed = 0
 		@speeds.each_with_index do |speed, i|
 			speed = 0 if speed == nil
-			puts "\tWorker #{i}: " + "#{format_bytes(speed)}/s".yellow
+			puts "\tWorker #{i}: " + "#{format_bytes(speed)}/s".yellow	# pass a hash containing speed and ip address of socket reporting speed
 			total_speed += speed
 		end
 		puts
