@@ -118,7 +118,7 @@ class MultiplexityClient
 		}
 	end
 	
-	def verify_file(file)	# takes local filename and remote filename
+	def verify_file(file)
 		remote_thread = Thread.new{ Thread.current[:remote_crc] = get_remote_crc(file)}
 		local_crc = Zlib::crc32(File.read(file))
 		remote_thread.join

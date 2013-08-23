@@ -12,15 +12,13 @@ class MultiplexityServer
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
 		@workers = []
-		@chunk_size = 1024*100#24*3
-		@last_chunk = 0	
-		self.handshake
+		@chunk_size = 1024*1024
+		@last_chunk = 0
 	end
 	
 	def handshake
 		@client.close if @client.gets.chomp != "HELLO Multiplexity"
 		@client.puts "HELLO Client"
-		self.setup_multiplex
 	end
 	
 	def setup_multiplex
@@ -29,7 +27,6 @@ class MultiplexityServer
 		socket_count.to_i.times do |i|
 			@multiplex_sockets << @server.accept
 		end
-		self.choose_file
 	end
 	
 	def choose_file
@@ -38,7 +35,6 @@ class MultiplexityServer
 			command = @client.gets.chomp
 			done = process_command(command)
 		end
-		self.serve_file
 	end
 	
 	def serve_file
@@ -54,7 +50,7 @@ class MultiplexityServer
 			thread.join if thread != Thread.current
 		end
 		#self.verify
-		process_command(@client.gets.chomp)	# good this works
+		process_command(@client.gets.chomp)
 	end
 	
 	def serve_chunk

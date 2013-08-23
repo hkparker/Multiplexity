@@ -170,7 +170,7 @@ def process_local_command(command,client)
 	end
 end
 
-def process_download_request(client, socket, command)
+def process_download_request(client, command)
 	target = command.split(" ")[1]
 	if target != nil and target != ""
 		type = client.check_target_type target
@@ -179,14 +179,12 @@ def process_download_request(client, socket, command)
 			puts "Download complete".good
 			puts "Would you like to check the file integrity?".question
 			if get_bool
-				success = client.verify_file target	# make verification a nermal command (like crc <filename>), that write the digits to socket (have a raw size retriever just like this.
+				success = client.verify_file target
 				if success == true
 					puts "CRC match, the file was download successfully".good
 				else
 					puts "CRC mismatch, the file was corrupt during download".bad
 				end
-			else
-				socket.puts "NO VERIFY"
 			end
 		elsif type == "directory"
 			puts "Directory downloads are not yet supported, sorry".bad
@@ -285,7 +283,7 @@ loop {
 	elsif transfer_commands.include? switch
 		case switch
 			when "download"
-				process_download_request(client,socket,command)
+				process_download_request(client,command)
 			when "upload"
 				puts "File uploads not working yet, sorry".bad
 		end

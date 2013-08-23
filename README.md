@@ -7,7 +7,7 @@ The goal of this project is to be able to upload or download a file to/from a se
 Current status
 --------------
 
-You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  I've just finished cleaning up the client flow, need to do ther server next.
+You can download a single file from a server at this point, and while that is working reliably there are still many missing features.  Finishing the basic functionallity and cleaning up code now.
 
 Usage
 -----
@@ -22,9 +22,7 @@ Ruby >= 1.9.1
 Todo
 ----
 
-Clean up code
-
-Handle duplicate filenames
+Clean up code / finish basic features
 
 Directory downloads
 
