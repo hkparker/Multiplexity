@@ -118,7 +118,7 @@ def get_env_config
 		route_list.each do |route|
 			puts "#{route[:interface]} has an IP address of #{route[:ip_address]} and uses #{route[:default_gateway]} as its default gateway"
 		end
-		puts "Is this correct?"
+		puts "Is this correct? (y/n)"
 		correct = true if get_bool
 	end
 	route_list
@@ -167,6 +167,37 @@ def process_local_command(command,client)
 			system "clear"
 		when "exit"
 			shutdown(client)
+	end
+end
+
+def process_download_request(client, socket, command)
+	target = command.split(" ")[1]
+	if target != nil and target != ""
+		type = client.check_target_type target
+		if type == "file"
+			client.process_command("size #{target}")
+			write_verbose "Waiting for server to be ready to serve the file".good
+			socket.gets
+			client.download_file target
+			puts "Download complete".good
+			puts "Would you like to check the file integrity?".question
+			if get_bool
+				success = client.verify_file target
+				if success == true
+					puts "CRC match, the file was download successfully".good
+				else
+					puts "CRC mismatch, the file was corrupt during download".bad
+				end
+			else
+				socket.puts "NO VERIFY"
+			end
+		elsif type == "directory"
+			puts "Directory downloads are not yet supported, sorry".bad
+		else
+			puts "The selected file/directory could not be read".bad
+		end
+	else
+		puts "File cannot be blank".bad
 	end
 end
 
@@ -237,13 +268,14 @@ if socket_count < bind_ips.size
 	puts "This could be caused by an incorrect IP address, port filtering on the network(s), or bad firewall rules".bad
 #	puts "Continue with successful connections? (y/n)".question
 	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
+	# maybe take attempted-success (# of missing sockets) and just open sockets from the default ip and throw them away so the server is ahppy
 #	shutdown(client) if get_bool == false
 	shutdown(client)
 	# just close for now
 end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
-loop {	# this is very ugly and these blocks should be broken into smaller methods
+loop {
 	local_commands = ["lls","lpwd","lcd","lsize","clear","exit"]
 	transfer_commands = ["download", "upload"]
 	command = get_string
@@ -253,36 +285,7 @@ loop {	# this is very ugly and these blocks should be broken into smaller method
 	elsif transfer_commands.include? switch
 		case switch
 			when "download"
-				target = command.split(" ")[1]
-				if target != nil and target != ""
-					type = client.check_target_type target
-					if type == "file"
-						client.process_command("size #{target}")
-						write_verbose "Waiting for server to be ready to serve the file".good
-						socket.gets
-						client.download_file target
-						puts "Download complete".good
-						puts "Would you like to check the file integrity?".question
-						if get_bool
-							# make a 1 file at a time checker
-							success = client.verify_file target
-							if success == true
-								puts "CRC match, the file was download successfully".good
-							else
-								puts "CRC mismatch, the file was corrupt during download".bad
-							end
-						else
-							socket.puts "NO VERIFY"
-						end
-					elsif type == "directory"
-						puts "Directory downloads are not yet supported, sorry".bad
-						# mkdir target, cd target, file.each client.download file
-					else
-						puts "The selected file/directory could not be read".bad
-					end
-				else
-					puts "File cannot be blank".bad
-				end
+				process_download_request(client,socket,command)
 			when "upload"
 				puts "File uploads not working yet, sorry".bad
 		end

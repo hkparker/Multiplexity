@@ -12,7 +12,7 @@ class MultiplexityServer
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
 		@workers = []
-		@chunk_size = 1024*1024*3
+		@chunk_size = 1024*100#24*3
 		@last_chunk = 0	
 		self.handshake
 	end
