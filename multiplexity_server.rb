@@ -38,7 +38,6 @@ class MultiplexityServer
 			command = @client.gets.chomp
 			done = process_command(command)
 		end
-		process_command(@client.gets.chomp)	# this is the size check right before download
 		self.serve_file
 	end
 	
@@ -51,19 +50,11 @@ class MultiplexityServer
 		end
 		@file = File.open(@download_file, 'rb')
 		Thread.new{serve_chunk}
-		@client.puts "ready"
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
-		self.verify
-	end
-	
-	def verify
-		check = @client.gets.chomp
-		if check == "VERIFY"
-			hash = Zlib::crc32(File.read(@download_file))
-			@client.puts hash
-		end
+		#self.verify
+		process_command(@client.gets.chomp)	# good this works
 	end
 	
 	def serve_chunk
@@ -122,6 +113,10 @@ class MultiplexityServer
 				print_dir
 			when "check"
 				check_file command[1]
+			when "crc"
+				send_file_crc command[1]
+			when "bytes"
+				send_bytes command[1]
 			when "?"
 				print_help
 			else
@@ -195,5 +190,13 @@ class MultiplexityServer
 			@client.puts "The file could not be read".bad
 			@client.puts "fin"
 		end
+	end
+	
+	def send_file_crc(file)
+		@client.puts Zlib::crc32(File.read(file))
+	end
+	
+	def send_bytes(file)
+		
 	end
 end

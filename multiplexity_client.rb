@@ -118,11 +118,20 @@ class MultiplexityClient
 		}
 	end
 	
-	def verify_file(file)
-		@server.puts "VERIFY"
-		remote_crc = @server.gets.to_i
+	def verify_file(file)	# takes local filename and remote filename
+		remote_thread = Thread.new{ Thread.current[:remote_crc] = get_remote_crc(file)}
 		local_crc = Zlib::crc32(File.read(file))
-		remote_crc == local_crc
+		remote_thread.join
+		remote_thread[:remote_crc] == local_crc
+	end
+	
+	def get_size_bytes
+		
+	end
+	
+	def get_remote_crc(file)
+		@server.puts "crc #{file}"
+		return @server.gets.to_i	# have server send 0 if the file couldn't be read.  have verify check for that.
 	end
 	
 	def shutdown

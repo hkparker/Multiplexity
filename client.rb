@@ -175,14 +175,11 @@ def process_download_request(client, socket, command)
 	if target != nil and target != ""
 		type = client.check_target_type target
 		if type == "file"
-			client.process_command("size #{target}")
-			write_verbose "Waiting for server to be ready to serve the file".good
-			socket.gets
 			client.download_file target
 			puts "Download complete".good
 			puts "Would you like to check the file integrity?".question
 			if get_bool
-				success = client.verify_file target
+				success = client.verify_file target	# make verification a nermal command (like crc <filename>), that write the digits to socket (have a raw size retriever just like this.
 				if success == true
 					puts "CRC match, the file was download successfully".good
 				else
@@ -255,7 +252,7 @@ client = MultiplexityClient.new(socket)
 write_verbose "Beginning handshake with server".good
 if client.handshake == false
 	puts "Client handshake failed".bad
-	puts "This most likely means the server is outdated".bad
+	puts "This most likely means the server or client is outdated".bad
 	puts "Something other than multiplexity might be listening on port #{port}".bad
 	shutdown(client)
 	exit 0
@@ -270,6 +267,9 @@ if socket_count < bind_ips.size
 	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
 	# maybe take attempted-success (# of missing sockets) and just open sockets from the default ip and throw them away so the server is ahppy
 #	shutdown(client) if get_bool == false
+#	(socket_count - bind_ips.size).times do
+#		(TCPSocket.open(server, 8001)).close
+#	end
 	shutdown(client)
 	# just close for now
 end
