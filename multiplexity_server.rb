@@ -6,12 +6,10 @@ require 'zlib'
 class MultiplexityServer
 	@@used_ports = []
 	def initialize(client)
-		@id = 1
 		@client = client
 		@multiplex_port = 8001
 		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
-		@workers = []
 		@chunk_size = 1024*1024
 		@last_chunk = 0
 	end
@@ -29,15 +27,36 @@ class MultiplexityServer
 		end
 	end
 	
-	def choose_file
-		done = ""
-		until done == "done"
+#	def choose_file
+#		done = ""
+#		until done == "done"
+#			command = @client.gets.chomp
+#			done = process_command(command)
+#		end
+#	end
+	
+	def process_commands
+		loop {
+			transfer_commands = ["download","upload"]
 			command = @client.gets.chomp
-			done = process_command(command)
-		end
+			switch = command.split(" ")[0]
+			if transfer_commands.include? switch
+				case switch
+					when "download"
+						# assign @download_file, call serve_file
+						@download_file = command.split(" ")[1]
+						serve_file
+					when "upload"
+						
+				end
+			else
+				process_command(command)
+			end
+		}
 	end
 	
 	def serve_file
+		@workers = []
 		@file_remaining = File.size(@download_file)
 		@multiplex_sockets.each do |socket|
 			worker = Worker.new(socket)
@@ -50,11 +69,12 @@ class MultiplexityServer
 			thread.join if thread != Thread.current
 		end
 		#self.verify
-		process_command(@client.gets.chomp)
+#		process_command(@client.gets.chomp)
 	end
 	
 	def serve_chunk
 		told = 0
+		@id = 1
 		until told == @workers.size
 			@workers.each do |worker|
 				if worker.ready == true
@@ -87,8 +107,8 @@ class MultiplexityServer
 	def check_file file
 		if (FileTest.readable?(file) and (Dir.exists?(file) != true))
 			@client.puts "file"
-			@download_file = file
-			return "done"
+#			@download_file = file
+#			return "done"
 		elsif Dir.exists?(file)
 			@client.puts "directory"
 		else

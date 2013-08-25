@@ -207,7 +207,7 @@ def shutdown(client)
 		end
 	end
 	puts "Multiplexity closed.".good
-	exit 0
+	exit 0	# also send some sort of halt command to the server?
 end
 
 puts "Multiplexity".good

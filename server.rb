@@ -10,8 +10,7 @@ client = server.accept
 multiplex_server = MultiplexityServer.new(client)
 multiplex_server.handshake
 multiplex_server.setup_multiplex
-multiplex_server.choose_file
-multiplex_server.serve_file
+multiplex_server.process_commands
 
 
 # need to loop for commands like the client instead

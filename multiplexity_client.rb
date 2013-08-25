@@ -61,6 +61,7 @@ class MultiplexityClient
 	end
 	
 	def download_file(file)
+		@server.puts "download #{file}" # inform the server of intent to download , ckeck no longer does this
 		@buffer = Buffer.new(file)
 		@speeds = []
 		@multiplex_sockets.each_with_index do |socket, i|
