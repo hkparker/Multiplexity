@@ -27,14 +27,6 @@ class MultiplexityServer
 		end
 	end
 	
-#	def choose_file
-#		done = ""
-#		until done == "done"
-#			command = @client.gets.chomp
-#			done = process_command(command)
-#		end
-#	end
-	
 	def process_commands
 		loop {
 			transfer_commands = ["download","upload"]
@@ -43,7 +35,6 @@ class MultiplexityServer
 			if transfer_commands.include? switch
 				case switch
 					when "download"
-						# assign @download_file, call serve_file
 						@download_file = command.split(" ")[1]
 						serve_file
 					when "upload"
@@ -68,8 +59,6 @@ class MultiplexityServer
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
-		#self.verify
-#		process_command(@client.gets.chomp)
 	end
 	
 	def serve_chunk
@@ -107,8 +96,6 @@ class MultiplexityServer
 	def check_file file
 		if (FileTest.readable?(file) and (Dir.exists?(file) != true))
 			@client.puts "file"
-#			@download_file = file
-#			return "done"
 		elsif Dir.exists?(file)
 			@client.puts "directory"
 		else

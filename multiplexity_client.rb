@@ -132,7 +132,7 @@ class MultiplexityClient
 	
 	def get_remote_crc(file)
 		@server.puts "crc #{file}"
-		return @server.gets.to_i	# have server send 0 if the file couldn't be read.  have verify check for that.
+		return @server.gets.to_i
 	end
 	
 	def shutdown
