@@ -124,6 +124,7 @@ class MultiplexityServer
 				print_help
 			else
 				@client.puts "That was not a recognized command".bad
+				@client.puts "Type ? to see all commands".good
 				@client.puts "fin"
 		end
 	end

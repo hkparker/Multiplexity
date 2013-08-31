@@ -11,9 +11,69 @@ def write_verbose(string)
 end
 
 def parse_args
-	ARGV.each do |arg|
-		$verbose = true if arg == "-v"
+	settings = {:skip_route_setup => false,
+				:bind_ips => nil,
+				:server_ip => nil,
+				:chunk_size => 1024*1024,
+				:username => nil,
+				:password => nil,
+				:recycle => nil
+				}	# choose mode as well
+	ARGV.each_with_index do |arg, i|
+		case arg
+			when "-n"
+				settings[:skip_route_setup] = true
+			when "-b"
+				if ARGV[i+1] != nil
+					ip_list = ARGV[i+1].split(",")
+					input_ips = ip_list
+					ip_size = input_ips.size
+					if ip_size <= 1
+						puts "Provided IP addresses for binding are not valid or too few".bad
+						puts "Bind IPs will be obtained interactivly".good
+					else
+						bind_ips = []
+						input_ips.each do |ip|
+							bind_ips << ip if is_ip?(ip)
+						end
+						if bind_ips.size == ip_size
+							settings[:bind_ips] = bind_ips
+						else
+							puts "Some of the entered bind IP addresses were not valid".bad
+							puts "Bind IP addresses will be obtained interactivly"
+						end
+					end
+				else
+					puts "No bind IPs provided, will be obtained interactivly".bad
+				end
+			when "-s"
+				server_ip = ARGV[i+1]
+				if is_ip?(server_ip) == true
+					settings[:server_ip] = server_ip
+				else
+					puts "Provided server IP address is not valid, will be obtained interactivly".bad
+				end
+			when "-c"
+				begin
+					settings[:chunk_size] = ARGV[i+1].to_i
+				rescue
+					puts "The provided chunk size was not an integer".bad
+					puts "Using the default value of #{format_bytes(settings[:chunk_size])}"
+				end
+			when "-v"
+				$verbose = true
+			when "-u"
+				#settings[:username] = ARGV[i+1]
+			when "-p"
+				#settings[:password] = ARGV[i+1]
+			when "-r"
+				settings[:recycle] = ARGV[i+1].to_i	# recycle can either be every chunk (0), never (nil) or every x bytes
+			when "-h"
+				print_help
+				exit(0)
+		end
 	end
+	settings
 end
 
 def env_check
@@ -207,37 +267,51 @@ def shutdown(client)
 		end
 	end
 	puts "Multiplexity closed.".good
-	exit 0	# also send some sort of halt command to the server?
+	exit 0	# also send some sort of halt command to the server?  maybe in the client object's shutdown method
 end
 
 puts "Multiplexity".good
-parse_args
+settings = parse_args
 env_check
-puts "Would you like to setup routing rules now? (y/n)".question
-if get_bool
-	config = route_auto_config
-	if config == nil
-		puts "Unable to auto configure routing information".bad
-		puts "You can still use Multiplexity, but you must do all source based routing.".bad
-		puts "This means your operating system must already know to route packets to the correct interface/gateway.".bad
-		puts "Continue anyway? (y/n)".question
-		if get_bool == false
-			puts "Closing Multiplexity".good
-			exit 0
+if settings[:skip_route_setup] == false
+	puts "Would you like to setup routing rules now? (y/n)".question
+	if get_bool
+		config = route_auto_config
+		if config == nil
+			puts "Unable to auto configure routing information".bad
+			puts "You can still use Multiplexity, but you must do all source based routing.".bad
+			puts "This means your operating system must already know to route packets to the correct interface/gateway.".bad
+			puts "Continue anyway? (y/n)".question
+			if get_bool == false
+				puts "Closing Multiplexity".good
+				shutdown(nil)
+			end
+		else
+			routes = get_env_config
+			firewall = config.new(routes)
+			write_verbose "Applying firewall rules".good
+			firewall.apply
 		end
-		bind_ips = get_bind_ips
-	else
-		routes = get_env_config
-		firewall = config.new(routes)
-		write_verbose "Applying firewall rules".good
-		firewall.apply
-		bind_ips = firewall.get_bind_ips
+	end
+end
+if (defined? firewall) != nil and firewall != nil
+	bind_ips = firewall.get_bind_ips
+	if settings[:bind_ips] != bind_ips
+		write_verbose "Conflicting values for bind IP addresses, using IPs used for route setup".bad
 	end
 else
-	bind_ips = get_bind_ips
+	if settings[:bind_ips] == nil
+		bind_ips = get_bind_ips
+	else
+		bind_ips = settings[:bind_ips]
+	end
 end
-puts "Please enter the IP address of the multiplexity server".question
-server = get_ip
+if settings[:server_ip] == nil
+	puts "Please enter the IP address of the multiplexity server".question
+	server = get_ip
+else
+	server = settings[:server_ip]
+end
 write_verbose "Opening control socket".good
 begin
 	socket = TCPSocket.open(server, port)
