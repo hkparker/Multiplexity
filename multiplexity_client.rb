@@ -61,7 +61,10 @@ class MultiplexityClient
 	end
 	
 	def download_file(file)
-		@server.puts "download #{file}" # inform the server of intent to download , ckeck no longer does this
+		@server.puts "bytes #{file}"
+		@bytes = @server.gets.to_i
+		@downloaded = 0
+		@server.puts "download #{file}"
 		@buffer = Buffer.new(file)
 		@speeds = []
 		@multiplex_sockets.each_with_index do |socket, i|
@@ -92,7 +95,7 @@ class MultiplexityClient
 		puts
 		puts "Pool speed: ".green + "#{format_bytes(total_speed)}/s".yellow
 		puts
-		puts "Progress: ".green + "%".yellow
+		puts "Progress: ".green + "#{((@downloaded.to_f/@bytes.to_f)*100).round(1)}%".yellow
 	end
 	
 	def format_bytes(bytes)
@@ -116,6 +119,7 @@ class MultiplexityClient
 			time = Time.now - start
 			@buffer.insert(Chunk.new(chunk_id,chunk_data))
 			@speeds[id] = chunk_size / time
+			@downloaded += chunk_size
 		}
 	end
 	

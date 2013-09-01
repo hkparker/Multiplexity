@@ -17,8 +17,9 @@ def parse_args
 				:chunk_size => 1024*1024,
 				:username => nil,
 				:password => nil,
-				:recycle => nil
-				}	# choose mode as well
+				:recycle => nil,
+				:mode => nil
+				}
 	ARGV.each_with_index do |arg, i|
 		case arg
 			when "-n"
@@ -54,11 +55,11 @@ def parse_args
 					puts "Provided server IP address is not valid, will be obtained interactivly".bad
 				end
 			when "-c"
-				begin
+				if is_digit?(ARGV[i+1]) and ARGV[i+1] != "0"
 					settings[:chunk_size] = ARGV[i+1].to_i
-				rescue
+				else
 					puts "The provided chunk size was not an integer".bad
-					puts "Using the default value of #{format_bytes(settings[:chunk_size])}"
+					puts "Using the default value of #{format_bytes(settings[:chunk_size])}".good
 				end
 			when "-v"
 				$verbose = true
@@ -67,7 +68,14 @@ def parse_args
 			when "-p"
 				#settings[:password] = ARGV[i+1]
 			when "-r"
-				settings[:recycle] = ARGV[i+1].to_i	# recycle can either be every chunk (0), never (nil) or every x bytes
+				if is_digit?(ARGV[i+1])
+					settings[:recycle] = ARGV[i+1].to_i
+				else
+					puts "The provided chunk size was not an integer".bad
+					puts "Using the default value of #{format_bytes(settings[:chunk_size])}".good
+				end
+			when "-m"
+				#set mode
 			when "-h"
 				print_help
 				exit(0)
@@ -106,6 +114,16 @@ def is_ip?(address)
 		return $~.captures.all? {|i| i.to_i < 256}
 	end
 	return false
+end
+
+def format_bytes(bytes)
+		i = 0
+		until bytes < 1024
+			bytes = (bytes / 1024).round(1)
+			i += 1
+		end
+		suffixes = ["bytes","KB","MB","GB","TB"]
+		"#{bytes} #{suffixes[i]}"
 end
 
 def get_ip
@@ -259,7 +277,7 @@ end
 def shutdown(client)
 	puts "Closing multiplexity".good
 	client.shutdown if client != nil
-	if (defined? firewall) != nil
+	if (defined? firewall) != nil and firewall != nil
 		puts "Would you like to remove the multiplexity firewall rules?".question
 		if get_bool
 			write_verbose "Telling firewall to restore environment".good
@@ -327,7 +345,6 @@ if client.handshake == false
 	puts "This most likely means the server or client is outdated".bad
 	puts "Something other than multiplexity might be listening on port #{port}".bad
 	shutdown(client)
-	exit 0
 end
 write_verbose "Opening multiplex sockets with server".good
 socket_count = client.setup_multiplex(bind_ips, server)

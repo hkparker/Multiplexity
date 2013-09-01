@@ -201,6 +201,11 @@ class MultiplexityServer
 	end
 	
 	def send_bytes(file)
-		
+		begin
+			bytes = File.size(file)
+		rescue
+			bytes = 0
+		end
+		@client.puts bytes
 	end
 end
