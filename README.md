@@ -15,17 +15,8 @@ Usage
 Multiplexity is still in very active development, and many features do not exist yet.
 
 Client:
-	-n	skip firewall rule setup
-	-b	IP addresses to bind to (comma separated)
-	-s	server IP addess
-	-p	server port
-	-mp	multiplex port
-	-c	chunk size
-	-v	verbose
-	-r	recycle sockets (0 = after every chunk, unspecified = never, X = after X bytes)
-	-m	mode (multiple interfaces or multiple sockets on default interface)
-	-sc	socket count (number of sockets to open per interface)
-	-h	print help
+	
+	List of arguments will go here once finalized
 
 Server:
 
