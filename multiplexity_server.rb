@@ -4,26 +4,25 @@ require './chunk.rb'
 require 'zlib'
 
 class MultiplexityServer
-	@@used_ports = []
 	def initialize(client)
 		@client = client
-		@multiplex_port = 8001
-		@server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@multiplex_sockets = []
-		@chunk_size = 1024*1024
 		@last_chunk = 0
 	end
 	
 	def handshake
 		@client.close if @client.gets.chomp != "HELLO Multiplexity"
 		@client.puts "HELLO Client"
+		@multiplex_port = @client.gets.to_i
+		@chunk_size = @client.gets.to_i
 	end
 	
 	def setup_multiplex
+		server = TCPServer.new("0.0.0.0", @multiplex_port)
+		@client.puts "ready"
 		socket_count = @client.gets.to_i
-		@client.puts @multiplex_port
 		socket_count.to_i.times do |i|
-			@multiplex_sockets << @server.accept
+			@multiplex_sockets << server.accept
 		end
 	end
 	

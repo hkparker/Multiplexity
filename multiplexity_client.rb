@@ -11,11 +11,13 @@ class MultiplexityClient
 		@id = 1
 	end
 	
-	def handshake
+	def handshake(port,chunk_size)
 		begin
 			@server.puts "HELLO Multiplexity"
 			response = @server.gets.chomp
 			if response == "HELLO Client"
+				@server.puts port
+				@server.puts chunk_size
 				return true
 			else
 				return false
@@ -25,9 +27,9 @@ class MultiplexityClient
 		end
 	end
 	
-	def setup_multiplex(bind_ips, server)
+	def setup_multiplex(bind_ips, server, multiplex_port)
+		@server.gets
 		@server.puts bind_ips.size
-		multiplex_port = @server.gets.to_i
 		bind_ips.each do |ip|
 			begin
 				lhost = Socket.pack_sockaddr_in(0, ip)

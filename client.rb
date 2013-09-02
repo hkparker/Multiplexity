@@ -4,7 +4,8 @@ require './multiplexity_client.rb'
 require './firewalls.rb'
 require 'socket'
 
-port = 8000
+# todo before next commit:
+#	client specify multiplex port, merge in hash
 
 def write_verbose(string)
 	puts string if $verbose == true
@@ -15,8 +16,8 @@ def parse_args
 				:bind_ips => nil,
 				:server_ip => nil,
 				:chunk_size => 1024*1024,
-				:username => nil,
-				:password => nil,
+				:port => 8000,
+				:multiplex_port => 8001,
 				:recycle => nil,
 				:mode => nil
 				}
@@ -61,12 +62,30 @@ def parse_args
 					puts "The provided chunk size was not an integer".bad
 					puts "Using the default value of #{format_bytes(settings[:chunk_size])}".good
 				end
+				if settings[:chunk_size] < 1024*1024
+					puts "Warning: Chunk size may be too small to get good results".bad
+				end
 			when "-v"
 				$verbose = true
-			when "-u"
-				#settings[:username] = ARGV[i+1]
 			when "-p"
-				#settings[:password] = ARGV[i+1]
+				if is_digit?(ARGV[i+1])
+					settings[:port] = ARGV[i+1].to_i
+				else
+					puts "The provided port was not an integer".bad
+					puts "Using the default value of #{settings[:port]}".good
+				end
+			when "-mp"
+				if is_digit?(ARGV[i+1])
+					settings[:multiplex_port] = ARGV[i+1].to_i
+				else
+					puts "The provided multiplex port was not an integer".bad
+					puts "Using the default value of #{settings[:port]}".good
+				end
+				if settings[:multiplex_port] == settings[:port]
+					puts "The control port cannot be the same as the multiplex port".bad
+					puts "Keeping the comtrol port as #{settings[:port]} and setting the multiplex port to #{settings[:port]+1}".good
+					settings[:multiplex_port] = settings[:port]+1
+				end
 			when "-r"
 				if is_digit?(ARGV[i+1])
 					settings[:recycle] = ARGV[i+1].to_i
@@ -332,7 +351,7 @@ else
 end
 write_verbose "Opening control socket".good
 begin
-	socket = TCPSocket.open(server, port)
+	socket = TCPSocket.open(server, settings[:port])
 rescue
 	puts "Failed to open control socket, please check your server information and try again".bad
 	shutdown(nil)
@@ -340,27 +359,22 @@ end
 write_verbose "Creating new client object".good
 client = MultiplexityClient.new(socket)
 write_verbose "Beginning handshake with server".good
-if client.handshake == false
+if client.handshake(settings[:multiplex_port],settings[:chunk_size]) == false
 	puts "Client handshake failed".bad
 	puts "This most likely means the server or client is outdated".bad
-	puts "Something other than multiplexity might be listening on port #{port}".bad
+	puts "Something other than multiplexity might be listening on port #{settings[:port]}".bad
 	shutdown(client)
 end
 write_verbose "Opening multiplex sockets with server".good
-socket_count = client.setup_multiplex(bind_ips, server)
+socket_count = client.setup_multiplex(bind_ips, server, settings[:multiplex_port])
 if socket_count < bind_ips.size
 	puts "Not all multiplex sockets opened successfully".bad
 	puts "Attempted to open #{bind_ips.size} sockets, #{socket_count} sockets opened successfully".bad
 	puts "This could be caused by an incorrect IP address, port filtering on the network(s), or bad firewall rules".bad
 #	puts "Continue with successful connections? (y/n)".question
 	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
-	# maybe take attempted-success (# of missing sockets) and just open sockets from the default ip and throw them away so the server is ahppy
 #	shutdown(client) if get_bool == false
-#	(socket_count - bind_ips.size).times do
-#		(TCPSocket.open(server, 8001)).close
-#	end
-	shutdown(client)
-	# just close for now
+	shutdown(client)	# just close for now
 end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
