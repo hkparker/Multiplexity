@@ -15,8 +15,7 @@ Usage
 Multiplexity is still in very active development, and many features do not exist yet.
 
 Client:
-	
-	List of arguments will go here once finalized
+
 
 Server:
 
