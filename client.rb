@@ -4,9 +4,6 @@ require './multiplexity_client.rb'
 require './firewalls.rb'
 require 'socket'
 
-# todo before next commit:
-#	client specify multiplex port, merge in hash
-
 def write_verbose(string)
 	puts string if $verbose == true
 end
@@ -371,10 +368,8 @@ if socket_count < bind_ips.size
 	puts "Not all multiplex sockets opened successfully".bad
 	puts "Attempted to open #{bind_ips.size} sockets, #{socket_count} sockets opened successfully".bad
 	puts "This could be caused by an incorrect IP address, port filtering on the network(s), or bad firewall rules".bad
-#	puts "Continue with successful connections? (y/n)".question
-	# The server is still expecting X multiplex connections even if one fails, need to tell the server to forget some or add them one at a time
-#	shutdown(client) if get_bool == false
-	shutdown(client)	# just close for now
+	puts "Continue with successful connections? (y/n)".question
+	shutdown(client) if get_bool == false
 end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good

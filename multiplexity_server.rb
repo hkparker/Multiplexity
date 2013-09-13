@@ -17,13 +17,23 @@ class MultiplexityServer
 		@chunk_size = @client.gets.to_i
 	end
 	
+	def recieve_multiplex_socket(server)
+		@multiplex_sockets << server.accept
+	end
+	
 	def setup_multiplex
-		server = TCPServer.new("0.0.0.0", @multiplex_port)
+		multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
 		@client.puts "ready"
 		socket_count = @client.gets.to_i
 		socket_count.to_i.times do |i|
-			@multiplex_sockets << server.accept
+			Thread.new{ recieve_multiplex_socket(multiplex_server)}
 		end
+		@client.puts "ready"
+		@client.gets
+		Thread.list.each do |thread|
+			thread.terminate if thread != Thread.current
+		end
+		@client.puts "continue"
 	end
 	
 	def process_commands

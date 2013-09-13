@@ -27,26 +27,45 @@ class MultiplexityClient
 		end
 	end
 	
-	def setup_multiplex(bind_ips, server, multiplex_port)
+	def create_multiplex_socket(bind_ip, server_ip, multiplex_port)
+		begin
+			lhost = Socket.pack_sockaddr_in(0, bind_ip)
+			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
+			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+			socket.bind(lhost)
+			socket.connect(rhost)
+			@multiplex_sockets << socket
+		rescue
+		end
+	end
+	
+	def setup_multiplex(bind_ips, server_ip, multiplex_port)
+			# send the number of expected sockets
+			# server spins up that many listening threads, then tells me when they are all waiting on .accept
+			# once the server is ready, client spins up a thread for each attempt
+			# every successful connection gets added to the server and client list
+			# just join every thread on the client because it will return either way
+			# have the server be waiting for the client to say everything has returned
+			# once the client says that, kill all threads that aresn't done, roll with what got added
+		
 		@server.gets
 		@server.puts bind_ips.size
-		bind_ips.each do |ip|
-			begin
-				lhost = Socket.pack_sockaddr_in(0, ip)
-				rhost = Socket.pack_sockaddr_in(multiplex_port, server)
-				socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-				socket.bind(lhost)
-				socket.connect(rhost)
-				@multiplex_sockets << socket
-			rescue
-			end
+		@server.gets
+		bind_ips.each do |bind_ip|
+			Thread.new{create_multiplex_socket(bind_ip, server_ip, multiplex_port)}
 		end
+		Thread.list.each do |thread|
+			thread.join if thread != Thread.current
+		end
+		@server.puts "done"
+		@server.gets
 		@multiplex_sockets.size
 	end
 	
 	def check_target_type(target)
 		@server.puts "check #{target}"
 		return @server.gets.chomp
+		# this is a bug!  if user types "check" no fin is sent, command line hangs
 	end
 		
 	def process_command(command)
