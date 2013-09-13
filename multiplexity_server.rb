@@ -2,6 +2,7 @@ require './colors.rb'
 require './worker.rb'
 require './chunk.rb'
 require 'zlib'
+require 'fileutils'
 
 class MultiplexityServer
 	def initialize(client)
@@ -110,6 +111,28 @@ class MultiplexityServer
 		else
 			@client.puts "unavailable"
 		end
+		@client.puts "fin"
+	end
+	
+	def delete_item(item)
+		if (FileTest.readable?(item) and (Dir.exists?(item) != true))
+			begin
+				File.delete(item)
+				@client.puts "Deleted file #{item}".good
+			rescue
+				@client.puts "The file #{item} could not be deleted".bad
+			end
+		elsif Dir.exists?(item)
+			begin
+				FileUtils.rm_rf item
+				@client.puts "Deleted directory #{item} and all its contents".good
+			rescue
+				@client.puts "The directory #{item} could not be deleted".bad
+			end
+		else
+			@client.puts "The item #{item} could not be found".bad
+		end
+		@client.puts "fin"
 	end
 	
 	def process_command(command)
@@ -119,6 +142,8 @@ class MultiplexityServer
 				list_files
 			when "cd"
 				change_dir command[1]
+			when "rm"
+				delete_item command[1]
 			when "size"
 				show_size command[1]
 			when "pwd"
@@ -150,17 +175,19 @@ class MultiplexityServer
 	
 	def print_help
 		@client.puts "Avaliable commands are:".good
-		@client.puts "ls\t\t- list remote files"
-		@client.puts "lls\t\t- list local files"
+		@client.puts "ls\t\t- list remote files in current directory"
+		@client.puts "lls\t\t- list local files in current directory"
 		@client.puts "pwd\t\t- print remote working directory"
 		@client.puts "lpwd\t\t- print local working directory"
 		@client.puts "cd <dir>\t- change remote directory"
 		@client.puts "lcd <dir>\t- change local directory"
+		@client.puts "rm <file/dir>\t- delete a remote file / directory"
+		@client.puts "lrm <file/dir>\t- delete a local file / directory"
 		@client.puts "size <file>\t- check the size of a remote file/directory"
 		@client.puts "lsize <file>\t- check the size of a local file/directory"
 		@client.puts "clear\t\t- clear the terminal"
-		@client.puts "download <file/directory>\t- download file/directory from server to client"
-		@client.puts "upload <file/directory>\t\t- upload file/direcoty from client to server"
+		@client.puts "download <file/dir>\t- download file/directory from server to client"
+		@client.puts "upload <file/dir>\t\t- upload file/direcoty from client to server"
 		@client.puts "?\t\t- print this message"
 		@client.puts "exit\t\t- exits multiplexity"
 		@client.puts "fin"

@@ -3,6 +3,7 @@
 require './multiplexity_client.rb'
 require './firewalls.rb'
 require 'socket'
+require 'fileutils'
 
 def write_verbose(string)
 	puts string if $verbose == true
@@ -249,6 +250,37 @@ def process_local_command(command,client)
 			rescue
 				puts "Unable to change local directory to #{dir}".bad
 			end
+		when "rm"
+			item = command.split(" ")[1]
+			puts "Are you sure you want to #{"permanently".red} delete the file or directory #{item} and #{"all of its contents?".red} (y/n)"
+			if get_bool
+				client.process_command "rm #{item}"
+			end
+		when "lrm"
+			item = command.split(" ")[1]
+			if (FileTest.readable?(item) and (Dir.exists?(item) != true))
+				begin
+					puts "Are you sure you want to #{"permanently".red} delete the local file #{item}? (y/n)"
+					if get_bool
+						File.delete(item)
+						puts "Deleted file #{item}".good
+					end
+				rescue
+					puts "The file #{item} could not be deleted".bad
+				end
+			elsif Dir.exists?(item)
+				begin
+					puts "Are you sure you want to #{"permanently".red} delete the local directory #{item} #{"and all of its contents".red}? (y/n)"
+					if get_bool
+						FileUtils.rm_rf item
+						puts "Deleted directory #{item} and all its contents".good
+					end
+				rescue
+					puts "The directory #{item} could not be deleted".bad
+				end
+			else
+				puts "The item #{item} could not be found".bad
+			end
 		when "lsize"
 			file = command.split(" ")[1]
 			puts "File size for #{file}:".good
@@ -374,7 +406,7 @@ end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
 loop {
-	local_commands = ["lls","lpwd","lcd","lsize","clear","exit"]
+	local_commands = ["lls","lpwd","lcd","rm","lrm","lsize","clear","exit"]
 	transfer_commands = ["download", "upload"]
 	command = get_string
 	switch = command.split(" ")[0]

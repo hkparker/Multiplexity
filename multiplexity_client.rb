@@ -40,14 +40,6 @@ class MultiplexityClient
 	end
 	
 	def setup_multiplex(bind_ips, server_ip, multiplex_port)
-			# send the number of expected sockets
-			# server spins up that many listening threads, then tells me when they are all waiting on .accept
-			# once the server is ready, client spins up a thread for each attempt
-			# every successful connection gets added to the server and client list
-			# just join every thread on the client because it will return either way
-			# have the server be waiting for the client to say everything has returned
-			# once the client says that, kill all threads that aresn't done, roll with what got added
-		
 		@server.gets
 		@server.puts bind_ips.size
 		@server.gets
@@ -64,8 +56,9 @@ class MultiplexityClient
 	
 	def check_target_type(target)
 		@server.puts "check #{target}"
-		return @server.gets.chomp
-		# this is a bug!  if user types "check" no fin is sent, command line hangs
+		type = @server.gets.chomp
+		@server.gets
+		return type
 	end
 		
 	def process_command(command)
