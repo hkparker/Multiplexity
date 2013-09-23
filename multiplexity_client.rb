@@ -7,30 +7,34 @@ require 'zlib'
 class MultiplexityClient
 	def initialize(socket)
 		@server = socket
-		@multiplex_sockets = []
-		@id = 1
 	end
 	
-	def handshake(port,chunk_size)
+	def handshake(multiplex_port,chunk_size)
 		begin
 			@server.puts "HELLO Multiplexity"
 			response = @server.gets.chomp
-			if response == "HELLO Client"
-				@server.puts port
-				@server.puts chunk_size
-				return true
-			else
+			if response != "HELLO Client"
+				@server.close
+				return false
+			end
+			@server.puts "#{multiplex_port}:#{chunk_size}"
+			response = @server.gets.chomp
+			if response != "OK"
+				@server.close
 				return false
 			end
 		rescue
 			return false
 		end
+		@multiplex_port = multiplex_port
+		@chunk_size = chunk_size
+		return true
 	end
 	
-	def create_multiplex_socket(bind_ip, server_ip, multiplex_port)
+	def create_multiplex_socket(bind_ip, server_ip)
 		begin
 			lhost = Socket.pack_sockaddr_in(0, bind_ip)
-			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
+			rhost = Socket.pack_sockaddr_in(@multiplex_port, server_ip)
 			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 			socket.bind(lhost)
 			socket.connect(rhost)
@@ -40,38 +44,66 @@ class MultiplexityClient
 	end
 	
 	def setup_multiplex(bind_ips, server_ip, multiplex_port)
-		@server.gets
+		@multiplex_sockets = []
+		if @server.gets.chomp != "OK"
+			return false
+		end
 		@server.puts bind_ips.size
-		@server.gets
+		if @server.gets.chomp != "OK"
+			return false
+		end	
 		bind_ips.each do |bind_ip|
-			Thread.new{create_multiplex_socket(bind_ip, server_ip, multiplex_port)}
+			Thread.new{create_multiplex_socket(bind_ip, server_ip)}
 		end
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
 		end
-		@server.puts "done"
+		@server.puts "OK"
 		@server.gets
 		@multiplex_sockets.size
 	end
+	
+	
+	def get_remote_dir
+		@server.puts "pwd"
+		return @server.gets.chomp
+	end
+	
+	def get_remote_files(directory=".")
+		files = []
+		@server.puts "ls #{directory}"
+		file_list = @server.gets
+		file_list = file_list.split(";")
+		file_list.each do |line|
+			line = line.split("#")
+			files << {:filename => line[0], :path => line[1], :size => line[2].to_i, :type => line[3], :last_write => line[4], :readable => line[5]}
+		end
+		files
+	end
+	
+	def delete_remote_item(item)
+		@server.puts "rm #{item}"
+		return @server.gets.to_i
+	end
+	
+	def change_remote_directory(directory)
+		@server.puts "cd #{directory}"
+		return @server.gets.to_i
+	end
+	
+	def shutdown
+		@server.puts "halt"
+	end
+	
+	###############################
+	###############################
+	###############################
 	
 	def check_target_type(target)
 		@server.puts "check #{target}"
 		type = @server.gets.chomp
 		@server.gets
 		return type
-	end
-		
-	def process_command(command)
-		@server.puts command
-		loop {
-			line = @server.gets
-			break if line.chomp == "fin"
-			puts line
-		}
-	end
-	
-	def download_directory(dir)
-	
 	end
 	
 	def download_file(file)
@@ -144,20 +176,9 @@ class MultiplexityClient
 		remote_thread[:remote_crc] == local_crc
 	end
 	
-	def get_size_bytes
-		
-	end
-	
 	def get_remote_crc(file)
 		@server.puts "crc #{file}"
 		return @server.gets.to_i
-	end
-	
-	def shutdown
-		@multiplex_sockets.each do |socket|
-			socket.close
-		end
-		@server.close
 	end
 	
 end

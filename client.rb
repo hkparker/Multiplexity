@@ -296,6 +296,23 @@ def process_local_command(command,client)
 	end
 end
 
+def process_remote_command(command, client)
+	command = command.split(" ")
+	case command[0]
+		when "ls"
+			files = client.get_remote_files
+			files.each do |file|
+				puts file[:filename]
+			end
+		when "rm"
+			puts client.delete_remote_item command[1]
+		when "cd"
+			puts client.change_remote_directory command[1]
+		when "pwd"
+			puts client.get_remote_dir
+	end
+end
+
 def process_download_request(client, command)
 	target = command.split(" ")[1]
 	if target != nil and target != ""
@@ -406,8 +423,9 @@ end
 write_verbose "Multiplex connections setup".good
 puts "Connected to the Multiplexity server".good
 loop {
-	local_commands = ["lls","lpwd","lcd","rm","lrm","lsize","clear","exit"]
+	local_commands = ["lls","lpwd","lcd","lrm","lsize","clear","exit"]
 	transfer_commands = ["download", "upload"]
+	remote_commands = ["ls", "rm", "cd", "pwd"]
 	command = get_string
 	switch = command.split(" ")[0]
 	if local_commands.include? switch
@@ -419,7 +437,7 @@ loop {
 			when "upload"
 				puts "File uploads not working yet, sorry".bad
 		end
-	else
-		client.process_command command
+	elsif remote_commands.include? switch
+		process_remote_command(command, client)
 	end
 }

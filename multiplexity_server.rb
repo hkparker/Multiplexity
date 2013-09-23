@@ -7,54 +7,163 @@ require 'fileutils'
 class MultiplexityServer
 	def initialize(client)
 		@client = client
-		@multiplex_sockets = []
-		@last_chunk = 0
 	end
-	
+
 	def handshake
-		@client.close if @client.gets.chomp != "HELLO Multiplexity"
-		@client.puts "HELLO Client"
-		@multiplex_port = @client.gets.to_i
-		@chunk_size = @client.gets.to_i
+		begin
+			hello = @client.gets.chomp
+			if hello != "HELLO Multiplexity"
+				@client.close
+				return false
+			end
+			@client.puts "HELLO Client"
+			values = @client.gets.chomp
+			values = values.split(":")
+			@multiplex_port = values[0].to_i
+			@chunk_size = values[1].to_i
+			@client.puts "OK"
+		rescue
+			@client.close
+			return false
+		end
 	end
-	
+
 	def recieve_multiplex_socket(server)
 		@multiplex_sockets << server.accept
 	end
-	
+
 	def setup_multiplex
-		multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
-		@client.puts "ready"
-		socket_count = @client.gets.to_i
-		socket_count.to_i.times do |i|
-			Thread.new{ recieve_multiplex_socket(multiplex_server)}
+		@multiplex_sockets = []
+		begin
+			multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
+		rescue
+			@client.puts "FAIL"
+			return false
 		end
-		@client.puts "ready"
+		@client.puts "OK"
+		begin
+			socket_count = @client.gets.to_i
+			socket_count.to_i.times do |i|
+				Thread.new{ recieve_multiplex_socket(multiplex_server)}
+			end
+		rescue
+			@client.puts "FAIL"
+			return false
+		end
+		@client.puts "OK"
 		@client.gets
 		Thread.list.each do |thread|
 			thread.terminate if thread != Thread.current
 		end
-		@client.puts "continue"
+		@client.puts "OK"
 	end
-	
+
 	def process_commands
-		loop {
-			transfer_commands = ["download","upload"]
-			command = @client.gets.chomp
-			switch = command.split(" ")[0]
-			if transfer_commands.include? switch
-				case switch
-					when "download"
-						@download_file = command.split(" ")[1]
-						serve_file
-					when "upload"
-						
-				end
-			else
-				process_command(command)
+		loop{
+			command = @client.gets.chomp.split(" ")
+			case command[0]
+				when "ls"
+					send_file_list command[1]
+				when "rm"
+					delete_item command[1]
+				when "cd"
+					change_dir command[1]
+				when "pwd"
+					send_pwd
+				when "mkdir"
+					create_directory command[1]
+				when "download"
+					@download_file = command[1]
+					serve_file
+				when "upload"
+					
+				when "halt"
+					@multiplex_sockets.each do |socket|
+						socket.close
+					end
+					@client.close
+					return 0
+				## to be removed:
+				when "bytes"
+					send_bytes command[1]
+				when "check"
+					check_file command[1]
+				when "crc"
+					send_file_crc command[1]
 			end
 		}
 	end
+
+	def send_file_list(directory)
+		directory = Dir.getwd if directory == nil
+		files = Dir.entries(directory)
+		file_list = ""
+		files.each do |filename|
+			line = filename
+			line += "#"
+			line += directory
+			line += "#"
+			line += File.size("#{directory}/#{filename}").to_s
+			line += "#"
+			line += File.ftype "#{directory}/#{filename}"
+			line += "#"
+			line += File.mtime("#{directory}/#{filename}").strftime("%m/%e/%Y %l:%M %p")
+			line += "#"
+			line += File.readable?("#{directory}/#{filename}").to_s
+			line += ";"
+			file_list << line
+		end
+		@client.puts file_list
+	end
+
+	def delete_item(item)
+		if (FileTest.readable?(item) and (Dir.exists?(item) != true))
+			begin
+				File.delete(item)
+				@client.puts "0"
+			rescue
+				@client.puts "1"
+			end
+		elsif Dir.exists?(item)
+			begin
+				FileUtils.rm_rf item
+				@client.puts "0"
+			rescue
+				@client.puts "1"
+			end
+		else
+			@client.puts "1"
+		end
+	end
+	
+	def change_dir(dir)
+		begin
+			Dir.chdir(dir)
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
+	end
+	
+	def send_pwd
+		@client.puts Dir.pwd
+	end
+	
+	def create_directory(directory)
+		begin
+			Dir.mkdir("#{Dir.pwd}/#{directory}")
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
+	end
+	
+	
+	
+	###############################
+	###############################
+	###############################
+	
 	
 	def serve_file
 		@workers = []
@@ -103,6 +212,11 @@ class MultiplexityServer
 		size
 	end
 	
+	###############################
+	###############################
+	###############################
+	
+	
 	def check_file file
 		if (FileTest.readable?(file) and (Dir.exists?(file) != true))
 			@client.puts "file"
@@ -114,102 +228,6 @@ class MultiplexityServer
 		@client.puts "fin"
 	end
 	
-	def delete_item(item)
-		if (FileTest.readable?(item) and (Dir.exists?(item) != true))
-			begin
-				File.delete(item)
-				@client.puts "Deleted file #{item}".good
-			rescue
-				@client.puts "The file #{item} could not be deleted".bad
-			end
-		elsif Dir.exists?(item)
-			begin
-				FileUtils.rm_rf item
-				@client.puts "Deleted directory #{item} and all its contents".good
-			rescue
-				@client.puts "The directory #{item} could not be deleted".bad
-			end
-		else
-			@client.puts "The item #{item} could not be found".bad
-		end
-		@client.puts "fin"
-	end
-	
-	def process_command(command)
-		command = command.split(" ")
-		case command[0]
-			when "ls"
-				list_files
-			when "cd"
-				change_dir command[1]
-			when "rm"
-				delete_item command[1]
-			when "size"
-				show_size command[1]
-			when "pwd"
-				print_dir
-			when "check"
-				check_file command[1]
-			when "crc"
-				send_file_crc command[1]
-			when "bytes"
-				send_bytes command[1]
-			when "?"
-				print_help
-			else
-				@client.puts "That was not a recognized command".bad
-				@client.puts "Type ? to see all commands".good
-				@client.puts "fin"
-		end
-	end
-	
-	def list_files
-		@client.puts "Files and directories in current remote directory:".good
-		files = Dir.entries(Dir.getwd)
-		files.each do |file|
-			file += "/" if Dir.exists?(file)
-			@client.puts(file)
-		end
-		@client.puts "fin"
-	end
-	
-	def print_help
-		@client.puts "Avaliable commands are:".good
-		@client.puts "ls\t\t- list remote files in current directory"
-		@client.puts "lls\t\t- list local files in current directory"
-		@client.puts "pwd\t\t- print remote working directory"
-		@client.puts "lpwd\t\t- print local working directory"
-		@client.puts "cd <dir>\t- change remote directory"
-		@client.puts "lcd <dir>\t- change local directory"
-		@client.puts "rm <file/dir>\t- delete a remote file / directory"
-		@client.puts "lrm <file/dir>\t- delete a local file / directory"
-		@client.puts "size <file>\t- check the size of a remote file/directory"
-		@client.puts "lsize <file>\t- check the size of a local file/directory"
-		@client.puts "clear\t\t- clear the terminal"
-		@client.puts "download <file/dir>\t- download file/directory from server to client"
-		@client.puts "upload <file/dir>\t\t- upload file/direcoty from client to server"
-		@client.puts "?\t\t- print this message"
-		@client.puts "exit\t\t- exits multiplexity"
-		@client.puts "fin"
-	end
-	
-	def change_dir(dir)
-		begin
-			Dir.chdir(dir)
-			@client.puts("Changed remote directory to #{dir}".good)
-			@client.puts "fin"
-		rescue
-			@client.puts("Unable to change remote directory to #{dir}".bad)
-			@client.puts "fin"
-		end
-	end
-	
-	def print_dir
-		@client.puts "The current remote working directory is:".good
-		@client.puts(Dir.pwd)
-		@client.puts "fin"
-	end
-	
 	def format_bytes(bytes)
 		i = 0
 		until bytes < 1024
@@ -218,18 +236,6 @@ class MultiplexityServer
 		end
 		suffixes = ["bytes","KB","MB","GB","TB"]
 		"#{bytes} #{suffixes[i]}"
-	end
-	
-	def show_size(file)
-		@client.puts "File size for #{file}:".good
-		if file != nil and file != "" and FileTest.readable?(file)
-			size = format_bytes(File.size(file))
-			@client.puts size
-			@client.puts "fin"
-		else
-			@client.puts "The file could not be read".bad
-			@client.puts "fin"
-		end
 	end
 	
 	def send_file_crc(file)
