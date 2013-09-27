@@ -28,8 +28,10 @@ class MultiplexityServer
 		end
 	end
 
-	def recieve_multiplex_socket(server)
-		@multiplex_sockets << server.accept
+	def recieve_multiplex_socket(server)	# should the multiplex server be an instance variable?
+		socket = server.accept
+		@multiplex_sockets << socket
+		socket
 	end
 
 	def setup_multiplex
@@ -172,7 +174,48 @@ class MultiplexityServer
 		end
 	end
 	
-	def serve_chunk
+	def serve_chunk(socket)
+		closed = false
+		loop {
+			if closed
+				socket = recieve_multiplex_socket
+			end
+			command = @client.gets.chomp
+			if command == "CLOSE"
+				@multiplex_sockets.delete socket
+				socket.close
+				break
+			end
+			verify == true if command == "GETNEXTWITHCRC"
+			next_chunk = get_next_chunk
+			if next_chunk == nil
+				socket.puts "DONE"
+				break
+			end
+			chunk_header = "#{next_chunk[:id]}:#{next_chunk[:size]}"
+			chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if verify == true
+			socket.puts chunk_header
+			begin
+				socket.write(next_chunk[:data])
+			rescue
+				@stale << next_chunk
+				@multiplex_sockets.delete socket
+				socket.close
+				break
+			end
+			if verify
+				crc_status = socket.gets.chomp
+				if crc_status == "CRC MISMATCH"
+					@stale << next_chunk
+				end
+			end
+			reset = socket.gets.chomp
+			if reset == "RESET"
+				@multiplex_sockets.delete socket
+				socket.close
+				closed = true
+			end
+		}
 		#told = 0
 		#@id = 1
 		#until told == @workers.size

@@ -21,7 +21,9 @@ Todo
 ----
 
 Re-write downloader workers
+
 online addition and subtraction of workers
+
 online chunk resize
 
 

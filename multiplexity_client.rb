@@ -158,17 +158,24 @@ class MultiplexityClient
 	def get_next_chunk(socket, verify, reset)
 		Thread.current[:close] = false
 		Thread.current[:reset] = reset
-		# define a variable for the bound IP and port? 	# sock_domain, remote_port, remote_hostname, remote_ip = socket.peeraddr
+		Thread.current[:pause] = false
+		server_ip = socket.peeraddr[2]
+		bind_ip = socket.addr[2]
+		bind_ip = 
 		closed = false
 		loop {
-			if Thread.current[:close] == true
-				socket.puts "CLOSE"
-				socket.close
-				break
+			until Thread.current[:pause] == true
+				sleep 1
 			end
 			if closed
-				socket = create_multiplex_socket(bind_ip, server_ip)	# need to have this stuff defined before the for loop
+				socket = create_multiplex_socket(bind_ip, server_ip)
 				closed = false
+			end
+			if Thread.current[:close] == true
+				socket.puts "CLOSE"
+				@multiplex_sockets.delete socket
+				socket.close
+				break
 			end
 			if verify
 				socket.puts "GETNEXTWITHCRC"
@@ -183,7 +190,14 @@ class MultiplexityClient
 			if verify
 				chunk_crc = data[2].to_i
 			end
-			chunk_data = socket.read(chunk_size)
+			start = Time.now
+			begin
+				chunk_data = socket.read(chunk_size)
+			rescue
+				@multiplex_sockets.delete socket
+				socket.close
+				break
+			end
 			if verify
 				local_crc = Zlib::crc32(chunk_data)
 				if local_crc == chunk_crc
@@ -192,11 +206,17 @@ class MultiplexityClient
 					socket.puts "CRC MISMATCH"
 				end
 			end
+			time = Time.now - start
+			Thread.current[:speed] = chunk_size / time
+			@buffer.insert({:id => chunk_id, :data => chunk_data})	# This should not be a blocking process!  Make sure it gets threaded.
+			@downloaded += chunk_size	# do I still want to do this?
 			if Thread.current[:reset]
 				socket.puts "RESET"
 				@multiplex_sockets.delete socket
 				socket.close
 				closed = true
+			else
+				socket.puts "NORESET"
 			end
 		}	
 		#loop {
