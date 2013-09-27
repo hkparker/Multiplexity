@@ -77,6 +77,9 @@ class MultiplexityServer
 					serve_file
 				when "upload"
 					
+			#	when "updatechunk"
+			#	when "updatereset"
+			#	when "addworkers"
 				when "halt"
 					@multiplex_sockets.each do |socket|
 						socket.close
@@ -117,21 +120,10 @@ class MultiplexityServer
 	end
 
 	def delete_item(item)
-		if (FileTest.readable?(item) and (Dir.exists?(item) != true))
-			begin
-				File.delete(item)
-				@client.puts "0"
-			rescue
-				@client.puts "1"
-			end
-		elsif Dir.exists?(item)
-			begin
-				FileUtils.rm_rf item
-				@client.puts "0"
-			rescue
-				@client.puts "1"
-			end
-		else
+		begin
+			FileUtils.rm_rf item
+			@client.puts "0"
+		rescue
 			@client.puts "1"
 		end
 	end
@@ -181,24 +173,24 @@ class MultiplexityServer
 	end
 	
 	def serve_chunk
-		told = 0
-		@id = 1
-		until told == @workers.size
-			@workers.each do |worker|
-				if worker.ready == true
-					if @file_remaining > 0
-						chunk_size = get_size
-						worker.chunk = Chunk.new(@id,@file.read(chunk_size))
-						@id += 1
-						worker.ready = false
-					else
-						worker.chunk = 0
-						worker.ready = false
-						told += 1
-					end
-				end
-			end
-		end
+		#told = 0
+		#@id = 1
+		#until told == @workers.size
+			#@workers.each do |worker|
+				#if worker.ready == true
+					#if @file_remaining > 0
+						#chunk_size = get_size
+						#worker.chunk = Chunk.new(@id,@file.read(chunk_size))
+						#@id += 1
+						#worker.ready = false
+					#else
+						#worker.chunk = 0
+						#worker.ready = false
+						#told += 1
+					#end
+				#end
+			#end
+		#end
 	end
 	
 	def get_size
@@ -217,37 +209,27 @@ class MultiplexityServer
 	###############################
 	
 	
-	def check_file file
-		if (FileTest.readable?(file) and (Dir.exists?(file) != true))
-			@client.puts "file"
-		elsif Dir.exists?(file)
-			@client.puts "directory"
-		else
-			@client.puts "unavailable"
-		end
-		@client.puts "fin"
-	end
+	#def check_file file
+		#if (FileTest.readable?(file) and (Dir.exists?(file) != true))
+			#@client.puts "file"
+		#elsif Dir.exists?(file)
+			#@client.puts "directory"
+		#else
+			#@client.puts "unavailable"
+		#end
+		#@client.puts "fin"
+	#end
 	
-	def format_bytes(bytes)
-		i = 0
-		until bytes < 1024
-			bytes = (bytes / 1024).round(1)
-			i += 1
-		end
-		suffixes = ["bytes","KB","MB","GB","TB"]
-		"#{bytes} #{suffixes[i]}"
-	end
+	#def send_file_crc(file)
+		#@client.puts Zlib::crc32(File.read(file))
+	#end
 	
-	def send_file_crc(file)
-		@client.puts Zlib::crc32(File.read(file))
-	end
-	
-	def send_bytes(file)
-		begin
-			bytes = File.size(file)
-		rescue
-			bytes = 0
-		end
-		@client.puts bytes
-	end
+	#def send_bytes(file)
+		#begin
+			#bytes = File.size(file)
+		#rescue
+			#bytes = 0
+		#end
+		#@client.puts bytes
+	#end
 end
