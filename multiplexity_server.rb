@@ -179,6 +179,7 @@ class MultiplexityServer
 		loop {
 			if closed
 				socket = recieve_multiplex_socket
+				closed = false
 			end
 			command = @client.gets.chomp
 			if command == "CLOSE"
@@ -192,7 +193,7 @@ class MultiplexityServer
 				socket.puts "DONE"
 				break
 			end
-			chunk_header = "#{next_chunk[:id]}:#{next_chunk[:size]}"
+			chunk_header = "#{next_chunk[:id]}:#{next_chunk[:data].size}"
 			chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if verify == true
 			socket.puts chunk_header
 			begin

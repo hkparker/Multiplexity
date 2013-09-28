@@ -161,10 +161,9 @@ class MultiplexityClient
 		Thread.current[:pause] = false
 		server_ip = socket.peeraddr[2]
 		bind_ip = socket.addr[2]
-		bind_ip = 
 		closed = false
 		loop {
-			until Thread.current[:pause] == true
+			until Thread.current[:pause] == false
 				sleep 1
 			end
 			if closed
@@ -202,13 +201,15 @@ class MultiplexityClient
 				local_crc = Zlib::crc32(chunk_data)
 				if local_crc == chunk_crc
 					socket.puts "CRC OK"
+					@buffer.insert({:id => chunk_id, :data => chunk_data})
 				else
 					socket.puts "CRC MISMATCH"
 				end
+			else
+				@buffer.insert({:id => chunk_id, :data => chunk_data})
 			end
 			time = Time.now - start
 			Thread.current[:speed] = chunk_size / time
-			@buffer.insert({:id => chunk_id, :data => chunk_data})	# This should not be a blocking process!  Make sure it gets threaded.
 			@downloaded += chunk_size	# do I still want to do this?
 			if Thread.current[:reset]
 				socket.puts "RESET"
