@@ -99,17 +99,18 @@ class MultiplexityClient
 	###############################
 	
 	def download_file(file, verify, reset)
+		@downloaded = 0
 		@workers = []
 		@server.puts "download #{file}"
 		readable = @server.gets.to_i
 		if readable == 1
 			return 1
 		end
+		@buffer = Buffer.new(file)
 		@server.gets
 		@multiplex_sockets.each_with_index do |socket, i|
 			@workers << Thread.new{get_next_chunk(socket, verify, reset)}
 		end
-		
 		@workers.each do |thread|
 			thread.join
 		end
@@ -152,8 +153,8 @@ class MultiplexityClient
 		Thread.current[:close] = false
 		Thread.current[:reset] = reset
 		Thread.current[:pause] = false
-		server_ip = socket.peeraddr[2]
-		bind_ip = socket.addr[2]
+		server_ip = "192.210.217.180"#socket.peeraddr[2]
+		bind_ip = "192.168.1.9"#socket.addr[2]
 		closed = false
 		loop {
 			until Thread.current[:pause] == false

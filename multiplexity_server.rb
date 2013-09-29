@@ -158,7 +158,7 @@ class MultiplexityServer
 	
 	
 	def serve_file(file)
-		@id = 1
+		@id = 0
 		begin
 			@current_file = File.open(file, 'rb')
 			@client.puts "0"
@@ -191,13 +191,18 @@ class MultiplexityServer
 					break
 				end
 			end
-			command = @client.gets.chomp
+			command = socket.gets.chomp
 			if command == "CLOSE"
 				@multiplex_sockets.delete socket
 				socket.close
 				break
 			end
-			verify == true if command == "GETNEXTWITHCRC"
+			if command == "GETNEXTWITHCRC"
+				verify = true
+			else
+				verify = false
+			end
+			next_chunk = nil
 			@semaphore.synchronize{ next_chunk = get_next_chunk }
 			if next_chunk == nil
 				socket.puts "DONE"
@@ -234,8 +239,8 @@ class MultiplexityServer
 		if chunk_size == 0
 			return nil
 		else
-			return {:id => @id, :data => @current_file.read(chunk_size)}
 			@id += 1
+			return {:id => @id, :data => @current_file.read(chunk_size)}
 		end
 	end
 	
