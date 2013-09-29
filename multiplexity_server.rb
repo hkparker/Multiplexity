@@ -1,8 +1,6 @@
-require './colors.rb'
-require './worker.rb'
-require './chunk.rb'
 require 'zlib'
 require 'fileutils'
+require 'thread'
 
 class MultiplexityServer
 	def initialize(client)
@@ -28,8 +26,8 @@ class MultiplexityServer
 		end
 	end
 
-	def recieve_multiplex_socket(server)	# should the multiplex server be an instance variable?
-		socket = server.accept
+	def recieve_multiplex_socket
+		socket = @multiplex_server.accept
 		@multiplex_sockets << socket
 		socket
 	end
@@ -37,7 +35,7 @@ class MultiplexityServer
 	def setup_multiplex
 		@multiplex_sockets = []
 		begin
-			multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
+			@multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
 		rescue
 			@client.puts "FAIL"
 			return false
@@ -46,7 +44,7 @@ class MultiplexityServer
 		begin
 			socket_count = @client.gets.to_i
 			socket_count.to_i.times do |i|
-				Thread.new{ recieve_multiplex_socket(multiplex_server)}
+				Thread.new{ recieve_multiplex_socket }
 			end
 		rescue
 			@client.puts "FAIL"
@@ -75,13 +73,13 @@ class MultiplexityServer
 				when "mkdir"
 					create_directory command[1]
 				when "download"
-					@download_file = command[1]
-					serve_file
+					serve_file command[1]
 				when "upload"
 					
 			#	when "updatechunk"
 			#	when "updatereset"
-			#	when "addworkers"
+			#	when "updateworkers"
+			#	when "changeverification"
 				when "halt"
 					@multiplex_sockets.each do |socket|
 						socket.close
@@ -159,27 +157,39 @@ class MultiplexityServer
 	###############################
 	
 	
-	def serve_file
+	def serve_file(file)
+		@id = 1
+		begin
+			@current_file = File.open(file, 'rb')
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+			return
+		end
+		@semaphore = Mutex.new
+		@stale = []
+		@file_remaining = File.size(file)
 		@workers = []
-		@file_remaining = File.size(@download_file)
 		@multiplex_sockets.each do |socket|
-			worker = Worker.new(socket)
-			@workers << worker
-			Thread.new{worker.start}
+			@workers << Thread.new{ serve_chunk(socket) }
 		end
-		@file = File.open(@download_file, 'rb')
-		Thread.new{serve_chunk}
-		Thread.list.each do |thread|
-			thread.join if thread != Thread.current
+		@client.puts "OK"
+		@workers.each do |thread|
+			thread.join
 		end
+		@current_file.close
 	end
 	
 	def serve_chunk(socket)
 		closed = false
 		loop {
 			if closed
-				socket = recieve_multiplex_socket
-				closed = false
+				begin
+					socket = recieve_multiplex_socket
+					closed = false
+				rescue
+					break
+				end
 			end
 			command = @client.gets.chomp
 			if command == "CLOSE"
@@ -188,7 +198,7 @@ class MultiplexityServer
 				break
 			end
 			verify == true if command == "GETNEXTWITHCRC"
-			next_chunk = get_next_chunk
+			@semaphore.synchronize{ next_chunk = get_next_chunk }
 			if next_chunk == nil
 				socket.puts "DONE"
 				break
@@ -217,24 +227,16 @@ class MultiplexityServer
 				closed = true
 			end
 		}
-		#told = 0
-		#@id = 1
-		#until told == @workers.size
-			#@workers.each do |worker|
-				#if worker.ready == true
-					#if @file_remaining > 0
-						#chunk_size = get_size
-						#worker.chunk = Chunk.new(@id,@file.read(chunk_size))
-						#@id += 1
-						#worker.ready = false
-					#else
-						#worker.chunk = 0
-						#worker.ready = false
-						#told += 1
-					#end
-				#end
-			#end
-		#end
+	end
+	
+	def get_next_chunk
+		chunk_size = get_size
+		if chunk_size == 0
+			return nil
+		else
+			return {:id => @id, :data => @current_file.read(chunk_size)}
+			@id += 1
+		end
 	end
 	
 	def get_size
@@ -247,33 +249,4 @@ class MultiplexityServer
 		end
 		size
 	end
-	
-	###############################
-	###############################
-	###############################
-	
-	
-	#def check_file file
-		#if (FileTest.readable?(file) and (Dir.exists?(file) != true))
-			#@client.puts "file"
-		#elsif Dir.exists?(file)
-			#@client.puts "directory"
-		#else
-			#@client.puts "unavailable"
-		#end
-		#@client.puts "fin"
-	#end
-	
-	#def send_file_crc(file)
-		#@client.puts Zlib::crc32(File.read(file))
-	#end
-	
-	#def send_bytes(file)
-		#begin
-			#bytes = File.size(file)
-		#rescue
-			#bytes = 0
-		#end
-		#@client.puts bytes
-	#end
 end

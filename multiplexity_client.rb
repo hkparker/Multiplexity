@@ -1,6 +1,5 @@
 require './colors.rb'
 require './buffer.rb'
-require './chunk.rb'
 require 'socket'
 require 'zlib'
 
@@ -27,7 +26,6 @@ class MultiplexityClient
 			return false
 		end
 		@multiplex_port = multiplex_port
-	#	@chunk_size = chunk_size	### isn't needed
 		return true
 	end
 	
@@ -44,7 +42,7 @@ class MultiplexityClient
 		socket
 	end
 	
-	def setup_multiplex(bind_ips, server_ip, multiplex_port)	# multiplex port doesn't need to be passed here, but maybe should be moved here
+	def setup_multiplex(bind_ips, server_ip)
 		@multiplex_sockets = []
 		if @server.gets.chomp != "OK"
 			return false
@@ -100,25 +98,20 @@ class MultiplexityClient
 	###############################
 	###############################
 	
-	#def check_target_type(target)
-		#@server.puts "check #{target}"
-		#type = @server.gets.chomp
-		#@server.gets
-		#return type
-	#end
-	
-	def download_file(file)
-		@server.puts "bytes #{file}"
-		@bytes = @server.gets.to_i
-		@downloaded = 0
+	def download_file(file, verify, reset)
+		@workers = []
 		@server.puts "download #{file}"
-		@buffer = Buffer.new(file)
-		@speeds = []
-		@multiplex_sockets.each_with_index do |socket, i|
-			Thread.new{get_next_chunk(socket, i, false)}	# this is going to change a lot
+		readable = @server.gets.to_i
+		if readable == 1
+			return 1
 		end
-		Thread.list.each do |thread|
-			thread.join if thread != (Thread.current)
+		@server.gets
+		@multiplex_sockets.each_with_index do |socket, i|
+			@workers << Thread.new{get_next_chunk(socket, verify, reset)}
+		end
+		
+		@workers.each do |thread|
+			thread.join
 		end
 	end
 	
@@ -167,8 +160,12 @@ class MultiplexityClient
 				sleep 1
 			end
 			if closed
-				socket = create_multiplex_socket(bind_ip, server_ip)
-				closed = false
+				begin
+					socket = create_multiplex_socket(bind_ip, server_ip)
+					closed = false
+				rescue
+					break
+				end
 			end
 			if Thread.current[:close] == true
 				socket.puts "CLOSE"
@@ -183,11 +180,11 @@ class MultiplexityClient
 			end
 			response = socket.gets.chomp
 			break if response == "DONE"
-			data = response.split(":")
-			chunk_id = data[0].to_i
-			chunk_size = data[1].to_i
+			header = response.split(":")
+			chunk_id = header[0].to_i
+			chunk_size = header[1].to_i
 			if verify
-				chunk_crc = data[2].to_i
+				chunk_crc = header[2].to_i
 			end
 			start = Time.now
 			begin
@@ -201,16 +198,16 @@ class MultiplexityClient
 				local_crc = Zlib::crc32(chunk_data)
 				if local_crc == chunk_crc
 					socket.puts "CRC OK"
-					@buffer.insert({:id => chunk_id, :data => chunk_data})
+					Thread.new{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
 				else
 					socket.puts "CRC MISMATCH"
 				end
 			else
-				@buffer.insert({:id => chunk_id, :data => chunk_data})
+				Thread.new{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
 			end
 			time = Time.now - start
 			Thread.current[:speed] = chunk_size / time
-			@downloaded += chunk_size	# do I still want to do this?
+			@downloaded += chunk_size
 			if Thread.current[:reset]
 				socket.puts "RESET"
 				@multiplex_sockets.delete socket
@@ -219,31 +216,6 @@ class MultiplexityClient
 			else
 				socket.puts "NORESET"
 			end
-		}	
-		#loop {
-			#draw_screen
-			#chunk_id = socket.gets.to_i
-			#break if chunk_id == 0
-			#chunk_size = socket.gets.to_i
-			#start = Time.now
-			#chunk_data = socket.read(chunk_size)
-			#time = Time.now - start
-			#@buffer.insert(Chunk.new(chunk_id,chunk_data))
-			#@speeds[id] = chunk_size / time
-			#@downloaded += chunk_size
-		#}
+		}
 	end
-	
-	#def verify_file(file)
-		#remote_thread = Thread.new{ Thread.current[:remote_crc] = get_remote_crc(file)}
-		#local_crc = Zlib::crc32(File.read(file))
-		#remote_thread.join
-		#remote_thread[:remote_crc] == local_crc
-	#end
-	
-	#def get_remote_crc(file)
-		#@server.puts "crc #{file}"
-		#return @server.gets.to_i
-	#end
-	
 end

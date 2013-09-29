@@ -412,7 +412,7 @@ if client.handshake(settings[:multiplex_port],settings[:chunk_size]) == false
 	shutdown(client)
 end
 write_verbose "Opening multiplex sockets with server".good
-socket_count = client.setup_multiplex(bind_ips, server, settings[:multiplex_port])
+socket_count = client.setup_multiplex(bind_ips, server)
 if socket_count < bind_ips.size
 	puts "Not all multiplex sockets opened successfully".bad
 	puts "Attempted to open #{bind_ips.size} sockets, #{socket_count} sockets opened successfully".bad

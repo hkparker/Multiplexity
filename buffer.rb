@@ -8,7 +8,7 @@ class Buffer
 	end
 	
 	def checkNext(newChunk, i)
-		if newChunk.id > @chunkArray[i].id && newChunk.id < @chunkArray[i+1].id
+		if newChunk[:id] > @chunkArray[i][:id] && newChunk[:id] < @chunkArray[i+1][:id]
 			@chunkArray.insert(i+1, newChunk)
 			return
 		end
@@ -16,28 +16,28 @@ class Buffer
 	end
 	
 	def insert(newChunk)
-		if @chunkArray.size == 0 || newChunk.id > @chunkArray[-1].id
+		if @chunkArray.size == 0 || newChunk[:id] > @chunkArray[-1][:id]
 			@chunkArray << newChunk
-		elsif newChunk.id < @chunkArray[0].id
+		elsif newChunk[:id] < @chunkArray[0][:id]
 			@chunkArray.insert(0, newChunk)
-		elsif newChunk.id > @chunkArray[0].id
+		elsif newChunk[:id] > @chunkArray[0][:id]
 			checkNext(newChunk, 0)
 		end
 		self.dump
 	end
 	
 	def countChunks(i)		
-		return i+1 if @chunkArray.size == i+1 || @chunkArray[i].id != @chunkArray[i+1].id-1
+		return i+1 if @chunkArray.size == i+1 || @chunkArray[i][:id] != @chunkArray[i+1][:id]-1
 		countChunks(i+1)
 	end
 	
 	def dump
 		safeCount = countChunks(0)
-		if @chunkArray[0].id == @fileTop+1
+		if @chunkArray[0][:id] == @fileTop+1
 			toDump = @chunkArray.shift(safeCount)
-			@fileTop = toDump[-1].id
+			@fileTop = toDump[-1][:id]
 			toDump.each do |out_chunk|
-				@file.write(out_chunk.data)
+				@file.write(out_chunk[:data])
 			end
 		end
 	end
@@ -45,7 +45,7 @@ class Buffer
 	def size
 		size = 0
 		@chunkArray.each do |chunk|
-			size += chunk.data.size
+			size += chunk[:data].size
 		end
 		size
 	end
