@@ -94,13 +94,10 @@ class MultiplexityClient
 		@server.puts "halt"
 	end
 	
-	###############################
-	###############################
-	###############################
-	
 	def download_file(file, verify, reset)
 		@downloaded = 0
 		@workers = []
+		@semaphore = Mutex.new
 		@server.puts "download #{file}"
 		readable = @server.gets.to_i
 		if readable == 1
@@ -115,29 +112,6 @@ class MultiplexityClient
 			thread.join
 		end
 	end
-	
-	#def draw_screen
-		#system "clear"
-		#puts "Multiplexity".teal
-		#puts
-		#puts "Currently downloading: ".green + "#{@buffer.filename}"
-		#puts
-		#puts "Buffer:".green
-		#puts "\tChunks:\t" + "#{@buffer.count}".yellow
-		#puts "\tSize:\t" + "#{format_bytes(@buffer.size)}".yellow
-		#puts
-		#puts "Interface speeds:".green
-		#total_speed = 0
-		#@speeds.each_with_index do |speed, i|
-			#speed = 0 if speed == nil
-			#puts "\tWorker #{i}: " + "#{format_bytes(speed)}/s".yellow
-			#total_speed += speed
-		#end
-		#puts
-		#puts "Pool speed: ".green + "#{format_bytes(total_speed)}/s".yellow
-		#puts
-		#puts "Progress: ".green + "#{((@downloaded.to_f/@bytes.to_f)*100).round(1)}%".yellow
-	#end
 	
 	def format_bytes(bytes)
 		i = 0
@@ -199,12 +173,12 @@ class MultiplexityClient
 				local_crc = Zlib::crc32(chunk_data)
 				if local_crc == chunk_crc
 					socket.puts "CRC OK"
-					Thread.new{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
+					@semaphore.synchronize{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
 				else
 					socket.puts "CRC MISMATCH"
 				end
 			else
-				Thread.new{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
+				@semaphore.synchronize{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
 			end
 			time = Time.now - start
 			Thread.current[:speed] = chunk_size / time

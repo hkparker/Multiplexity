@@ -86,13 +86,6 @@ class MultiplexityServer
 					end
 					@client.close
 					return 0
-				## to be removed:
-				when "bytes"
-					send_bytes command[1]
-				when "check"
-					check_file command[1]
-				when "crc"
-					send_file_crc command[1]
 			end
 		}
 	end
@@ -149,14 +142,7 @@ class MultiplexityServer
 			@client.puts "1"
 		end
 	end
-	
-	
-	
-	###############################
-	###############################
-	###############################
-	
-	
+
 	def serve_file(file)
 		@id = 0
 		begin
