@@ -1,4 +1,3 @@
-require './colors.rb'
 require './buffer.rb'
 require 'socket'
 require 'zlib'
@@ -94,6 +93,16 @@ class MultiplexityClient
 		@server.puts "halt"
 	end
 	
+	def format_bytes(bytes)
+		i = 0
+		until bytes < 1024
+			bytes = (bytes / 1024).round(1)
+			i += 1
+		end
+		suffixes = ["bytes","KB","MB","GB","TB"]
+		"#{bytes} #{suffixes[i]}"
+	end
+	
 	def download_file(file, verify, reset)
 		@downloaded = 0
 		@workers = []
@@ -113,21 +122,11 @@ class MultiplexityClient
 		end
 	end
 	
-	def format_bytes(bytes)
-		i = 0
-		until bytes < 1024
-			bytes = (bytes / 1024).round(1)
-			i += 1
-		end
-		suffixes = ["bytes","KB","MB","GB","TB"]
-		"#{bytes} #{suffixes[i]}"
-	end
-	
 	def get_next_chunk(socket, verify, reset)
 		Thread.current[:close] = false
 		Thread.current[:reset] = reset
 		Thread.current[:pause] = false
-		server_ip = "192.210.217.180"#socket.peeraddr[2]
+		server_ip = "192.210.217.180"#socket.peeraddr[2] Socket doesn't have those methods, only TCPSocket.  Ask server?
 		bind_ip = "192.168.1.9"#socket.addr[2]
 		closed = false
 		loop {
@@ -192,5 +191,52 @@ class MultiplexityClient
 				socket.puts "NORESET"
 			end
 		}
+	end
+	
+	def get_pool_speed
+		#0 if downloading != true
+		# otherwise workers.each add worker[:speed]
+	end
+	
+	def get_chunk_size
+		# local var or ask server?
+	end
+	
+	#check verification and recycling
+	
+	def get_worker_count
+	
+	end
+	
+	def get_download_progress
+	
+	end
+	
+	def add_workers
+	
+	end
+	
+	def remove_workers
+	
+	end
+	
+	def change_chunk_size
+	
+	end
+	
+	def change_verification
+	
+	end
+	
+	def change_recycling
+	
+	end
+	
+	def pause_transfer
+	
+	end
+	
+	def resume_transfer
+	
 	end
 end

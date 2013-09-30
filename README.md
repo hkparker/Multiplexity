@@ -1,30 +1,23 @@
 Multiplexity
-===========================
+============
 
-Multiplexity is an application designed to transfer files and directories over multiple sockets, network interfaces, and networks.  The original goal was to transfer files using multiple networking interfaces joined to separate networks while utilizing as much of the avaliable bandwidth as possible.  In testing, however, it became clear that even on a single network using multiple sockets to transfer smaller chunks of a file could improve performance due to some implementations of traffic shaping / throttling.
-
+Multiplexity is an inverse multiplexer for file transfers.  It can be used on one network with multiplex sockets, or over multiple networks.  Files are split into chunks that are asynchronously transfered over threaded workers, which can be added and removed mid transfer.  Chunk size can also be adjusted, as well as chunk CRC verification.  Multiplexity also supports optionally closing then reopening multiplex sockets after each chunk, which can improve performance on networks that use some implementations of traffic shaping / throttling.
 
 Current status
 --------------
 
-I'm changing a lot of code to simplify the API and make creating user interfaces / scripts easier to write.  I am also working on a gtk client.
+Currently finishing the API, then going to finish the CLI, and lastly a GTK client is in the works.
 
 Usage
 -----
 
 
-
 Examples
 --------
 
-Todo
-----
 
-Re-write downloader workers
-
-online addition and subtraction of workers
-
-online chunk resize
+Files
+-----
 
 
 Requirements
