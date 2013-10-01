@@ -3,20 +3,23 @@ require 'socket'
 require 'zlib'
 
 class MultiplexityClient
-	def initialize(socket)
-		@server = socket
+	def initialize(server_ip, server_port, multiplex_port, chunk_size)
+		@server_ip = server_ip
+		@server_port = server_port
+		@multiplex_port = multiplex_port
+		@chunk_size = chunk_size
 	end
 	
-	def handshake(multiplex_port,chunk_size)
-		# open the socket here, define everything in initialize
+	def handshake
 		begin
+			@server = TCPSocket.open(@server_ip, @server_port)
 			@server.puts "HELLO Multiplexity"
 			response = @server.gets.chomp
 			if response != "HELLO Client"
 				@server.close
 				return false
 			end
-			@server.puts "#{multiplex_port}:#{chunk_size}"
+			@server.puts "#{@multiplex_port}:#{@chunk_size}"
 			response = @server.gets.chomp
 			if response != "OK"
 				@server.close
@@ -25,7 +28,6 @@ class MultiplexityClient
 		rescue
 			return false
 		end
-		@multiplex_port = multiplex_port
 		return true
 	end
 	
@@ -193,27 +195,27 @@ class MultiplexityClient
 		}
 	end
 	
-	def get_pool_speed
+	def pool_speed
+		return 0 if @workers == nil
 		pool_speed = 0
 		@workers.each do |worker|
-			pool_spped += worker[:speed]
+			worker_speed = worker[:speed] || 0
+			pool_speed += worker_speed
 		end
 		pool_speed
-		#0 if downloading != true
-		# otherwise workers.each add worker[:speed]
 	end
 	
-	def get_chunk_size
+	def chunk_size
 		# local var or ask server?
 	end
 	
 	#check verification and recycling
 	
-	def get_worker_count
+	def worker_count
 	
 	end
 	
-	def get_download_progress
+	def download_progress
 	
 	end
 	
@@ -222,7 +224,7 @@ class MultiplexityClient
 	end
 	
 	def remove_workers
-	
+		# add option to remove al workers from one IP?
 	end
 	
 	def change_chunk_size
