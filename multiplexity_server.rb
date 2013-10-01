@@ -168,6 +168,7 @@ class MultiplexityServer
 	
 	def serve_chunk(socket)
 		closed = false
+		socket.puts socket.addr[2]
 		loop {
 			if closed
 				begin
@@ -221,6 +222,9 @@ class MultiplexityServer
 	end
 	
 	def get_next_chunk
+		if @stale.size > 0
+			return stale.shift(1)
+		end
 		chunk_size = get_size
 		if chunk_size == 0
 			return nil

@@ -8,6 +8,7 @@ class MultiplexityClient
 	end
 	
 	def handshake(multiplex_port,chunk_size)
+		# open the socket here, define everything in initialize
 		begin
 			@server.puts "HELLO Multiplexity"
 			response = @server.gets.chomp
@@ -60,7 +61,6 @@ class MultiplexityClient
 		@server.gets
 		@multiplex_sockets.size
 	end
-	
 	
 	def get_remote_dir
 		@server.puts "pwd"
@@ -126,8 +126,8 @@ class MultiplexityClient
 		Thread.current[:close] = false
 		Thread.current[:reset] = reset
 		Thread.current[:pause] = false
-		server_ip = "192.210.217.180"#socket.peeraddr[2] Socket doesn't have those methods, only TCPSocket.  Ask server?
-		bind_ip = "192.168.1.9"#socket.addr[2]
+		bind_ip = socket.local_address.ip_address
+		server_ip = socket.gets.chomp
 		closed = false
 		loop {
 			until Thread.current[:pause] == false
@@ -194,6 +194,11 @@ class MultiplexityClient
 	end
 	
 	def get_pool_speed
+		pool_speed = 0
+		@workers.each do |worker|
+			pool_spped += worker[:speed]
+		end
+		pool_speed
 		#0 if downloading != true
 		# otherwise workers.each add worker[:speed]
 	end
