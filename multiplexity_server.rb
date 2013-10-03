@@ -168,7 +168,6 @@ class MultiplexityServer
 	
 	def serve_chunk(socket)
 		closed = false
-		socket.puts socket.addr[2]
 		loop {
 			if closed
 				begin

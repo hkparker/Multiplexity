@@ -31,10 +31,10 @@ class MultiplexityClient
 		return true
 	end
 	
-	def create_multiplex_socket(bind_ip, server_ip)
+	def create_multiplex_socket(bind_ip)
 		begin
 			lhost = Socket.pack_sockaddr_in(0, bind_ip)
-			rhost = Socket.pack_sockaddr_in(@multiplex_port, server_ip)
+			rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
 			socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 			socket.bind(lhost)
 			socket.connect(rhost)
@@ -44,7 +44,7 @@ class MultiplexityClient
 		socket
 	end
 	
-	def setup_multiplex(bind_ips, server_ip)
+	def setup_multiplex(bind_ips)
 		@multiplex_sockets = []
 		if @server.gets.chomp != "OK"
 			return false
@@ -54,7 +54,7 @@ class MultiplexityClient
 			return false
 		end	
 		bind_ips.each do |bind_ip|
-			Thread.new{create_multiplex_socket(bind_ip, server_ip)}
+			Thread.new{create_multiplex_socket(bind_ip)}
 		end
 		Thread.list.each do |thread|
 			thread.join if thread != Thread.current
@@ -129,7 +129,6 @@ class MultiplexityClient
 		Thread.current[:reset] = reset
 		Thread.current[:pause] = false
 		bind_ip = socket.local_address.ip_address
-		server_ip = socket.gets.chomp
 		closed = false
 		loop {
 			until Thread.current[:pause] == false
@@ -137,7 +136,7 @@ class MultiplexityClient
 			end
 			if closed
 				begin
-					socket = create_multiplex_socket(bind_ip, server_ip)
+					socket = create_multiplex_socket(bind_ip)
 					closed = false
 				rescue
 					break
@@ -148,6 +147,7 @@ class MultiplexityClient
 				@multiplex_sockets.delete socket
 				socket.close
 				break
+				# also need to delete Thread.current from @workers?
 			end
 			if verify
 				socket.puts "GETNEXTWITHCRC"
