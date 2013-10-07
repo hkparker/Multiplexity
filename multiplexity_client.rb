@@ -17,7 +17,7 @@ class MultiplexityClient
 			response = @server.gets.chomp
 			if response != "HELLO Client"
 				@server.close
-				return false
+				return false	# return meaningful exceptions
 			end
 			@server.puts "#{@multiplex_port}:#{@chunk_size}"
 			response = @server.gets.chomp
@@ -110,6 +110,10 @@ class MultiplexityClient
 		@workers = []
 		@semaphore = Mutex.new
 		@server.puts "download #{file}"
+		busy = @server.gets.to_i
+		if busy == 1
+			return 1	# make better exceptions
+		end
 		readable = @server.gets.to_i
 		if readable == 1
 			return 1
@@ -122,6 +126,7 @@ class MultiplexityClient
 		@workers.each do |thread|
 			thread.join
 		end
+		@workers = []
 	end
 	
 	def get_next_chunk(socket, verify, reset)
@@ -145,9 +150,9 @@ class MultiplexityClient
 			if Thread.current[:close] == true
 				socket.puts "CLOSE"
 				@multiplex_sockets.delete socket
+				@workers.delete Thread.current
 				socket.close
 				break
-				# also need to delete Thread.current from @workers?
 			end
 			if verify
 				socket.puts "GETNEXTWITHCRC"
@@ -167,6 +172,7 @@ class MultiplexityClient
 				chunk_data = socket.read(chunk_size)
 			rescue
 				@multiplex_sockets.delete socket
+				@workers.delete Thread.current
 				socket.close
 				break
 			end
@@ -196,23 +202,28 @@ class MultiplexityClient
 	end
 	
 	def pool_speed
-		return 0 if @workers == nil
 		pool_speed = 0
-		@workers.each do |worker|
-			worker_speed = worker[:speed] || 0
-			pool_speed += worker_speed
+		begin
+			@workers.each do |worker|
+				pool_speed += worker[:speed] || 0
+			end
+		rescue
 		end
 		pool_speed
 	end
 	
 	def chunk_size
-		# local var or ask server?
+		@chunk_size
 	end
 	
 	#check verification and recycling
 	
-	def worker_count
-	
+	def workers
+		begin
+			return @workers.size
+		rescue
+			return 0
+		end
 	end
 	
 	def download_progress
@@ -223,12 +234,25 @@ class MultiplexityClient
 	
 	end
 	
-	def remove_workers
-		# add option to remove al workers from one IP?
+	def remove_workers(n)
+		# throw an exception if workers isn't defined		# add option to remove all workers from one IP?
+		closed = 0
+		i = 0
+		until closed == n
+			break if i == @workers.size
+			if @workers[i][:close] == false
+				@workers[i][:close] = true
+				closed += 1
+			end
+			i += 1
+		end
 	end
 	
-	def change_chunk_size
-	
+	def change_chunk_size(i)
+		@server.puts "updatechunk #{i}"
+		success = @server.gets.to_i
+		@chunk_size = i if success == 0
+		return success
 	end
 	
 	def change_verification

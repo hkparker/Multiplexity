@@ -5,6 +5,7 @@ require 'thread'
 class MultiplexityServer
 	def initialize(client)
 		@client = client
+		@downloading = false
 	end
 
 	def handshake
@@ -73,10 +74,17 @@ class MultiplexityServer
 				when "mkdir"
 					create_directory command[1]
 				when "download"
-					serve_file command[1]
+					if @downloading
+						@client.puts "1"
+					else
+						@client.puts "0"
+						Thread.new{ serve_file command[1] }
+					end
 				when "upload"
 					
-			#	when "updatechunk"
+				when "updatechunk"
+					change_chunk_size command[1]
+				
 			#	when "updatereset"
 			#	when "updateworkers"
 			#	when "changeverification"
@@ -130,6 +138,16 @@ class MultiplexityServer
 		end
 	end
 	
+	def change_chunk_size(i)
+		begin
+			i = i.to_i
+			@chunk_size = i
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
+	end
+	
 	def send_pwd
 		@client.puts Dir.pwd
 	end
@@ -144,6 +162,7 @@ class MultiplexityServer
 	end
 
 	def serve_file(file)
+		@downloading = true
 		@id = 0
 		begin
 			@current_file = File.open(file, 'rb')
@@ -164,6 +183,8 @@ class MultiplexityServer
 			thread.join
 		end
 		@current_file.close
+		@workers = []
+		@downloading = false
 	end
 	
 	def serve_chunk(socket)
@@ -180,6 +201,7 @@ class MultiplexityServer
 			command = socket.gets.chomp
 			if command == "CLOSE"
 				@multiplex_sockets.delete socket
+				@workers.delete Thread.current
 				socket.close
 				break
 			end
@@ -202,6 +224,7 @@ class MultiplexityServer
 			rescue
 				@stale << next_chunk
 				@multiplex_sockets.delete socket
+				@workers.delete Thread.current
 				socket.close
 				break
 			end
