@@ -84,8 +84,6 @@ class MultiplexityServer
 					
 				when "updatechunk"
 					change_chunk_size command[1]
-				
-			#	when "updatereset"
 			#	when "updateworkers"
 			#	when "changeverification"
 				when "halt"
@@ -169,6 +167,7 @@ class MultiplexityServer
 			@client.puts "0"
 		rescue
 			@client.puts "1"
+			@downloading = false
 			return
 		end
 		@semaphore = Mutex.new
@@ -206,9 +205,9 @@ class MultiplexityServer
 				break
 			end
 			if command == "GETNEXTWITHCRC"
-				verify = true
-			else
-				verify = false
+				add_crc = true
+			elsif command == "GETNEXT"
+				add_crc = false
 			end
 			next_chunk = nil
 			@semaphore.synchronize{ next_chunk = get_next_chunk }
@@ -217,7 +216,7 @@ class MultiplexityServer
 				break
 			end
 			chunk_header = "#{next_chunk[:id]}:#{next_chunk[:data].size}"
-			chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if verify == true
+			chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if add_crc == true
 			socket.puts chunk_header
 			begin
 				socket.write(next_chunk[:data])
@@ -228,11 +227,9 @@ class MultiplexityServer
 				socket.close
 				break
 			end
-			if verify
-				crc_status = socket.gets.chomp
-				if crc_status == "CRC MISMATCH"
-					@stale << next_chunk
-				end
+			error = socket.gets.chomp
+			if error == "CRC MISMATCH"
+				@stale << next_chunk
 			end
 			reset = socket.gets.chomp
 			if reset == "RESET"

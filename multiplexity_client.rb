@@ -17,13 +17,13 @@ class MultiplexityClient
 			response = @server.gets.chomp
 			if response != "HELLO Client"
 				@server.close
-				return false	# return meaningful exceptions
+				raise "Server did not respond to hello correctly"
 			end
 			@server.puts "#{@multiplex_port}:#{@chunk_size}"
 			response = @server.gets.chomp
 			if response != "OK"
 				@server.close
-				return false
+				raise "Server did not accept chunk size or port"
 			end
 		rescue
 			return false
@@ -112,11 +112,11 @@ class MultiplexityClient
 		@server.puts "download #{file}"
 		busy = @server.gets.to_i
 		if busy == 1
-			return 1	# make better exceptions
+			raise "Server is current processing another transfer"
 		end
 		readable = @server.gets.to_i
 		if readable == 1
-			return 1
+			raise "Remote file is not readable"
 		end
 		@buffer = Buffer.new(file)
 		@server.gets
@@ -133,7 +133,8 @@ class MultiplexityClient
 		Thread.current[:close] = false
 		Thread.current[:reset] = reset
 		Thread.current[:pause] = false
-		bind_ip = socket.local_address.ip_address
+		Thread.current[:bind_ip] = socket.local_address.ip_address
+		Thread.current[:verify] = verify
 		closed = false
 		loop {
 			until Thread.current[:pause] == false
@@ -141,7 +142,7 @@ class MultiplexityClient
 			end
 			if closed
 				begin
-					socket = create_multiplex_socket(bind_ip)
+					socket = create_multiplex_socket(Thread.current[:bind_ip])
 					closed = false
 				rescue
 					break
@@ -154,17 +155,19 @@ class MultiplexityClient
 				socket.close
 				break
 			end
-			if verify
+			if Thread.current[:verify]
 				socket.puts "GETNEXTWITHCRC"
+				has_crc = true
 			else
 				socket.puts "GETNEXT"
+				has_crc = false
 			end
 			response = socket.gets.chomp
 			break if response == "DONE"
 			header = response.split(":")
 			chunk_id = header[0].to_i
 			chunk_size = header[1].to_i
-			if verify
+			if has_crc
 				chunk_crc = header[2].to_i
 			end
 			start = Time.now
@@ -176,7 +179,7 @@ class MultiplexityClient
 				socket.close
 				break
 			end
-			if verify
+			if Thread.current[:verify] and has_crc
 				local_crc = Zlib::crc32(chunk_data)
 				if local_crc == chunk_crc
 					socket.puts "CRC OK"
@@ -185,6 +188,7 @@ class MultiplexityClient
 					socket.puts "CRC MISMATCH"
 				end
 			else
+				socket.puts "NO VERIFY"
 				@semaphore.synchronize{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
 			end
 			time = Time.now - start
@@ -227,7 +231,7 @@ class MultiplexityClient
 	end
 	
 	def download_progress
-	
+		
 	end
 	
 	def add_workers
@@ -235,7 +239,7 @@ class MultiplexityClient
 	end
 	
 	def remove_workers(n)
-		# throw an exception if workers isn't defined		# add option to remove all workers from one IP?
+		raise "There are no active workers" if (defined? @workers) == nil
 		closed = 0
 		i = 0
 		until closed == n
@@ -248,6 +252,15 @@ class MultiplexityClient
 		end
 	end
 	
+	def remove_interface(ip)
+		raise "There are no active workers" if (defined? @workers) == nil
+		@workers.each do |worker|
+			if worker[:bind_ip] == ip
+				worker[:close] = true
+			end
+		end
+	end
+	
 	def change_chunk_size(i)
 		@server.puts "updatechunk #{i}"
 		success = @server.gets.to_i
@@ -256,18 +269,28 @@ class MultiplexityClient
 	end
 	
 	def change_verification
-	
+		@workers.each do |worker|
+			if worker[:verify] == true
+				worker[:verify] = false
+			else
+				worker[:verify] = true
+			end
+		end
 	end
 	
 	def change_recycling
-	
+		
 	end
 	
 	def pause_transfer
-	
+		@workers.each do |worker|
+			worker[:pause] = true
+		end
 	end
 	
 	def resume_transfer
-	
+		@workers.each do |worker|
+			worker[:pause] = false
+		end
 	end
 end
