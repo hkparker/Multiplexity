@@ -3,11 +3,14 @@ require 'socket'
 require 'zlib'
 
 class MultiplexityClient
+	attr_reader :chunk_size
+	attr_reader :verify
 	def initialize(server_ip, server_port, multiplex_port, chunk_size)
 		@server_ip = server_ip
 		@server_port = server_port
 		@multiplex_port = multiplex_port
 		@chunk_size = chunk_size
+		@verify = nil
 	end
 	
 	def handshake
@@ -109,6 +112,7 @@ class MultiplexityClient
 		@downloaded = 0
 		@workers = []
 		@semaphore = Mutex.new
+		@verify = verify
 		@server.puts "download #{file}"
 		busy = @server.gets.to_i
 		if busy == 1
@@ -216,12 +220,6 @@ class MultiplexityClient
 		pool_speed
 	end
 	
-	def chunk_size
-		@chunk_size
-	end
-	
-	#check verification and recycling
-	
 	def workers
 		begin
 			return @workers.size
@@ -270,12 +268,9 @@ class MultiplexityClient
 	
 	def change_verification
 		@workers.each do |worker|
-			if worker[:verify] == true
-				worker[:verify] = false
-			else
-				worker[:verify] = true
-			end
+			worker[:verify] = !worker[:verify]
 		end
+		@verify = !@verify
 	end
 	
 	def change_recycling

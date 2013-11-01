@@ -203,8 +203,7 @@ class MultiplexityServer
 				@workers.delete Thread.current
 				socket.close
 				break
-			end
-			if command == "GETNEXTWITHCRC"
+			elsif command == "GETNEXTWITHCRC"
 				add_crc = true
 			elsif command == "GETNEXT"
 				add_crc = false
