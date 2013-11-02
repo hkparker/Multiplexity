@@ -35,6 +35,7 @@ labels.pack_start socket_count_label, true, true, 0
 inputs = Gtk::VBox.new(true, 0)
 server_ip = Gtk::Entry.new
 server_port = Gtk::Entry.new
+server_port.insert_text("8000", 0)
 multiplex_port = Gtk::Entry.new
 chunk_size = Gtk::Entry.new
 chunk_unit = Gtk::ComboBox.new
@@ -57,17 +58,17 @@ settings_left.pack_start inputs, true, true, 0
 ###
 
 
-
-network_mode = Gtk::CheckButton.new("I would like to use multiple networks")
-network_mode.signal_connect("clicked") {
-
-}
-
 bind_ip_box = Gtk::HBox.new(false, 0)
 bind_ips_label = Gtk::Label.new("Bind IPs: ", true)
 bind_ips = Gtk::Entry.new
+bind_ips.set_sensitive false
 bind_ip_box.pack_start bind_ips_label, false, false, 0
 bind_ip_box.pack_start bind_ips, true, true, 0
+
+network_mode = Gtk::CheckButton.new("I would like to use multiple networks")
+network_mode.signal_connect("clicked") {
+	bind_ips.set_sensitive !bind_ips.sensitive?
+}
 
 small_opts = Gtk::HBox.new(true, 0)
 verify = Gtk::CheckButton.new("CRC verify chunks")
@@ -75,9 +76,15 @@ recycle = Gtk::CheckButton.new("Recycle sockets")
 small_opts.pack_start verify, true, true, 0
 small_opts.pack_start recycle, true, true, 0
 
+log_file = Gtk::Entry.new
+log_file.set_sensitive false
+
 log_box = Gtk::HBox.new(false, 0)
 log_option = Gtk::CheckButton.new("Log messages")
-log_file = Gtk::Entry.new
+log_option.signal_connect("clicked") {
+	log_file.set_sensitive !log_file.sensitive?
+}
+
 log_box.pack_start log_option, false, false, 0
 log_box.pack_start log_file, true, true, 0
 
