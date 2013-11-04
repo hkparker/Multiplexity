@@ -96,6 +96,7 @@ class MultiplexityClient
 	
 	def shutdown
 		@server.puts "halt"
+		@server.close
 	end
 	
 	def format_bytes(bytes)

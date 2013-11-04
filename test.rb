@@ -2,12 +2,12 @@
 
 require './multiplexity_client.rb'
 
-# Multiplexity options.  This test will be 54.8GB.
+# Multiplexity options.
 tests = 1
 verifications = [true, false]
 recyclings = [true, false]
-chunk_sizes = [524288,1048576,3145728,6291456]
-socket_counts = [2,5,10,20,50,100,150]
+chunk_sizes = [262144,524288,1048576,3145728,6291456]
+socket_counts = [2,4,6,8,10,20,50,100,150]
 
 
 # Test settings.
@@ -16,9 +16,24 @@ server = "192.210.217.180"
 port = 8000
 multiplex_port = 8001
 bind_ip = "192.168.1.4"
-download_file = "500MB_file"
+download_file = "largefile"#"500MB_file"
+file_size = 102400000#524288000
+
+# Used for clean output.
+def format_bytes(bytes)
+		i = 0
+		until bytes < 1024
+			bytes = (bytes / 1024).round(1)
+			i += 1
+		end
+		suffixes = ["bytes","KB","MB","GB","TB"]
+		"#{bytes} #{suffixes[i]}"
+end
+
+puts "This test will download #{format_bytes(file_size*tests*verifications.size*recyclings.size*chunk_sizes.size*socket_counts.size)}"
 
 log_file = File.open(log_filename, "w")
+log_file.sync = true
 
 tests.times do |i|
 	verifications.each do |verify|
@@ -33,7 +48,9 @@ tests.times do |i|
 					client.download_file(download_file, verify, recycle)
 					time = Time.now - start
 					client.shutdown
-					log_file.write "#{i},#{verify},#{recycle},#{chunk_size},#{socket_count},#{time}}"
+					speed = file_size / time
+					log_file.write "#{i},#{verify},#{recycle},#{chunk_size},#{socket_count},#{time},#{speed}\n"
+					sleep 15
 				end
 			end
 		end
