@@ -56,10 +56,11 @@ class MultiplexityClient
 		if @server.gets.chomp != "OK"
 			return false
 		end	
+		bind_threads = []
 		bind_ips.each do |bind_ip|
-			Thread.new{create_multiplex_socket(bind_ip)}
+			bind_threads << Thread.new{create_multiplex_socket(bind_ip)}
 		end
-		Thread.list.each do |thread|
+		bind_threads.each do |thread|
 			thread.join if thread != Thread.current
 		end
 		@server.puts "OK"
