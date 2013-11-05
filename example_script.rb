@@ -2,7 +2,7 @@
 
 require './multiplexity_client.rb'
 
-client = MultiplexityClient.new("192.210.217.180", 8000, 8001, 1048576)#3145728)
+client = MultiplexityClient.new("192.210.217.180", 8000, 8001, 3145728)
 client.handshake
 bind_ips = []
 bind_ips << Array.new(50,"158.104.244.87")

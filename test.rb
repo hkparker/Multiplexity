@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require './multiplexity_client.rb'
+require 'net/ssh'
 
 # Multiplexity options.
 tests = 1
@@ -35,12 +36,14 @@ puts "This test will download #{format_bytes(file_size*tests*verifications.size*
 log_file = File.open(log_filename, "w")
 log_file.sync = true
 
+server = Net::SSH.start('hkparker.com', 'root')
+
 tests.times do |i|
 	verifications.each do |verify|
 		recyclings.each do |recycle|
 			chunk_sizes.each do |chunk_size|
 				socket_counts.each do |socket_count|
-					## ssh in and start server
+					server.exec! "./server.rb"
 					client = MultiplexityClient.new(server, port, multiplex_port, chunk_size)
 					client.handshake
 					bind_ips = Array.new(socket_count,bind_ip)
@@ -61,3 +64,4 @@ tests.times do |i|
 end
 
 log_file.close
+server.close
