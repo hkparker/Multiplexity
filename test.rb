@@ -16,8 +16,8 @@ server = "192.210.217.180"
 port = 8000
 multiplex_port = 8001
 bind_ip = "192.168.1.4"
-download_file = "largefile"#"500MB_file"
-file_size = 102400000#524288000
+download_file = "500MB_file"
+file_size = 524288000
 
 # Used for clean output.
 def format_bytes(bytes)
@@ -40,17 +40,20 @@ tests.times do |i|
 		recyclings.each do |recycle|
 			chunk_sizes.each do |chunk_size|
 				socket_counts.each do |socket_count|
+					## ssh in and start server
 					client = MultiplexityClient.new(server, port, multiplex_port, chunk_size)
 					client.handshake
 					bind_ips = Array.new(socket_count,bind_ip)
+					bind_start = Time.now
 					client.setup_multiplex(bind_ips)
+					bind_time = Time.now - bind_start
 					start = Time.now
 					client.download_file(download_file, verify, recycle)
 					time = Time.now - start
 					client.shutdown
 					speed = file_size / time
-					log_file.write "#{i},#{verify},#{recycle},#{chunk_size},#{socket_count},#{time},#{speed}\n"
-					sleep 15
+					log_file.write "#{i},#{verify},#{recycle},#{chunk_size},#{socket_count},#{bind_time},#{time},#{speed}\n"
+					sleep 5
 				end
 			end
 		end
