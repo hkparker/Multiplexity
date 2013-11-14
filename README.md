@@ -1,32 +1,12 @@
 Multiplexity
 ============
 
-Multiplexity is an inverse multiplexer for file transfers.  It can be used on one network with multiplex sockets, or over multiple networks.  Files are split into chunks that are asynchronously transfered over threaded workers, which can be added and removed mid transfer.  Chunk size can also be adjusted, as well as chunk CRC verification.  Multiplexity also supports optionally closing then reopening multiplex sockets after each chunk, which can improve performance on networks that use some implementations of traffic shaping / throttling.
+Multiplexity is an inverse multiplexer for file transfers.  Files are split into chunks that are inverse multiplexed over TCP sockets.  These sockets can exist on an arbitrary number of networks and each network and have an arbitrary number of sockets.  Using multiple sockets on a single network can improve performance and evade some implementations of traffic shaping / throttling while using multiple networks allows one to maximize bandwidth consumption on each network.  Multiplexity supports a number of other options as well, including adding more sockets mid transfer, CRC verificatin of each chunk, resetting each connection after each chunk, and changing the chunk size.
 
 Current status
 --------------
 
-Currently finishing the API, then going to finish the CLI, and lastly a GTK client is in the works.
-
-Usage
------
-
-
-Examples
---------
-
-
-Files
------
-
-
-Requirements
-------------
-
-Ruby >= 1.9.1
-
-rpam (http://rpam.rubyforge.org/) required for server when PAM authentication is used
-
+Ruby has given me scaling and threading issues that are difficult to track down.  While downloads are currently working well, I will likely be using either C or Go to write a production version after I'm done prototyping.
 
 License
 -------

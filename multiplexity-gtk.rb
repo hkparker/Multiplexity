@@ -13,7 +13,7 @@ multiplexity.signal_connect("destroy") {
 }
 
 ### Top Row
-top_row = Gtk::HBox.new(true, 0)
+top_row = Gtk::HBox.new(true, 10)
 
 ### Settings side
 
@@ -140,21 +140,80 @@ top_row.pack_start right_side, true, true, 0
 
 
 ### Middle Row
-middle_row = Gtk::HBox.new(true, 0)
+middle_row = Gtk::HBox.new(true, 10)
 local_files = Gtk::VBox.new(true, 0)
 remote_files = Gtk::VBox.new(true, 0)
 #######################
-image4 = Gtk::Button.new
-local_files.pack_start image4, true, true, 0
-image5 = Gtk::Button.new
-remote_files.pack_start image5, true, true, 0
+local_tree = Gtk::ListStore.new(String, String, Integer, String, String, String)
+##
+files = []
+files << {:filename => "file1", :path => "/root", :size => 1024, :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
+files << {:filename => "file2", :path => "/root", :size => 2024, :type => "file", :last_write => "1/1/13 2:00 PM", :readable => "true"}
+files << {:filename => "file3", :path => "/root", :size => 3024, :type => "file", :last_write => "1/1/13 3:00 PM", :readable => "true"}
+files << {:filename => "file4", :path => "/root", :size => 4024, :type => "file", :last_write => "1/1/13 4:00 PM", :readable => "true"}
+files << {:filename => "movie.mkv", :path => "/home/hayden/data/", :size => 23987512, :type => "file", :last_write => "9/17/13 4:47 PM", :readable => "true"}
+files.each do |file|
+	row = local_tree.append()
+	row[0] = file[:filename]
+	row[1] = file[:path]
+	row[2] = file[:size]
+	row[3] = file[:type]
+	row[4] = file[:last_write]
+	row[5] = file[:readable]
+end
+##
+local_view = Gtk::TreeView.new(local_tree)
+local_view.reorderable=true
+columns = ["File Name","Path","Size","Type","Last Write","Readable"]
+columns.each_with_index do |column, i|
+	renderer = Gtk::CellRendererText.new
+	colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+	colum.resizable = true
+	local_view.append_column(colum)
+end
+scrolled_local = Gtk::ScrolledWindow.new
+scrolled_local.add(local_view)
+scrolled_local.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+local_files.pack_start_defaults(scrolled_local)
+##########
+remote_tree = Gtk::ListStore.new(String, String, Integer, String, String, String)
+##
+files = []
+files << {:filename => "file1", :path => "/root", :size => 1024, :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
+files << {:filename => "file2", :path => "/root", :size => 2024, :type => "file", :last_write => "1/1/13 2:00 PM", :readable => "true"}
+files << {:filename => "file3", :path => "/root", :size => 3024, :type => "file", :last_write => "1/1/13 3:00 PM", :readable => "true"}
+files << {:filename => "file4", :path => "/root", :size => 4024, :type => "file", :last_write => "1/1/13 4:00 PM", :readable => "true"}
+files << {:filename => "movie.mkv", :path => "/home/hayden/data/", :size => 23987512, :type => "file", :last_write => "9/17/13 4:47 PM", :readable => "true"}
+files.each do |file|
+	row = remote_tree.append()
+	row[0] = file[:filename]
+	row[1] = file[:path]
+	row[2] = file[:size]
+	row[3] = file[:type]
+	row[4] = file[:last_write]
+	row[5] = file[:readable]
+end
+##
+remote_view = Gtk::TreeView.new(remote_tree)
+remote_view.reorderable=true
+columns = ["File Name","Path","Size","Type","Last Write","Readable"]
+columns.each_with_index do |column, i|
+	renderer = Gtk::CellRendererText.new
+	colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+	colum.resizable = true
+	remote_view.append_column(colum)
+end
+scrolled_remote = Gtk::ScrolledWindow.new
+scrolled_remote.add(remote_view)
+scrolled_remote.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+remote_files.pack_start_defaults(scrolled_remote)
 #######################
 middle_row.pack_start local_files, true, true, 0
 middle_row.pack_start remote_files, true, true, 0
 
 
 ### Bottom Row
-bottom_row = Gtk::HBox.new(false, 0)
+bottom_row = Gtk::HBox.new(false, 10)
 status = Gtk::VBox.new(true, 0)
 queue = Gtk::VBox.new(true, 0)
 #######################
@@ -167,7 +226,7 @@ bottom_row.pack_start status, true, true, 0
 bottom_row.pack_start queue, true, true, 0
 
 
-all_rows = Gtk::VBox.new(false, 0)
+all_rows = Gtk::VBox.new(false, 10)
 all_rows.pack_start top_row, false, false, 0
 all_rows.pack_start middle_row, true, true, 0
 all_rows.pack_start bottom_row, true, true, 0
