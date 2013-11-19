@@ -37,7 +37,9 @@ server_ip = Gtk::Entry.new
 server_port = Gtk::Entry.new
 server_port.insert_text("8000", 0)
 multiplex_port = Gtk::Entry.new
+multiplex_port.insert_text("8001", 0)
 chunk_size = Gtk::Entry.new
+chunk_size.insert_text("3", 0)
 chunk_unit = Gtk::ComboBox.new
 chunk_unit.append_text("KB")
 chunk_unit.append_text("MB")
@@ -54,7 +56,6 @@ inputs.pack_start socket_count, true, true, 0
 
 settings_left.pack_start labels, true, true, 0
 settings_left.pack_start inputs, true, true, 0
-#settings_left.set_size_request(400, 200)
 ###
 
 
@@ -77,6 +78,7 @@ small_opts.pack_start verify, true, true, 0
 small_opts.pack_start recycle, true, true, 0
 
 log_file = Gtk::Entry.new
+log_file.insert_text("/var/log/multiplexity.log", 0)
 log_file.set_sensitive false
 
 log_box = Gtk::HBox.new(false, 0)
