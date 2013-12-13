@@ -147,20 +147,27 @@ class MultiplexityClient
 				sleep 1
 			end
 			if closed
+				##
 				begin
 					socket = create_multiplex_socket(Thread.current[:bind_ip])
 					closed = false
 				rescue
+					puts "I'm breaking #{Thread.current} due to failure to reopen"
 					break
 				end
+				##
 			end
 			if Thread.current[:close] == true
+				##
 				socket.puts "CLOSE"
 				@multiplex_sockets.delete socket
 				@workers.delete Thread.current
 				socket.close
+				puts "I'm breaking #{Thread.current} due to close signal"
 				break
+				##
 			end
+			
 			if Thread.current[:verify]
 				socket.puts "GETNEXTWITHCRC"
 				has_crc = true
@@ -169,13 +176,17 @@ class MultiplexityClient
 				has_crc = false
 			end
 			response = socket.gets.chomp
-			break if response == "DONE"
+			if response == "DONE"
+				puts "I'm breaking #{Thread.current} due to no more chunks"
+				break
+			end
 			header = response.split(":")
 			chunk_id = header[0].to_i
 			chunk_size = header[1].to_i
 			if has_crc
 				chunk_crc = header[2].to_i
 			end
+			
 			start = Time.now
 			begin
 				chunk_data = socket.read(chunk_size)
@@ -183,6 +194,7 @@ class MultiplexityClient
 				@multiplex_sockets.delete socket
 				@workers.delete Thread.current
 				socket.close
+				puts "I'm breaking #{Thread.current} due to a broken socket while moving data"
 				break
 			end
 			if Thread.current[:verify] and has_crc
@@ -209,6 +221,7 @@ class MultiplexityClient
 				socket.puts "NORESET"
 			end
 		}
+		puts puts "I'm broken #{Thread.current}"
 	end
 	
 	def pool_speed
