@@ -12,11 +12,12 @@ class Worker
 	attr_accessor :transfer_speed
 	attr_accessor :downloaded
 
-	def initialize(bind_ip, server_ip, multiplex_port, buffer, semaphore)
+	def initialize(bind_ip, server_ip, multiplex_port, buffer, semaphore, manager)
 		@bind_ip = bind_ip
 		@server_ip = server_ip
 		@multiplex_port = multiplex_port
 		@semaphore = semaphore
+		@manager = manager
 		@buffer = buffer
 		@finish = false
 		@pause = false
