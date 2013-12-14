@@ -8,6 +8,6 @@ bind_ips = []
 bind_ips << Array.new(25,"192.168.1.6")
 bind_ips = bind_ips.flatten
 client.setup_multiplex(bind_ips)
-download = Thread.new{ client.download_file("largefile", false, false) }
+download = Thread.new{ client.download_file("largefile", true, true) }
 download.join
 client.shutdown
