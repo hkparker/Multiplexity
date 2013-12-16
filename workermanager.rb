@@ -3,7 +3,6 @@ require './buffer.rb'
 
 class WorkerManager
 	attr_writer :stale_chunks	# This needs to be tested
-	attr_reader :workers
 	
 	def initialize(server_ip, multiplex_port)
 		@server_ip = server_ip
@@ -15,12 +14,12 @@ class WorkerManager
 		@action = nil
 	end
 	
-	def remove_workers(count)	# need to be able to specify a bind IP to remove
+	def remove_workers(count)
 		# remove even across multiple IPs if there are any
 	end
 	
 	def remove_workers_by_ip(bind_ip, count)
-		
+		# remove count workers with the bind_ip bind_ip
 	end
 	
 	def add_workers(bind_ips)
@@ -82,5 +81,11 @@ class WorkerManager
 	
 	def get_next_chunk
 		
+	end
+	
+	def get_stats
+		# bind_count = count the number of different bind ips
+		# {:server_ip => @server_ip, :multiplex_port => @multiplex_port, :worker_count => @workers.size, :bind_count => bind_count, ... }
+		# return a hash of info about the manager
 	end
 end
