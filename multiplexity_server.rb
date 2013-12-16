@@ -86,6 +86,7 @@ class MultiplexityServer
 					change_chunk_size command[1]
 			#	when "updateworkers"
 			#	when "changeverification"
+			# perhaps also have a CONNECT TO command where you can tell ther server to make an outgoing connection
 				when "halt"
 					@multiplex_sockets.each do |socket|
 						socket.close

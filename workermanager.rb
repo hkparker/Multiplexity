@@ -47,15 +47,13 @@ class WorkerManager
 		#new_worker.serve_download if actions == "serving"
 	end
 	
-	#def create_new_worker
-		
-	#	@workers << Worker.new(self, next_chunk_semaphore, stale_semaphore)
-	#end
+	# Server side
+	# worker = Worker.new
+	# worker.recieve_connection
 	
 	def serve_file(filename)
-		raise "WorkerManager is currently #{action}.  Use another WorkerManager instance for concurrent inverse multiplex transfers." if @action != nil
+		raise "WorkerManager is currently #{action}.  Use another WorkerManager instance for concurrent transfers." if @action != nil
 		@action = "serving"
-		# check we aren't doing something else
 		working_workers = []
 		@workers.each do |worker|
 			working_workers << Thread.new{ worker.serve_download }
@@ -67,11 +65,11 @@ class WorkerManager
 	end
 	
 	def download_file(filename, verify, reset)
-		raise "WorkerManager is currently #{action}.  Please use another WorkerManager instance for concurrent inverse multiplex transfers." if @action != nil
+		raise "WorkerManager is currently #{action}.  Please use another WorkerManager instance for concurrent transfers." if @action != nil
 		@action = "downloading"
 		# check that thats an ok file to write to
 		buffer = Buffer.new(filename)
-		#check that there are active workers
+		#check that there are avliable workers
 		working_workers = []
 		@workers.each do |worker|
 			working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }

@@ -39,6 +39,10 @@ class Worker
 		end
 	end
 	
+	def recieve_connection
+	
+	end
+	
 	def process_download(verify, reset, buffer)
 		@verify = verify
 		@reset = reset
