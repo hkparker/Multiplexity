@@ -24,6 +24,7 @@ class Worker
 	end
 
 	def open_socket(bind_ip, server_ip, multiplex_port)
+		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions
 		begin
 			lhost = Socket.pack_sockaddr_in(0, bind_ip)
 			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
