@@ -12,13 +12,10 @@ class Worker
 	attr_accessor :transfer_speed
 	attr_accessor :downloaded
 
-	def initialize(bind_ip, server_ip, multiplex_port, buffer, semaphore, manager)
-		@bind_ip = bind_ip
-		@server_ip = server_ip
-		@multiplex_port = multiplex_port
-		@semaphore = semaphore
+	def initialize(manager, next_chunk_semaphore, stale_semaphore)
 		@manager = manager
-		@buffer = buffer
+		@next_chunk_semaphore = next_chunk_semaphore
+		@stale_semaphore = stale_smaphore
 		@finish = false
 		@pause = false
 		@closed = true
@@ -26,10 +23,10 @@ class Worker
 		@downloaded = 0
 	end
 
-	def open_socket
+	def open_socket(bind_ip, server_ip, multiplex_port)
 		begin
-			lhost = Socket.pack_sockaddr_in(0, @bind_ip)
-			rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
+			lhost = Socket.pack_sockaddr_in(0, bind_ip)
+			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
 			@socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 			@socket.bind(lhost)
 			@socket.connect(rhost)
@@ -41,11 +38,7 @@ class Worker
 		end
 	end
 	
-	def recieve_connection
-		# where will the multiplex server be defined?
-	end
-	
-	def process_download(verify, reset)
+	def process_download(verify, reset, buffer)
 		@verify = verify
 		@reset = reset
 		loop{
@@ -60,7 +53,7 @@ class Worker
 			chunk_data = recieve_chunk_data(chunk_size)
 			close_socket; break if chunk_data == nil
 			chunk_ok = verify_chunk(chunk_data, chunk_crc)
-			buffer_insert(@buffer, @semaphore, chunk_id, chunk_data) if chunk_ok
+			buffer_insert(buffer, @next_chunk_semaphore, chunk_id, chunk_data) if chunk_ok
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
 			@downloaded += chunk_size
@@ -74,11 +67,11 @@ class Worker
 			command = @socket.gets.chomp
 			break if command == "CLOSE"
 			add_crc = add_crc? command
-			next_chunk = @manager.get_next_chunk	# Create a worker manager.  then server_file is passed a refernce to the manager that can stream chunks
+			next_chunk = @manager.get_next_chunk
 			@socket.puts "DONE"; break if next_chunk == nil
 			chunk_header = build_chunk_header(next_chunk, add_crc)
 			success = send_chunk_data(chunk_header, next_chunk)
-			@manager.recieve_stale next_chunk if not success
+			@manager.stale_chunks << next_chunk if not success	# if that/attr_accessor doesn't work try @manager.stale_chunks = @manager.stale_chunks + next_chunk
 			client_confirm_crc(next_chunk)
 			reset_socket_server
 		}
