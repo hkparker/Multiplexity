@@ -1,7 +1,6 @@
 require 'zlib'
 
 class Worker
-	attr_accessor :finish
 	attr_accessor :reset
 	attr_accessor :pause
 	attr_accessor :bind_ip
@@ -11,19 +10,21 @@ class Worker
 	attr_accessor :buffer
 	attr_accessor :transfer_speed
 	attr_accessor :downloaded
+	attr_reader :state
 
 	def initialize(manager, next_chunk_semaphore, stale_semaphore)
 		@manager = manager
 		@next_chunk_semaphore = next_chunk_semaphore
 		@stale_semaphore = stale_smaphore
-		@finish = false
 		@pause = false
 		@closed = true
 		@transfer_speed = 0
 		@downloaded = 0
+		@state = "idle"
 	end
 
 	def open_socket(bind_ip, server_ip, multiplex_port)
+		@state = "connecting"
 		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions
 		begin
 			lhost = Socket.pack_sockaddr_in(0, bind_ip)
@@ -37,6 +38,7 @@ class Worker
 			@closed = true
 			return false
 		end
+		@state = "idle"
 	end
 	
 	def recieve_connection
@@ -44,12 +46,12 @@ class Worker
 	end
 	
 	def process_download(verify, reset, buffer)
+		@state = "downloading"
 		@verify = verify
 		@reset = reset
 		loop{
 			sleep 1 until @pause == false
 			open_socket if @closed
-			close_socket; break if @finish
 			request_next_chunk
 			response = @socket.gets.chomp
 			close_socket; break if response == "DONE"
@@ -64,13 +66,14 @@ class Worker
 			@downloaded += chunk_size
 			reset_socket
 		}
+		@state = "idle"
 	end
 	
 	def serve_download
+		@state = "serving"
 		loop{
 			recieve_connection if closed
 			command = @socket.gets.chomp
-			break if command == "CLOSE"
 			add_crc = add_crc? command
 			next_chunk = @manager.get_next_chunk
 			@socket.puts "DONE"; break if next_chunk == nil
@@ -80,6 +83,7 @@ class Worker
 			client_confirm_crc(next_chunk)
 			reset_socket_server
 		}
+		@state = "idle"
 	end
 	
 	private

@@ -11,7 +11,8 @@ class WorkerManager
 		@next_chunk_semaphore = Mutex.new
 		@workers = []
 		@stale_chunks = []
-		@action = nil
+		@state = "idle"
+		@paused = false
 	end
 	
 	def remove_workers(count)
@@ -51,8 +52,8 @@ class WorkerManager
 	# worker.recieve_connection
 	
 	def serve_file(filename)
-		raise "WorkerManager is currently #{action}.  Use another WorkerManager instance for concurrent transfers." if @action != nil
-		@action = "serving"
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
+		@state = "serving"
 		working_workers = []
 		@workers.each do |worker|
 			working_workers << Thread.new{ worker.serve_download }
@@ -60,12 +61,12 @@ class WorkerManager
 		working_workers.each do |thread|
 			thread.join
 		end
-		@action = nil
+		@state = "idle"
 	end
 	
 	def download_file(filename, verify, reset)
-		raise "WorkerManager is currently #{action}.  Please use another WorkerManager instance for concurrent transfers." if @action != nil
-		@action = "downloading"
+		raise "WorkerManager is currently #{@state}.  Please use another WorkerManager instance for concurrent transfers." if @state != nil
+		@state = "downloading"
 		# check that thats an ok file to write to
 		buffer = Buffer.new(filename)
 		#check that there are avliable workers
@@ -76,7 +77,7 @@ class WorkerManager
 		working_workers.each do |thread|
 			thread.join
 		end
-		@action = nil
+		@state = "idle"
 	end
 	
 	def get_next_chunk
@@ -84,8 +85,60 @@ class WorkerManager
 	end
 	
 	def get_stats
-		# bind_count = count the number of different bind ips
-		# {:server_ip => @server_ip, :multiplex_port => @multiplex_port, :worker_count => @workers.size, :bind_count => bind_count, ... }
-		# return a hash of info about the manager
+		idle_workers = 0
+		connecting_workers = 0
+		downloading_workers = 0
+		serving_workers = 0
+		@workers.each do |worker|
+			case worker.state
+				when "idle"
+					idle_workers += 1
+				when "connecting"
+					connecting_workers += 1
+				when "downloading"
+					downloading_workers += 1
+				when "serving"
+					serving_workers += 1
+			end
+			bound_ips = {}
+			bound_ip = worker.bind_ip
+			if bound_ips.include? bound_ip
+				bound_ips[bound_ip] += 1
+			elsif
+				bound_ips << bound_ip
+				bound_ips.merge!(bound_ip => 1)
+			end
+		end
+		bound_ips_string = ""
+		bound_ips.each_pair do |ip, count|
+			bound_ips_string += "#{ip}:#{count};"
+		end
+		return {:server_ip => @server_ip,
+				:multiplex_port => @multiplex_port,
+				:worker_count => @workers.size,
+				:idle_workers => idle_workers,
+				:connecting_workers => connecting_workers,
+				:downloading_workers => downloading_workers,
+				:serving_workers => serving_workers,
+				:state => @state
+				:pause => @pause
+				:bound_ips => bound_ips_string}
 	end
+	
+	def pause_workers
+		return 1 if @paused
+		@workers.each do |worker|
+			worker.pause = true
+		end
+		@paused = true
+	end
+	
+	def resume_workers
+		return 1 if not @paused
+		@workers.each do |worker|
+			worker.pause = false
+		end
+		@paused = false
+	end
+	
 end
