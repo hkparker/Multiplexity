@@ -116,10 +116,6 @@ settings.pack_start settings_right, false, false, 0
 
 
 
-
-
-
-
 ### route and messages
 right_side = Gtk::HBox.new(true, 0)
 route_setup = Gtk::VBox.new(true, 0)
@@ -141,12 +137,26 @@ top_row.pack_start right_side, true, true, 0
 ### End top row
 
 
+
+
+
+
+
+
+
+
+
+
 ### Middle Row
 middle_row = Gtk::HBox.new(true, 10)
-local_files = Gtk::VBox.new(true, 0)
-remote_files = Gtk::VBox.new(true, 0)
+local_files = Gtk::VBox.new(false, 5)
+remote_files = Gtk::VBox.new(false, 5)
 #######################
 local_tree = Gtk::ListStore.new(String, String, Integer, String, String, String)
+local_top_hbox = Gtk::HBox.new(false, 0)
+local_label = Gtk::Label.new
+local_label.set_markup("<span size=\"x-large\" weight=\"bold\">Local Files</span>")
+local_top_hbox.pack_start local_label, false, false, 0
 ##
 files = []
 files << {:filename => "file1", :path => "/root", :size => 1024, :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
@@ -176,9 +186,14 @@ end
 scrolled_local = Gtk::ScrolledWindow.new
 scrolled_local.add(local_view)
 scrolled_local.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+local_files.pack_start local_top_hbox, false, false, 0
 local_files.pack_start_defaults(scrolled_local)
 ##########
 remote_tree = Gtk::ListStore.new(String, String, Integer, String, String, String)
+remote_top_hbox = Gtk::HBox.new(false, 5)
+remote_label = Gtk::Label.new
+remote_label.set_markup("<span size=\"x-large\" weight=\"bold\">Remote Files</span>")
+remote_top_hbox.pack_start remote_label, false, false, 0
 ##
 files = []
 files << {:filename => "file1", :path => "/root", :size => 1024, :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
@@ -208,6 +223,7 @@ end
 scrolled_remote = Gtk::ScrolledWindow.new
 scrolled_remote.add(remote_view)
 scrolled_remote.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+remote_files.pack_start remote_top_hbox, false, false, 0
 remote_files.pack_start_defaults(scrolled_remote)
 #######################
 middle_row.pack_start local_files, true, true, 0
@@ -216,16 +232,29 @@ middle_row.pack_start remote_files, true, true, 0
 
 ### Bottom Row
 bottom_row = Gtk::HBox.new(false, 10)
-status = Gtk::VBox.new(true, 0)
-queue = Gtk::VBox.new(true, 0)
+status = Gtk::VBox.new(false, 5)
+queue = Gtk::VBox.new(false, 5)
 #######################
+status_top_hbox = Gtk::HBox.new(false, 0)
+status_label = Gtk::Label.new
+status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
 image7 = Gtk::Button.new
+status_top_hbox.pack_start status_label, false, false, 0
+status.pack_start status_top_hbox, false, false, 0
 status.pack_start image7, true, true, 0
+####
+queue_top_hbox = Gtk::HBox.new(false, 0)
+queue_label = Gtk::Label.new
+queue_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queue</span>")
 image8 = Gtk::Button.new
+queue_top_hbox.pack_start queue_label, false, false, 0
+queue.pack_start queue_top_hbox, false, false, 0
 queue.pack_start image8, true, true, 0
 #######################
 bottom_row.pack_start status, true, true, 0
 bottom_row.pack_start queue, true, true, 0
+### End Bottom Row
+
 
 
 all_rows = Gtk::VBox.new(false, 10)

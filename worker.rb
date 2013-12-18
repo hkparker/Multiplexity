@@ -10,6 +10,7 @@ class Worker
 	attr_accessor :buffer
 	attr_accessor :transfer_speed
 	attr_accessor :downloaded
+	attr_accessor :finish
 	attr_reader :state
 
 	def initialize(manager, next_chunk_semaphore, stale_semaphore)
@@ -17,6 +18,7 @@ class Worker
 		@next_chunk_semaphore = next_chunk_semaphore
 		@stale_semaphore = stale_smaphore
 		@pause = false
+		@finish = false
 		@closed = true
 		@transfer_speed = 0
 		@downloaded = 0
@@ -25,7 +27,7 @@ class Worker
 
 	def open_socket(bind_ip, server_ip, multiplex_port)
 		@state = "connecting"
-		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions
+		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions (created in manager init)
 		begin
 			lhost = Socket.pack_sockaddr_in(0, bind_ip)
 			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
@@ -52,6 +54,7 @@ class Worker
 		loop{
 			sleep 1 until @pause == false
 			open_socket if @closed
+			close_socket; break if @finish
 			request_next_chunk
 			response = @socket.gets.chomp
 			close_socket; break if response == "DONE"
@@ -74,6 +77,7 @@ class Worker
 		loop{
 			recieve_connection if closed
 			command = @socket.gets.chomp
+			break if command == "CLOSE"
 			add_crc = add_crc? command
 			next_chunk = @manager.get_next_chunk
 			@socket.puts "DONE"; break if next_chunk == nil
