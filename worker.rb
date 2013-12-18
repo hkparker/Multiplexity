@@ -27,10 +27,13 @@ class Worker
 
 	def open_socket(bind_ip, server_ip, multiplex_port)
 		@state = "connecting"
+		@bind_ip = bind_ip
+		@server_ip = server_ip
+		@multiplex_port = multiplex_port
 		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions (created in manager init)
 		begin
-			lhost = Socket.pack_sockaddr_in(0, bind_ip)
-			rhost = Socket.pack_sockaddr_in(multiplex_port, server_ip)
+			lhost = Socket.pack_sockaddr_in(0, @bind_ip)
+			rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
 			@socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 			@socket.bind(lhost)
 			@socket.connect(rhost)

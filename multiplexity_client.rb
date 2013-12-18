@@ -214,45 +214,8 @@ class MultiplexityClient
 		}
 	end
 	
-	def pool_speed
-		pool_speed = 0
-		begin
-			@workers.each do |worker|
-				pool_speed += worker[:speed] || 0
-			end
-		rescue
-		end
-		pool_speed
-	end
-	
-	def workers
-		begin
-			return @workers.size
-		rescue
-			return 0
-		end
-	end
-	
 	def download_progress
 		
-	end
-	
-	def add_workers
-	
-	end
-	
-	def remove_workers(n)
-		raise "There are no active workers" if (defined? @workers) == nil
-		closed = 0
-		i = 0
-		until closed == n
-			break if i == @workers.size
-			if @workers[i][:close] == false
-				@workers[i][:close] = true
-				closed += 1
-			end
-			i += 1
-		end
 	end
 	
 	def remove_interface(ip)

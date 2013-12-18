@@ -20,19 +20,34 @@ class WorkerManager
 	end
 	
 	def remove_workers_by_ip(bind_ip, count)
-		# remove count workers with the bind_ip bind_ip
+		stopped = 0
+		@workers.each do |worker|
+			break if stopped == count
+			if worker.bind_ip == bind_ip && worker.finish != true
+				worker.finish == true
+				stopped += 1
+			end
+		end
 	end
 	
 	def add_workers(bind_ips)
-		
-		
+		added = 0
 		bind_ips.each do |ip|
-			worker = Worker.new(self, @next_chunk_semaphore, @stale_semaphore)
-			worker.open_socket(ip, @server_ip, @multiplex_port)
-			@workers << worker
+			begin
+				worker = Worker.new(self, @next_chunk_semaphore, @stale_semaphore)
+				worker.open_socket(ip, @server_ip, @multiplex_port)
+	#			case @state
+	#				when "serving"
+	#					@working_workers << Thread.new{ worker.serve_download }
+	#				when "downloading"
+	#					@working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }
+	#			end
+				@workers << worker
+				added += 1
+			rescue
+			end
 		end
-		
-		
+		return added
 	end
 	
 	def change_worker_count(change)
@@ -54,13 +69,14 @@ class WorkerManager
 	def serve_file(filename)
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
 		@state = "serving"
-		working_workers = []
+		@working_workers = []
 		@workers.each do |worker|
-			working_workers << Thread.new{ worker.serve_download }
+			@working_workers << Thread.new{ worker.serve_download }
 		end
-		working_workers.each do |thread|
+		@working_workers.each do |thread|
 			thread.join
 		end
+		@working_workers = []
 		@state = "idle"
 	end
 	
@@ -70,13 +86,14 @@ class WorkerManager
 		# check that thats an ok file to write to
 		buffer = Buffer.new(filename)
 		#check that there are avliable workers
-		working_workers = []
+		@working_workers = []
 		@workers.each do |worker|
-			working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }
+			@working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }
 		end
-		working_workers.each do |thread|
+		@working_workers.each do |thread|
 			thread.join
 		end
+		@working_workers = []
 		@state = "idle"
 	end
 	
@@ -89,6 +106,7 @@ class WorkerManager
 		connecting_workers = 0
 		downloading_workers = 0
 		serving_workers = 0
+		pool_speed = 0
 		@workers.each do |worker|
 			case worker.state
 				when "idle"
@@ -108,6 +126,7 @@ class WorkerManager
 				bound_ips << bound_ip
 				bound_ips.merge!(bound_ip => 1)
 			end
+			pool_speed += worker.transfer_speed
 		end
 		bound_ips_string = ""
 		bound_ips.each_pair do |ip, count|
@@ -120,9 +139,10 @@ class WorkerManager
 				:connecting_workers => connecting_workers,
 				:downloading_workers => downloading_workers,
 				:serving_workers => serving_workers,
-				:state => @state
-				:pause => @pause
-				:bound_ips => bound_ips_string}
+				:state => @state,
+				:pause => @pause,
+				:bound_ips => bound_ips_string,
+				:pool_speed => pool_speed}
 	end
 	
 	def pause_workers
