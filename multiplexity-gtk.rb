@@ -231,17 +231,46 @@ middle_row.pack_start remote_files, true, true, 0
 
 
 ### Bottom Row
-bottom_row = Gtk::HBox.new(false, 10)
+bottom_row = Gtk::HBox.new(true, 10)
 status = Gtk::VBox.new(false, 5)
 queue = Gtk::VBox.new(false, 5)
 #######################
 status_top_hbox = Gtk::HBox.new(false, 0)
 status_label = Gtk::Label.new
 status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
-image7 = Gtk::Button.new
+status_options = Gtk::VBox.new
+
+
+change_worker_count = Gtk::HBox.new
+add_or_remove = Gtk::ComboBox.new
+add_or_remove.append_text("Add")
+add_or_remove.append_text("Remove")
+add_or_remove.set_active 0
+worker_count = Gtk::Entry.new
+workers_label = Gtk::Label.new
+workers_label.set_markup("<span size=\"large\" weight=\"bold\"> workers </span>")
+add_bind_ip = Gtk::CheckButton.new("bind ip = ")
+bind_ip_to_add = Gtk::Entry.new
+bind_ip_to_add.set_sensitive false
+add_bind_ip.signal_connect("clicked") {
+	bind_ip_to_add.set_sensitive !bind_ip_to_add.sensitive?
+}
+change_worker_button = Gtk::Button.new("Do it")
+change_worker_button.signal_connect("clicked") {
+
+}
+
+change_worker_count.pack_start add_or_remove, false, false, 0
+change_worker_count.pack_start worker_count, false, false, 0
+change_worker_count.pack_start workers_label, false, false, 0
+change_worker_count.pack_start add_bind_ip, false, false, 0
+change_worker_count.pack_start bind_ip_to_add, false, false, 0
+change_worker_count.pack_start change_worker_button, false, false, 0
+
+status_options.pack_start change_worker_count, true, true, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
-status.pack_start image7, true, true, 0
+status.pack_start status_options, true, true, 0
 ####
 queue_top_hbox = Gtk::HBox.new(false, 0)
 queue_label = Gtk::Label.new
