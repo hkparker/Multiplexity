@@ -241,6 +241,7 @@ status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
 status_options = Gtk::VBox.new
 
 
+filler = Gtk::Button.new
 change_worker_count = Gtk::HBox.new
 add_or_remove = Gtk::ComboBox.new
 add_or_remove.append_text("Add")
@@ -264,10 +265,11 @@ change_worker_count.pack_start add_or_remove, false, false, 0
 change_worker_count.pack_start worker_count, false, false, 0
 change_worker_count.pack_start workers_label, false, false, 0
 change_worker_count.pack_start add_bind_ip, false, false, 0
-change_worker_count.pack_start bind_ip_to_add, false, false, 0
+change_worker_count.pack_start bind_ip_to_add, true, true, 0
 change_worker_count.pack_start change_worker_button, false, false, 0
 
-status_options.pack_start change_worker_count, true, true, 0
+status_options.pack_start filler, true, true, 0
+status_options.pack_start change_worker_count, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
 status.pack_start status_options, true, true, 0
