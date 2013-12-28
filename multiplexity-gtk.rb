@@ -13,38 +13,40 @@ multiplexity.signal_connect("destroy") {
 }
 
 ### Top Row
-top_row = Gtk::VBox.new(false, 0)
-top_row_upper = Gtk::HBox.new(false, 0)
-top_row_lower = Gtk::HBox.new(false, 0)
+top_row = Gtk::HBox.new(false, 0)
 
-server_ip_label = Gtk::Label.new("Server: ")
+server_ip_label = Gtk::Label.new("Server:")
 server_ip_input = Gtk::Entry.new
-control_port_label = Gtk::Label.new("Port: ")
+control_port_label = Gtk::Label.new("Port:")
 control_port_input = Gtk::Entry.new
+control_port_input.width_chars=5
 control_port_input.insert_text("8000", 0)
-multiplex_port_label = Gtk::Label.new("Multiplex Port: ")
+multiplex_port_label = Gtk::Label.new("Multiplex Port:")
 multiplex_port_input = Gtk::Entry.new
+multiplex_port_input.width_chars=5
 multiplex_port_input.insert_text("8001", 0)
-chunk_size_label = Gtk::Label.new("Chunk Size: ")
+chunk_size_label = Gtk::Label.new("Chunk Size:")
 chunk_size_input = Gtk::Entry.new
-chunk_size_input.insert_text("3", 0)
+chunk_size_input.width_chars=5
+chunk_size_input.insert_text("5", 0)
 chunk_unit = Gtk::ComboBox.new
 chunk_unit.append_text("KB")
 chunk_unit.append_text("MB")
 chunk_unit.active = 1
-socket_count_label = Gtk::Label.new("Sockets/IP: ")
+socket_count_label = Gtk::Label.new("Sockets/IP:")
 socket_count_input = Gtk::Entry.new
-bind_ips_label = Gtk::Label.new("Bind IPs: ")
+socket_count_input.width_chars=5
 bind_ips_input = Gtk::Entry.new
-network_mode = Gtk::CheckButton.new("Multiple networks")
+bind_ips_input.set_sensitive false
+network_mode = Gtk::CheckButton.new("Bind IPs:")
 network_mode.signal_connect("clicked") {
 	bind_ips_input.set_sensitive !bind_ips_input.sensitive?
 }
-route_helper_button = Gtk::Button.new("Launch route helper")
+route_helper_button = Gtk::Button.new("Route helper")
 log_file = Gtk::Entry.new
 log_file.insert_text("/var/log/multiplexity.log", 0)
 log_file.set_sensitive false
-log_option = Gtk::CheckButton.new("Log messages")
+log_option = Gtk::CheckButton.new("Log")
 log_option.signal_connect("clicked") {
 	log_file.set_sensitive !log_file.sensitive?
 }
@@ -52,29 +54,26 @@ connect_button = Gtk::Button.new("Connect")
 connect_button.signal_connect("clicked") {
 	#
 }
-top_row_upper.pack_start server_ip_label, false, false, 0
-top_row_upper.pack_start server_ip_input, false, false, 0
-top_row_upper.pack_start control_port_label, false, false, 0
-top_row_upper.pack_start control_port_input, false, false, 0
-top_row_upper.pack_start multiplex_port_label, false, false, 0
-top_row_upper.pack_start multiplex_port_input, false, false, 0
-top_row_upper.pack_start chunk_size_label, false, false, 0
-top_row_upper.pack_start chunk_size_input, false, false, 0
-top_row_upper.pack_start chunk_unit, false, false, 0
+top_row.pack_start server_ip_label, false, false, 0
+top_row.pack_start server_ip_input, false, false, 0
+top_row.pack_start control_port_label, false, false, 0
+top_row.pack_start control_port_input, false, false, 0
+top_row.pack_start multiplex_port_label, false, false, 0
+top_row.pack_start multiplex_port_input, false, false, 0
+top_row.pack_start chunk_size_label, false, false, 0
+top_row.pack_start chunk_size_input, false, false, 0
+top_row.pack_start chunk_unit, false, false, 0
 
-top_row_lower.pack_start socket_count_label, false, false, 0
-top_row_lower.pack_start socket_count_input, false, false, 0
-top_row_lower.pack_start network_mode, false, false, 0
-top_row_lower.pack_start bind_ips_label, false, false, 0
-top_row_lower.pack_start bind_ips_input, false, false, 0
-top_row_lower.pack_start route_helper_button, false, false, 0
-top_row_lower.pack_start log_option, false, false, 0
-top_row_lower.pack_start log_file, false, false, 0
-top_row_lower.pack_start connect_button, false, false, 0
+top_row.pack_start socket_count_label, false, false, 0
+top_row.pack_start socket_count_input, false, false, 0
+top_row.pack_start network_mode, false, false, 0
+top_row.pack_start bind_ips_input, false, false, 0
+top_row.pack_start route_helper_button, false, false, 0
+top_row.pack_start log_option, false, false, 0
+top_row.pack_start log_file, false, false, 0
+top_row.pack_start connect_button, false, false, 0
 
 
-top_row.pack_start top_row_upper, false, false, 0
-top_row.pack_start top_row_lower, false, false, 0
 ### End top row
 
 
