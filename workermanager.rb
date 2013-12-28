@@ -15,16 +15,12 @@ class WorkerManager
 		@paused = false
 	end
 	
-	def remove_workers(count)
-		# remove even across multiple IPs if there are any
-	end
-	
 	def remove_workers_by_ip(bind_ip, count)
 		stopped = 0
 		@workers.each do |worker|
 			break if stopped == count
 			if worker.bind_ip == bind_ip && worker.finish != true
-				worker.finish == true
+				worker.finish == true	# call method that closes sockets even if not in transfer
 				stopped += 1
 			end
 		end
@@ -56,10 +52,9 @@ class WorkerManager
 			add_workers Array.new(change,@workers[0].bind_ip)
 		elsif change < 0
 			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
-			# remove some workers.  set close signal?
+			# remove even across multiple IPs if there are any
 		end
 		# return the amount by which the size changed
-		#new_worker.serve_download if actions == "serving"
 	end
 	
 	# Server side
@@ -81,7 +76,7 @@ class WorkerManager
 	end
 	
 	def download_file(filename, verify, reset)
-		raise "WorkerManager is currently #{@state}.  Please use another WorkerManager instance for concurrent transfers." if @state != nil
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
 		@state = "downloading"
 		# check that thats an ok file to write to
 		buffer = Buffer.new(filename)
@@ -107,6 +102,7 @@ class WorkerManager
 		downloading_workers = 0
 		serving_workers = 0
 		pool_speed = 0
+		bound_ips = {}
 		@workers.each do |worker|
 			case worker.state
 				when "idle"
@@ -118,7 +114,6 @@ class WorkerManager
 				when "serving"
 					serving_workers += 1
 			end
-			bound_ips = {}
 			bound_ip = worker.bind_ip
 			if bound_ips.include? bound_ip
 				bound_ips[bound_ip] += 1

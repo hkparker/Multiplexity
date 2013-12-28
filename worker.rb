@@ -82,7 +82,8 @@ class Worker
 			command = @socket.gets.chomp
 			break if command == "CLOSE"
 			add_crc = add_crc? command
-			next_chunk = @manager.get_next_chunk
+			next_chunk = nil
+			@next_chunk_semaphore.synchronize{ next_chunk = @manager.get_next_chunk }
 			@socket.puts "DONE"; break if next_chunk == nil
 			chunk_header = build_chunk_header(next_chunk, add_crc)
 			success = send_chunk_data(chunk_header, next_chunk)
@@ -92,7 +93,16 @@ class Worker
 		}
 		@state = "idle"
 	end
-	
+
+	def close_connections
+		case @state
+			when "idle"
+				# close sockets
+			when "downloading"
+				# set finish flag
+		end
+	end
+
 	private
 	
 	def close_socket

@@ -49,12 +49,11 @@ class SecureSocket
 		@aes_decryption.key = shared_key
 	end
 	
-	def create_from_socket(socket)
+	def assign_socket(socket)
 		@socket = socket
-		return self
 	end
 	
-	def create_socket
+	def open(ip_address, port, bind_ip=nil, shared_key=nil)
 		# optionally provide bind ip, switch which ruby class to use based on that
 		# also optionally pass a shared key which will bypass DH exchange?
 		# or perhaps have a dh exchange be another method and raise error if no key?
@@ -90,9 +89,10 @@ class SecureServer
 		@server = TCPServer.new(@bind_ip, @bind_port)
 	end
 	
-	def accept
-		# accept a connection from @server
+	def accept(shared_key=nil)
+		insecure_socket = @server.accept
 		# handshake encryption
-		# return SecureSocket object
+		socket = SecureSocket.new
+		socket.assign_socket insecure_socket
 	end
 end
