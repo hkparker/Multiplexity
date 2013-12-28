@@ -13,127 +13,68 @@ multiplexity.signal_connect("destroy") {
 }
 
 ### Top Row
-top_row = Gtk::HBox.new(true, 10)
+top_row = Gtk::VBox.new(false, 0)
+top_row_upper = Gtk::HBox.new(false, 0)
+top_row_lower = Gtk::HBox.new(false, 0)
 
-### Settings side
-
-settings_left = Gtk::HBox.new(false, 0)
-settings_right = Gtk::VBox.new(true, 0)
-
-labels = Gtk::VBox.new(true, 0)
-server_label = Gtk::Label.new("Server: ", true)
-port_label = Gtk::Label.new("Port: ", true)
-multiplex_port_label = Gtk::Label.new("Multiplex Port: ", true)
-chunk_size_label = Gtk::Label.new("Chunk Size: ", true)
-socket_count_label = Gtk::Label.new("Sockets/IP: ", true)
-labels.pack_start server_label, true, true, 0
-labels.pack_start port_label, true, true, 0
-labels.pack_start multiplex_port_label, true, true, 0
-labels.pack_start chunk_size_label, true, true, 0
-labels.pack_start socket_count_label, true, true, 0
-
-inputs = Gtk::VBox.new(true, 0)
-server_ip = Gtk::Entry.new
-server_port = Gtk::Entry.new
-server_port.insert_text("8000", 0)
-multiplex_port = Gtk::Entry.new
-multiplex_port.insert_text("8001", 0)
-chunk_size = Gtk::Entry.new
-chunk_size.insert_text("3", 0)
+server_ip_label = Gtk::Label.new("Server: ")
+server_ip_input = Gtk::Entry.new
+control_port_label = Gtk::Label.new("Port: ")
+control_port_input = Gtk::Entry.new
+control_port_input.insert_text("8000", 0)
+multiplex_port_label = Gtk::Label.new("Multiplex Port: ")
+multiplex_port_input = Gtk::Entry.new
+multiplex_port_input.insert_text("8001", 0)
+chunk_size_label = Gtk::Label.new("Chunk Size: ")
+chunk_size_input = Gtk::Entry.new
+chunk_size_input.insert_text("3", 0)
 chunk_unit = Gtk::ComboBox.new
 chunk_unit.append_text("KB")
 chunk_unit.append_text("MB")
 chunk_unit.active = 1
-socket_count = Gtk::Entry.new
-inputs.pack_start server_ip, true, true, 0
-inputs.pack_start server_port, true, true, 0
-inputs.pack_start multiplex_port, true, true, 0
-chunk_box = Gtk::HBox.new
-chunk_box.pack_start chunk_size, true, true, 0
-chunk_box.pack_start chunk_unit, true, true, 0
-inputs.pack_start chunk_box, true, true, 0
-inputs.pack_start socket_count, true, true, 0
-
-settings_left.pack_start labels, true, true, 0
-settings_left.pack_start inputs, true, true, 0
-###
-
-
-bind_ip_box = Gtk::HBox.new(false, 0)
-bind_ips_label = Gtk::Label.new("Bind IPs: ", true)
-bind_ips = Gtk::Entry.new
-bind_ips.set_sensitive false
-bind_ip_box.pack_start bind_ips_label, false, false, 0
-bind_ip_box.pack_start bind_ips, true, true, 0
-
-network_mode = Gtk::CheckButton.new("I would like to use multiple networks")
+socket_count_label = Gtk::Label.new("Sockets/IP: ")
+socket_count_input = Gtk::Entry.new
+bind_ips_label = Gtk::Label.new("Bind IPs: ")
+bind_ips_input = Gtk::Entry.new
+network_mode = Gtk::CheckButton.new("Multiple networks")
 network_mode.signal_connect("clicked") {
-	bind_ips.set_sensitive !bind_ips.sensitive?
+	bind_ips_input.set_sensitive !bind_ips_input.sensitive?
 }
-
-small_opts = Gtk::HBox.new(true, 0)
-verify = Gtk::CheckButton.new("CRC verify chunks")
-recycle = Gtk::CheckButton.new("Recycle sockets")
-small_opts.pack_start verify, true, true, 0
-small_opts.pack_start recycle, true, true, 0
-
+route_helper_button = Gtk::Button.new("Launch route helper")
 log_file = Gtk::Entry.new
 log_file.insert_text("/var/log/multiplexity.log", 0)
 log_file.set_sensitive false
-
-log_box = Gtk::HBox.new(false, 0)
 log_option = Gtk::CheckButton.new("Log messages")
 log_option.signal_connect("clicked") {
 	log_file.set_sensitive !log_file.sensitive?
 }
-
-log_box.pack_start log_option, false, false, 0
-log_box.pack_start log_file, true, true, 0
-
 connect_button = Gtk::Button.new("Connect")
 connect_button.signal_connect("clicked") {
-
+	#
 }
+top_row_upper.pack_start server_ip_label, false, false, 0
+top_row_upper.pack_start server_ip_input, false, false, 0
+top_row_upper.pack_start control_port_label, false, false, 0
+top_row_upper.pack_start control_port_input, false, false, 0
+top_row_upper.pack_start multiplex_port_label, false, false, 0
+top_row_upper.pack_start multiplex_port_input, false, false, 0
+top_row_upper.pack_start chunk_size_label, false, false, 0
+top_row_upper.pack_start chunk_size_input, false, false, 0
+top_row_upper.pack_start chunk_unit, false, false, 0
 
-settings_right.pack_start network_mode, true, true, 0
-settings_right.pack_start bind_ip_box, true, true, 0
-settings_right.pack_start small_opts, true, true, 0
-settings_right.pack_start log_box, true, true, 0
-settings_right.pack_start connect_button, true, true, 0
-
-top_options = Gtk::HBox.new(true, 0)
-top_label = Gtk::VBox.new(true, 0)
-top_input = Gtk::VBox.new(true, 0)
-
-top_options.pack_start top_label, true, true, 0
-top_options.pack_start top_input, true, true, 0
-
-#######################
-
-settings = Gtk::HBox.new(true, 0)
-settings.pack_start settings_left, false, false, 0
-settings.pack_start settings_right, false, false, 0
+top_row_lower.pack_start socket_count_label, false, false, 0
+top_row_lower.pack_start socket_count_input, false, false, 0
+top_row_lower.pack_start network_mode, false, false, 0
+top_row_lower.pack_start bind_ips_label, false, false, 0
+top_row_lower.pack_start bind_ips_input, false, false, 0
+top_row_lower.pack_start route_helper_button, false, false, 0
+top_row_lower.pack_start log_option, false, false, 0
+top_row_lower.pack_start log_file, false, false, 0
+top_row_lower.pack_start connect_button, false, false, 0
 
 
-
-### route and messages
-right_side = Gtk::HBox.new(true, 0)
-route_setup = Gtk::VBox.new(true, 0)
-messages = Gtk::VBox.new(true, 0)
-
-#######################
-image2 = Gtk::Button.new
-route_setup.pack_start image2, true, true, 0
-image3 = Gtk::Button.new
-messages.pack_start image3, true, true, 0
-#######################
-
-right_side.pack_start route_setup, true, true, 0
-right_side.pack_start messages, true, true, 0
-
-top_row.pack_start settings, true, true, 0
-top_row.pack_start right_side, true, true, 0
-
+top_row.pack_start top_row_upper, false, false, 0
+top_row.pack_start top_row_lower, false, false, 0
 ### End top row
 
 
@@ -144,6 +85,8 @@ top_row.pack_start right_side, true, true, 0
 
 
 
+#verify = Gtk::CheckButton.new("CRC verify chunks")
+#recycle = Gtk::CheckButton.new("Recycle sockets")
 
 
 
