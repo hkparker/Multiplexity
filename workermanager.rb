@@ -7,30 +7,19 @@ class WorkerManager
 	def initialize(server_ip, multiplex_port)
 		@server_ip = server_ip
 		@multiplex_port = multiplex_port
-		@stale_semaphore = Mutex.new
-		@next_chunk_semaphore = Mutex.new
+		@client_semaphore = Mutex.new
+		@server_semaphore = Mutex.new
 		@workers = []
 		@stale_chunks = []
 		@state = "idle"
 		@paused = false
 	end
 	
-	def remove_workers_by_ip(bind_ip, count)
-		stopped = 0
-		@workers.each do |worker|
-			break if stopped == count
-			if worker.bind_ip == bind_ip && worker.finish != true
-				worker.finish == true	# call method that closes sockets even if not in transfer
-				stopped += 1
-			end
-		end
-	end
-	
 	def add_workers(bind_ips)
 		added = 0
 		bind_ips.each do |ip|
 			begin
-				worker = Worker.new(self, @next_chunk_semaphore, @stale_semaphore)
+				worker = Worker.new(self, @client_semaphore, @server_semaphore)
 				worker.open_socket(ip, @server_ip, @multiplex_port)
 	#			case @state
 	#				when "serving"
@@ -46,20 +35,41 @@ class WorkerManager
 		return added
 	end
 	
+	def remove_workers_by_ip(bind_ip, count)
+		stopped = 0
+		@workers.each do |worker|
+			break if stopped == count
+			if worker.bind_ip == bind_ip
+				remove_worker worker
+				stopped += 1
+			end
+		end
+	end
+	
 	def change_worker_count(change)
 		old_size = @workers.size
+		raise "Add workers with WorkerManager#add_workers first" if old_size == 0
 		if change > 0
-			add_workers Array.new(change,@workers[0].bind_ip)
+			change = add_workers Array.new(change,@workers[0].bind_ip)
+			# add evenly across multiple IPs if there are any
 		elsif change < 0
 			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
 			# remove even across multiple IPs if there are any
 		end
-		# return the amount by which the size changed
+		old_size+change
 	end
 	
-	# Server side
-	# worker = Worker.new
-	# worker.recieve_connection
+#	def recieve_workers(count)
+#		server = TCPServer.new()
+#		waiting = []
+#		count.times do |i|
+#			worker = Worker.new(self, @client_semaphore, @server_semaphore)
+#			waiting << Thread.new{ worker.recieve_connection(server) }
+#		end
+#		waiting.each do |thread|
+#			thread.join
+#		end
+#	end
 	
 	def serve_file(filename)
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
@@ -154,6 +164,15 @@ class WorkerManager
 			worker.pause = false
 		end
 		@paused = false
+	end
+	
+	# methods to turn on/off crc and recycle on all workers
+	
+	private
+	
+	def remove_worker(worker)
+		worker.close_connections
+		@workers.delete worker
 	end
 	
 end

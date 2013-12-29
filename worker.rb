@@ -13,16 +13,16 @@ class Worker
 	attr_accessor :finish
 	attr_reader :state
 
-	def initialize(manager, next_chunk_semaphore, stale_semaphore)
+	def initialize(manager, client_semaphore, server_semaphore)
 		@manager = manager
-		@next_chunk_semaphore = next_chunk_semaphore
-		@stale_semaphore = stale_smaphore
+		@client_semaphore = client_semaphore
+		@server_semaphore = server_semaphore
 		@pause = false
 		@finish = false
 		@closed = true
 		@transfer_speed = 0
 		@downloaded = 0
-		@state = "idle"
+		@state = "new"
 	end
 
 	def open_socket(bind_ip, server_ip, multiplex_port)
@@ -46,8 +46,8 @@ class Worker
 		@state = "idle"
 	end
 	
-	def recieve_connection
-	
+	def recieve_connection(server)
+		@socket = server.accept
 	end
 	
 	def process_download(verify, reset, buffer)
@@ -66,7 +66,7 @@ class Worker
 			chunk_data = recieve_chunk_data(chunk_size)
 			close_socket; break if chunk_data == nil
 			chunk_ok = verify_chunk(chunk_data, chunk_crc)
-			buffer_insert(buffer, @next_chunk_semaphore, chunk_id, chunk_data) if chunk_ok
+			@client_semaphore.synchronize{ buffer.insert {:id => chunk_id, :data =>chunk_data} } if chunk_ok
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
 			@downloaded += chunk_size
@@ -83,7 +83,7 @@ class Worker
 			break if command == "CLOSE"
 			add_crc = add_crc? command
 			next_chunk = nil
-			@next_chunk_semaphore.synchronize{ next_chunk = @manager.get_next_chunk }
+			@server_semaphore.synchronize{ next_chunk = @manager.get_next_chunk }
 			@socket.puts "DONE"; break if next_chunk == nil
 			chunk_header = build_chunk_header(next_chunk, add_crc)
 			success = send_chunk_data(chunk_header, next_chunk)
@@ -97,9 +97,12 @@ class Worker
 	def close_connections
 		case @state
 			when "idle"
-				# close sockets
+				@socket.close
 			when "downloading"
-				# set finish flag
+				@finish = true
+			when "connecting"
+				sleep 1
+				close_connections
 		end
 	end
 
@@ -159,16 +162,6 @@ class Worker
 		semaphore.synchronize{ buffer.insert({:id => chunk_id, :data => chunk_data}) }
 	end
 	
-	def reset_socket
-		if @reset
-			@socket.puts "RESET"
-			@socket.close
-			@closed = true
-		else
-			@socket.puts "NORESET"
-		end
-	end
-
 	def add_crc?(command)
 		case command
 			when "GETNEXT"
@@ -199,6 +192,16 @@ class Worker
 		@manager.recieve_stale chunk if success == "CRCMISMATCH"
 	end
 	
+	def reset_socket
+		if @reset
+			@socket.puts "RESET"
+			@socket.close
+			@closed = true
+		else
+			@socket.puts "NORESET"
+		end
+	end
+	
 	def reset_socket_server
 		reset = @socket.gets.chomp
 		if reset == "RESET"
@@ -206,5 +209,4 @@ class Worker
 			@closed = true
 		end
 	end
-
 end

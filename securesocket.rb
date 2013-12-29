@@ -5,7 +5,7 @@ require 'base64'
 class SecureSocket
 	attr_reader :peer_address
 	
-	def initialize(ip_address, port, bind_ip=nil, shared_key=nil)
+	def initialize
 	
 		if bind_ip == nil
 			@socket = TCPSocket.open(ip_address, port)
@@ -36,10 +36,10 @@ class SecureSocket
 		case shared_key.size
 			when 128
 				@aes_encryption = OpenSSL::Cipher.new('AES-128-CBC')
-				@es_decryption = OpenSSL::Cipher.new('AES-128-CBC')
+				@aes_decryption = OpenSSL::Cipher.new('AES-128-CBC')
 			when 256
 				@aes_encryption = OpenSSL::Cipher.new('AES-256-CBC')
-				@es_decryption = OpenSSL::Cipher.new('AES-256-CBC')
+				@aes_decryption = OpenSSL::Cipher.new('AES-256-CBC')
 			else
 				raise "Key size doesn't match supported ciphers"
 		end
