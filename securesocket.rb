@@ -65,7 +65,7 @@ class SecureSocket
 		encoded_data = @socket.gets
 		iv = Base64.decode64(encoded_iv)
 		ciphertext = Base64.decode64(encoded_data)
-		@aes_decryption.iv = iv
+		@decryption.iv = iv
 		cleartext = @decryption.update(ciphertext) + @decryption.final
 		cleartext
 	end
