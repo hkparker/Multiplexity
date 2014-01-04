@@ -7,13 +7,21 @@ class SecureSocket
 	attr_reader :cipher
 	attr_reader :shared_key
 	
-	def initialize(encryption_object=nil, decryption_object=nil, socket=nil)
+	def initialize(cipher=nil, key=nil, socket=nil)
 		@socket = socket
-		@encryption = encryption_object
-		@decryption = decryption_object
+		@encryption = nil
+		@decryption = nil
+		if cipher != nil && key != nil
+			@encryption = OpenSSL::Cipher.new(cipher)
+			@encryption.encrypt
+			@encryption.key = key
+			@decryption = OpenSSL::Cipher.new(cipher)
+			@decryption.decrypt
+			@decryption.key = key
+		end
 		@ciphers = ['AES-128-CBC', 'AES-192-CBC', 'AES-256-CBC', 'CAST5-CBC', 'CAMELLIA-128-CBC', 'CAMELLIA-192-CBC', 'CAMELLIA-256-CBC']
-		@cipher = nil
-		@shared_key = nil
+		@cipher = cipher
+		@shared_key = key
 	end
 
 	def open(ip_address, port, bind_ip=nil)
@@ -71,13 +79,13 @@ class SecureSocket
 	end
 	
 	def peer_address
-		case @socket.class
-			when TCPSocket
-				return @socket.peeraddr[3]
-			when Socket
-				return @socket.local_address.ip_address
-			when NilClass
-				return nil
+		socket_class = @socket.class
+		if socket_class == Socket
+			return @socket.local_address.ip_address
+		elsif socket_class == TCPSocket
+			return @socket.peeraddr[3]
+		else
+			return nil
 		end
 	end
 	
@@ -107,9 +115,9 @@ class SecureServer
 		@ciphers = ['AES-128-CBC', 'AES-192-CBC', 'AES-256-CBC', 'CAST5-CBC', 'CAMELLIA-128-CBC', 'CAMELLIA-192-CBC', 'CAMELLIA-256-CBC']
 	end
 	
-	def accept(encryption_object=nil, decryption_object=nil)
+	def accept(cipher=nil, shared_key=nil)
 		insecure_socket = @server.accept
-		if encryption_object == nil || decryption_object == nil
+		if cipher == nil || shared_key == nil
 			ciphers_string = ""
 			@ciphers.each do |cipher|
 				ciphers_string += "#{cipher},"
@@ -121,9 +129,6 @@ class SecureServer
 				raise "No compatable ciphers"
 			end
 			encryption_object = OpenSSL::Cipher.new(cipher)
-			encryption_object.encrypt
-			decryption_object = OpenSSL::Cipher.new(cipher)
-			decryption_object.decrypt
 			dh_size = encryption_object.random_key.size * 64
 			dh = OpenSSL::PKey::DH.new(dh_size)
 			params = dh.to_s
@@ -131,10 +136,8 @@ class SecureServer
 			client_public_key = insecure_socket.gets.to_i(16)
 			insecure_socket.puts dh.pub_key.to_s(16)
 			shared_key = dh.compute_key(client_public_key)
-			encryption_object.key = shared_key
-			decryption_object.key = shared_key
 		end
-		socket = SecureSocket.new(encryption_object, decryption_object, insecure_socket)
+		socket = SecureSocket.new(cipher, shared_key, insecure_socket)
 		socket
 	end
 	
