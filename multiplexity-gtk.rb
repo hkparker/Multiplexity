@@ -60,6 +60,7 @@ login_option.signal_connect("clicked") {
 login_option.active = true
 username.set_sensitive true
 password.set_sensitive true
+password.visibility=false
 server_secret = Gtk::Entry.new
 authenticate_option = Gtk::CheckButton.new("Authenticate")
 authenticate_option.signal_connect("clicked") {
@@ -209,13 +210,28 @@ queue = Gtk::VBox.new(false, 5)
 status_top_hbox = Gtk::HBox.new(false, 0)
 status_label = Gtk::Label.new
 status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
-status_options = Gtk::VBox.new
+status_options = Gtk::VBox.new(false, 0)
 
 
 filler = Gtk::Button.new
 
-#verify = Gtk::CheckButton.new("CRC verify chunks")
-#recycle = Gtk::CheckButton.new("Recycle sockets")
+authenticate_line = Gtk::HBox.new(false, 0)
+secret_label = Gtk::Label.new("Secret:")
+server_secret_2 = Gtk::Entry.new
+re_authenticate_button = Gtk::Button.new("Authenticate")
+re_authenticate_button.signal_connect("clicked") {
+	# Authenticate
+}
+authenticate_line.pack_start secret_label, false, false, 0
+authenticate_line.pack_start server_secret_2, false, false, 0
+authenticate_line.pack_start re_authenticate_button, false, false, 0
+
+
+small_options = Gtk::HBox.new(false, 0)
+verify = Gtk::CheckButton.new("CRC verify chunks")
+recycle = Gtk::CheckButton.new("Recycle sockets")
+small_options.pack_start verify, false, false, 0
+small_options.pack_start recycle, false, false, 0
 
 change_worker_count = Gtk::HBox.new
 add_or_remove = Gtk::ComboBox.new
@@ -249,6 +265,8 @@ change_worker_count.pack_start change_worker_button, false, false, 0
 
 
 status_options.pack_start filler, true, true, 0
+status_options.pack_start authenticate_line, false, false, 0
+status_options.pack_start small_options, false, false, 0
 status_options.pack_start change_worker_count, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
