@@ -24,7 +24,7 @@ class SecureSocket
 		@shared_key = key
 	end
 
-	def open(ip_address, port, bind_ip=nil)
+	def open(ip_address, port, authentication=nil, bind_ip=nil)
 		if bind_ip == nil
 			@socket = TCPSocket.open(ip_address, port)
 		else
@@ -115,7 +115,7 @@ class SecureServer
 		@ciphers = ['AES-128-CBC', 'AES-192-CBC', 'AES-256-CBC', 'CAST5-CBC', 'CAMELLIA-128-CBC', 'CAMELLIA-192-CBC', 'CAMELLIA-256-CBC']
 	end
 	
-	def accept(cipher=nil, shared_key=nil)
+	def accept(cipher=nil, shared_key=nil, authentication=nil)
 		insecure_socket = @server.accept
 		if cipher == nil || shared_key == nil
 			ciphers_string = ""

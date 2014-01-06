@@ -13,7 +13,9 @@ multiplexity.signal_connect("destroy") {
 }
 
 ### Top Row
-top_row = Gtk::HBox.new(false, 0)
+top_row = Gtk::VBox.new(false, 0)
+upper = Gtk::HBox.new(false, 0)
+lower = Gtk::HBox.new(false, 0)
 server_ip_label = Gtk::Label.new("Server:")
 server_ip_input = Gtk::Entry.new
 control_port_label = Gtk::Label.new("Port:")
@@ -43,6 +45,29 @@ network_mode.signal_connect("clicked") {
 	bind_ips_input.set_sensitive !bind_ips_input.sensitive?
 }
 route_helper_button = Gtk::Button.new("Route helper")
+route_helper_button.signal_connect("clicked") {
+	# Launch route help guide
+}
+
+username = Gtk::Entry.new
+login_colon = Gtk::Label.new(":")
+password = Gtk::Entry.new
+login_option = Gtk::CheckButton.new("Login")
+login_option.signal_connect("clicked") {
+	username.set_sensitive !username.sensitive?
+	password.set_sensitive !password.sensitive?
+}
+login_option.active = true
+username.set_sensitive true
+password.set_sensitive true
+server_secret = Gtk::Entry.new
+authenticate_option = Gtk::CheckButton.new("Authenticate")
+authenticate_option.signal_connect("clicked") {
+	server_secret.set_sensitive !server_secret.sensitive?
+}
+authenticate_option.active = true
+server_secret.set_sensitive true
+
 log_file = Gtk::Entry.new
 log_file.insert_text("/var/log/multiplexity.log", 0)
 log_file.set_sensitive false
@@ -54,25 +79,33 @@ connect_button = Gtk::Button.new("Connect")
 connect_button.signal_connect("clicked") {
 	#	Connect to server
 }
-top_row.pack_start server_ip_label, false, false, 0
-top_row.pack_start server_ip_input, false, false, 0
-top_row.pack_start control_port_label, false, false, 0
-top_row.pack_start control_port_input, false, false, 0
-top_row.pack_start multiplex_port_label, false, false, 0
-top_row.pack_start multiplex_port_input, false, false, 0
-top_row.pack_start chunk_size_label, false, false, 0
-top_row.pack_start chunk_size_input, false, false, 0
-top_row.pack_start chunk_unit, false, false, 0
-top_row.pack_start socket_count_label, false, false, 0
-top_row.pack_start socket_count_input, false, false, 0
-top_row.pack_start network_mode, false, false, 0
-top_row.pack_start bind_ips_input, true, true, 0
-top_row.pack_start route_helper_button, false, false, 0
-top_row.pack_start log_option, false, false, 0
-top_row.pack_start log_file, false, false, 0
-top_row.pack_start connect_button, false, false, 0
+upper.pack_start server_ip_label, false, false, 0
+upper.pack_start server_ip_input, false, false, 0
+upper.pack_start control_port_label, false, false, 0
+upper.pack_start control_port_input, false, false, 0
+upper.pack_start multiplex_port_label, false, false, 0
+upper.pack_start multiplex_port_input, false, false, 0
+upper.pack_start chunk_size_label, false, false, 0
+upper.pack_start chunk_size_input, false, false, 0
+upper.pack_start chunk_unit, false, false, 0
+upper.pack_start socket_count_label, false, false, 0
+upper.pack_start socket_count_input, false, false, 0
+upper.pack_start network_mode, false, false, 0
+upper.pack_start bind_ips_input, true, true, 0
+upper.pack_start route_helper_button, false, false, 0
 
+lower.pack_start login_option, false, false, 0
+lower.pack_start username, false, false, 0
+lower.pack_start login_colon, false, false, 0
+lower.pack_start password, false, false, 0
+lower.pack_start authenticate_option, false, false, 0
+lower.pack_start server_secret, true, true, 0
+lower.pack_start log_option, false, false, 0
+lower.pack_start log_file, false, false, 0
+lower.pack_start connect_button, false, false, 0
 
+top_row.pack_start upper, false, false, 0
+top_row.pack_start lower, false, false, 0
 ### End top row
 
 
