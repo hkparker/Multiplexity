@@ -121,8 +121,15 @@ remote_files = Gtk::VBox.new(false, 5)
 local_tree = Gtk::ListStore.new(String, String, String, String, String, String)
 local_top_hbox = Gtk::HBox.new(false, 0)
 local_label = Gtk::Label.new
-local_label.set_markup("<span size=\"x-large\" weight=\"bold\">Local Files</span>")
+local_label.set_markup("<span size=\"x-large\" weight=\"bold\">Local Files    </span>")
+#print_local_directory = Gtk::Button.new("pwd")
+#local_directory = Gtk::Entry.new
+#change_local_directory = Gtk::Button.new("cd")
 local_top_hbox.pack_start local_label, false, false, 0
+#local_top_hbox.pack_start print_local_directory, false, false, 0
+#local_top_hbox.pack_start local_directory, false, false, 0
+#local_top_hbox.pack_start change_local_directory, false, false, 0
+
 ##
 files = []
 files << {:filename => "file1", :path => "/root", :size => "1 MB", :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
@@ -215,6 +222,32 @@ status_options = Gtk::VBox.new(false, 0)
 
 filler = Gtk::Button.new
 
+current_file_bar = Gtk::HBox.new(false, 5)
+current_file_label = Gtk::Label.new
+current_file_label.set_markup("<span weight=\"bold\">Current File:</span>")
+current_file = Gtk::Label.new("filename.mkv")
+file_progress = Gtk::ProgressBar.new
+current_file_bar.pack_start current_file_label, false, false, 0
+current_file_bar.pack_start current_file, false, false, 0
+current_file_bar.pack_start file_progress, true, true, 0
+
+current_stats_bar = Gtk::HBox.new(false, 5)
+pool_speed_label = Gtk::Label.new
+pool_speed_label.set_markup("<span weight=\"bold\">Pool speed:</span>")
+pool_speed = Gtk::Label.new("8.4MB/s")
+worker_count_label = Gtk::Label.new
+worker_count_label.set_markup("<span weight=\"bold\">Worker count:</span>")
+worker_count = Gtk::Label.new("85")
+bound_ips_count_label = Gtk::Label.new
+bound_ips_count_label.set_markup("<span weight=\"bold\">Bound IPs:</span>")
+bound_ips_count = Gtk::Label.new("4")
+current_stats_bar.pack_start pool_speed_label, false, false, 0
+current_stats_bar.pack_start pool_speed, false, false, 0
+current_stats_bar.pack_start worker_count_label, false, false, 0
+current_stats_bar.pack_start worker_count, false, false, 0
+current_stats_bar.pack_start bound_ips_count_label, false, false, 0
+current_stats_bar.pack_start bound_ips_count, false, false, 0
+
 authenticate_line = Gtk::HBox.new(false, 0)
 secret_label = Gtk::Label.new("Secret:")
 server_secret_2 = Gtk::Entry.new
@@ -225,7 +258,6 @@ re_authenticate_button.signal_connect("clicked") {
 authenticate_line.pack_start secret_label, false, false, 0
 authenticate_line.pack_start server_secret_2, false, false, 0
 authenticate_line.pack_start re_authenticate_button, false, false, 0
-
 
 small_options = Gtk::HBox.new(false, 0)
 verify = Gtk::CheckButton.new("CRC verify chunks")
@@ -264,6 +296,8 @@ change_worker_count.pack_start change_worker_button, false, false, 0
 
 
 
+status_options.pack_start current_file_bar, false, false, 0
+status_options.pack_start current_stats_bar, false, false, 0
 status_options.pack_start filler, true, true, 0
 status_options.pack_start authenticate_line, false, false, 0
 status_options.pack_start small_options, false, false, 0
