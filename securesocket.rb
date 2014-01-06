@@ -3,28 +3,24 @@ require 'openssl'
 require 'base64'
 
 class SecureSocket
-	attr_accessor :ciphers
-	attr_reader :cipher
 	attr_reader :shared_key
 	
-	def initialize(cipher=nil, key=nil, socket=nil)
+	def initialize(key=nil, socket=nil)
 		@socket = socket
+		@shared_key = key
 		@encryption = nil
 		@decryption = nil
-		if cipher != nil && key != nil
-			@encryption = OpenSSL::Cipher.new(cipher)
+		if @shared_key != nil
+			@encryption = OpenSSL::Cipher.new("AES-128-CBC")
 			@encryption.encrypt
 			@encryption.key = key
-			@decryption = OpenSSL::Cipher.new(cipher)
+			@decryption = OpenSSL::Cipher.new("AES-128-CBC")
 			@decryption.decrypt
 			@decryption.key = key
 		end
-		@ciphers = ['AES-128-CBC', 'AES-192-CBC', 'AES-256-CBC', 'CAST5-CBC', 'CAMELLIA-128-CBC', 'CAMELLIA-192-CBC', 'CAMELLIA-256-CBC']
-		@cipher = cipher
-		@shared_key = key
 	end
 
-	def open(ip_address, port, authentication=nil, bind_ip=nil)
+	def open(ip_address, port, bind_ip=nil)
 		if bind_ip == nil
 			@socket = TCPSocket.open(ip_address, port)
 		else
@@ -35,25 +31,16 @@ class SecureSocket
 			@socket.connect(rhost)
 		end
 		if @encryption == nil || @decryption == nil
-			server_ciphers = @socket.gets.split(",")
-			begin
-				@cipher = best_cipher(@ciphers, server_ciphers)
-				@socket.puts @cipher
-			rescue
-				@socket.puts "NONE"
-				@socket.close
-				raise 'No compatable ciphers'
-			end
 			params = Base64.decode64(@socket.gets)
 			dh = OpenSSL::PKey::DH.new(params)
 			dh.generate_key!
 			@socket.puts dh.pub_key.to_s(16)
 			server_public_key = @socket.gets.to_i(16)
 			@shared_key = dh.compute_key(server_public_key)
-			@encryption = OpenSSL::Cipher.new(@cipher)
+			@encryption = OpenSSL::Cipher.new("AES-128-CBC")
 			@encryption.encrypt
 			@encryption.key = @shared_key
-			@decryption = OpenSSL::Cipher.new(@cipher)
+			@decryption = OpenSSL::Cipher.new("AES-128-CBC")
 			@decryption.decrypt
 			@decryption.key = @shared_key
 		end
@@ -92,52 +79,29 @@ class SecureSocket
 	def close
 		@socket.close
 	end
-	
-	private
-	
-	def best_cipher(local, remote)
-		local.each do |cipher|
-			return cipher if remote.include? cipher
-		end
-		raise "No compatable ciphers"
-	end
 end
 
 class SecureServer
 	attr_reader :bind_ip
 	attr_reader :bind_port
-	attr_accessor :ciphers
 	
 	def initialize(bind_ip, bind_port)
 		@bind_ip = bind_ip
 		@bind_port = bind_port
 		@server = TCPServer.new(@bind_ip, @bind_port)
-		@ciphers = ['AES-128-CBC', 'AES-192-CBC', 'AES-256-CBC', 'CAST5-CBC', 'CAMELLIA-128-CBC', 'CAMELLIA-192-CBC', 'CAMELLIA-256-CBC']
 	end
 	
-	def accept(cipher=nil, shared_key=nil, authentication=nil)
+	def accept(shared_key=nil)
 		insecure_socket = @server.accept
-		if cipher == nil || shared_key == nil
-			ciphers_string = ""
-			@ciphers.each do |cipher|
-				ciphers_string += "#{cipher},"
-			end
-			insecure_socket.puts ciphers_string
-			cipher = insecure_socket.gets.chomp
-			if cipher == "NONE"
-				insecure_socket.close
-				raise "No compatable ciphers"
-			end
-			encryption_object = OpenSSL::Cipher.new(cipher)
-			dh_size = encryption_object.random_key.size * 64
-			dh = OpenSSL::PKey::DH.new(dh_size)
+		if shared_key == nil
+			dh = OpenSSL::PKey::DH.new(1024)
 			params = dh.to_s
 			insecure_socket.puts Base64.encode64(params).gsub("\n","")
 			client_public_key = insecure_socket.gets.to_i(16)
 			insecure_socket.puts dh.pub_key.to_s(16)
 			shared_key = dh.compute_key(client_public_key)
 		end
-		socket = SecureSocket.new(cipher, shared_key, insecure_socket)
+		socket = SecureSocket.new(shared_key, insecure_socket)
 		socket
 	end
 	
