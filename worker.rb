@@ -1,48 +1,56 @@
 require 'zlib'
 
 class Worker
+	attr_reader :state
 	attr_accessor :reset
 	attr_accessor :pause
 	attr_accessor :bind_ip
 	attr_accessor :verify
 	attr_accessor :server_ip
 	attr_accessor :multiplex_port
-	attr_accessor :buffer
+	attr_accessor :finish	
 	attr_accessor :transfer_speed
-	attr_accessor :downloaded
-	attr_accessor :finish
-	attr_reader :state
+	attr_accessor :bytes_transfered
 
 	def initialize(manager, client_semaphore, server_semaphore)
 		@manager = manager
 		@client_semaphore = client_semaphore
 		@server_semaphore = server_semaphore
-		@pause = false
-		@finish = false
-		@closed = true
-		@transfer_speed = 0
-		@downloaded = 0
 		@state = "new"
+		@reset = false
+		@pause = false
+		@bind_ip = nil
+		@verify = false
+		@server_ip = nil
+		@multiplex_port = nil
+		@finish = false
+		@transfer_speed = 0
+		@bytes_transfered = 0
+		@closed = true		
 	end
 
-	def open_socket(bind_ip, server_ip, multiplex_port)
+	def open_socket(server_ip, multiplex_port, bind_ip=nil)
 		@state = "connecting"
 		@bind_ip = bind_ip
 		@server_ip = server_ip
 		@multiplex_port = multiplex_port
-		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions (created in manager init)
 		begin
-			lhost = Socket.pack_sockaddr_in(0, @bind_ip)
-			rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
-			@socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-			@socket.bind(lhost)
-			@socket.connect(rhost)
+			if @bind_ip != nil
+				lhost = Socket.pack_sockaddr_in(0, @bind_ip)
+				rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
+				@socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+				@socket.bind(lhost)
+				@socket.connect(rhost)
+			else
+				@socket = TCPSocket.new(@server_ip, @multiplex_port)
+			end
 			@closed = false
 			return true
 		rescue
 			@closed = true
 			return false
 		end
+		# maybe exchange an initial random bytes decided at the beginning to ensure we dont overlap with other multiplexity sessions (created in manager init)
 		@state = "idle"
 	end
 	
@@ -54,6 +62,7 @@ class Worker
 		@state = "downloading"
 		@verify = verify
 		@reset = reset
+		@bytes_transfered = 0
 		loop{
 			sleep 1 until @pause == false
 			open_socket if @closed
@@ -69,7 +78,7 @@ class Worker
 			@client_semaphore.synchronize{ buffer.insert {:id => chunk_id, :data =>chunk_data} } if chunk_ok
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
-			@downloaded += chunk_size
+			@bytes_transfered += chunk_size
 			reset_socket
 		}
 		@state = "idle"
@@ -77,6 +86,7 @@ class Worker
 	
 	def serve_download
 		@state = "serving"
+		@bytes_transfered = 0
 		loop{
 			recieve_connection if closed
 			command = @socket.gets.chomp
