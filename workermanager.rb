@@ -17,10 +17,10 @@ class WorkerManager
 	
 	def add_workers(bind_ips)
 		added = 0
-		bind_ips.each do |ip|
+		bind_ips.each do |bind_ip|
 			begin
 				worker = Worker.new(self, @client_semaphore, @server_semaphore)
-				worker.open_socket(ip, @server_ip, @multiplex_port)
+				worker.open_socket(@server_ip, @multiplex_port, bind_ip)
 	#			case @state
 	#				when "serving"
 	#					@working_workers << Thread.new{ worker.serve_download }
@@ -85,7 +85,7 @@ class WorkerManager
 		@state = "idle"
 	end
 	
-	def download_file(filename, verify, reset)
+	def download_file(filename, verify=false, reset=false)
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
 		@state = "downloading"
 		# check that thats an ok file to write to

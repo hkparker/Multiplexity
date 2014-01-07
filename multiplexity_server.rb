@@ -1,11 +1,15 @@
 require 'zlib'
 require 'fileutils'
 require 'thread'
+require './securesocket'
+require './smp.rb'
+require 'openssl'
 
 class MultiplexityServer
 	def initialize(client)
 		@client = client
-		@downloading = false
+		raise "handshake failed" if handshake != true
+		process_commands
 	end
 
 	def handshake
@@ -16,47 +20,54 @@ class MultiplexityServer
 				return false
 			end
 			@client.puts "HELLO Client"
-			values = @client.gets.chomp
-			values = values.split(":")
-			@multiplex_port = values[0].to_i
-			@chunk_size = values[1].to_i
-			@client.puts "OK"
+			# check if authentication is required
+			return true
 		rescue
 			@client.close
 			return false
 		end
 	end
 
+	def authenticate_client(secret)
+		shared_secret = OpenSSL::Digest::SHA256.hexdigest "#{secret}#{@client.shared_secret}"
+		smp = SMP.new shared_secret
+		@client.puts smp.step2 @client.gets
+		@client.puts smp.step4 @client.gets
+		return smp.match
+	end
+
+
+
 	def recieve_multiplex_socket
-		socket = @multiplex_server.accept
-		@multiplex_sockets << socket
-		socket
+		#socket = @multiplex_server.accept
+		#@multiplex_sockets << socket
+		#socket
 	end
 
 	def setup_multiplex
-		@multiplex_sockets = []
-		begin
-			@multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
-		rescue
-			@client.puts "FAIL"
-			return false
-		end
-		@client.puts "OK"
-		begin
-			socket_count = @client.gets.to_i
-			socket_count.to_i.times do |i|
-				Thread.new{ recieve_multiplex_socket }
-			end
-		rescue
-			@client.puts "FAIL"
-			return false
-		end
-		@client.puts "OK"
-		@client.gets
-		Thread.list.each do |thread|
-			thread.terminate if thread != Thread.current
-		end
-		@client.puts "OK"
+		#@multiplex_sockets = []
+		#begin
+			#@multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
+		#rescue
+			#@client.puts "FAIL"
+			#return false
+		#end
+		#@client.puts "OK"
+		#begin
+			#socket_count = @client.gets.to_i
+			#socket_count.to_i.times do |i|
+				#Thread.new{ recieve_multiplex_socket }
+			#end
+		#rescue
+			#@client.puts "FAIL"
+			#return false
+		#end
+		#@client.puts "OK"
+		#@client.gets
+		#Thread.list.each do |thread|
+			#thread.terminate if thread != Thread.current
+		#end
+		#@client.puts "OK"
 	end
 
 	def process_commands
@@ -186,60 +197,60 @@ class MultiplexityServer
 		@workers = []
 		@downloading = false
 	end
-	
-	def serve_chunk(socket)
-		closed = false
-		loop {
-			if closed
-				begin
-					socket = recieve_multiplex_socket
-					closed = false
-				rescue
-					break
-				end
-			end
-			command = socket.gets.chomp
-			if command == "CLOSE"
-				@multiplex_sockets.delete socket
-				@workers.delete Thread.current
-				socket.close
-				break
-			elsif command == "GETNEXTWITHCRC"
-				add_crc = true
-			elsif command == "GETNEXT"
-				add_crc = false
-			end
-			next_chunk = nil
-			@semaphore.synchronize{ next_chunk = get_next_chunk }
-			if next_chunk == nil
-				socket.puts "DONE"
-				break
-			end
-			chunk_header = "#{next_chunk[:id]}:#{next_chunk[:data].size}"
-			chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if add_crc == true
-			socket.puts chunk_header
-			begin
-				socket.write(next_chunk[:data])
-			rescue
-				@stale << next_chunk
-				@multiplex_sockets.delete socket
-				@workers.delete Thread.current
-				socket.close
-				break
-			end
-			error = socket.gets.chomp
-			if error == "CRC MISMATCH"
-				@stale << next_chunk
-			end
-			reset = socket.gets.chomp
-			if reset == "RESET"
-				@multiplex_sockets.delete socket
-				socket.close
-				closed = true
-			end
-		}
-	end
-	
+{
+	#def serve_chunk(socket)
+		#closed = false
+		#loop {
+			#if closed
+				#begin
+					#socket = recieve_multiplex_socket
+					#closed = false
+				#rescue
+					#break
+				#end
+			#end
+			#command = socket.gets.chomp
+			#if command == "CLOSE"
+				#@multiplex_sockets.delete socket
+				#@workers.delete Thread.current
+				#socket.close
+				#break
+			#elsif command == "GETNEXTWITHCRC"
+				#add_crc = true
+			#elsif command == "GETNEXT"
+				#add_crc = false
+			#end
+			#next_chunk = nil
+			#@semaphore.synchronize{ next_chunk = get_next_chunk }
+			#if next_chunk == nil
+				#socket.puts "DONE"
+				#break
+			#end
+			#chunk_header = "#{next_chunk[:id]}:#{next_chunk[:data].size}"
+			#chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if add_crc == true
+			#socket.puts chunk_header
+			#begin
+				#socket.write(next_chunk[:data])
+			#rescue
+				#@stale << next_chunk
+				#@multiplex_sockets.delete socket
+				#@workers.delete Thread.current
+				#socket.close
+				#break
+			#end
+			#error = socket.gets.chomp
+			#if error == "CRC MISMATCH"
+				#@stale << next_chunk
+			#end
+			#reset = socket.gets.chomp
+			#if reset == "RESET"
+				#@multiplex_sockets.delete socket
+				#socket.close
+				#closed = true
+			#end
+		#}
+	#end
+}
 	def get_next_chunk
 		if @stale.size > 0
 			return stale.shift(1)

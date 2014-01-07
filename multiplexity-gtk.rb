@@ -255,9 +255,14 @@ re_authenticate_button = Gtk::Button.new("Authenticate")
 re_authenticate_button.signal_connect("clicked") {
 	# Authenticate
 }
+auth_status_label = Gtk::Label.new("Authentication status:")
+auth_status = Gtk::Label.new("Secure")
 authenticate_line.pack_start secret_label, false, false, 0
 authenticate_line.pack_start server_secret_2, false, false, 0
 authenticate_line.pack_start re_authenticate_button, false, false, 0
+authenticate_line.pack_start auth_status_label, false, false, 5
+authenticate_line.pack_start auth_status, false, false, 0
+
 
 small_options = Gtk::HBox.new(false, 0)
 verify = Gtk::CheckButton.new("CRC verify chunks")
