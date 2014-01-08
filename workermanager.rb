@@ -4,9 +4,7 @@ require './buffer.rb'
 class WorkerManager
 	attr_writer :stale_chunks	# This needs to be tested
 	
-	def initialize(server_ip, multiplex_port)
-		@server_ip = server_ip
-		@multiplex_port = multiplex_port
+	def initialize
 		@client_semaphore = Mutex.new
 		@server_semaphore = Mutex.new
 		@workers = []
@@ -15,12 +13,12 @@ class WorkerManager
 		@paused = false
 	end
 	
-	def add_workers(bind_ips)
+	def add_workers(server_ip, multiplex_port, bind_ips)
 		added = 0
 		bind_ips.each do |bind_ip|
 			begin
 				worker = Worker.new(self, @client_semaphore, @server_semaphore)
-				worker.open_socket(@server_ip, @multiplex_port, bind_ip)
+				worker.open_socket(server_ip, multiplex_port, bind_ip)
 	#			case @state
 	#				when "serving"
 	#					@working_workers << Thread.new{ worker.serve_download }
@@ -50,7 +48,7 @@ class WorkerManager
 		old_size = @workers.size
 		raise "Add workers with WorkerManager#add_workers first" if old_size == 0
 		if change > 0
-			change = add_workers Array.new(change,@workers[0].bind_ip)
+			change = add_workers (@workers[0].server_ip,@workers[0].multiplex_port,Array.new(change,@workers[0].bind_ip))
 			# add evenly across multiple IPs if there are any
 		elsif change < 0
 			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
@@ -59,20 +57,21 @@ class WorkerManager
 		old_size+change
 	end
 	
-#	def recieve_workers(count)
-#		server = TCPServer.new()
-#		waiting = []
-#		count.times do |i|
-#			worker = Worker.new(self, @client_semaphore, @server_semaphore)
-#			waiting << Thread.new{ worker.recieve_connection(server) }
-#		end
-#		waiting.each do |thread|
-#			thread.join
-#		end
-#	end
+	def recieve_workers(listen_ip, listen_port, count, sync_string)
+		server = TCPServer.new(listen_ip, listen_port)
+		waiting = []
+		count.times do |i|
+			worker = Worker.new(self, @client_semaphore, @server_semaphore)
+			waiting << Thread.new{ worker.recieve_connection(server) }
+		end
+		waiting.each do |thread|
+			thread.join
+		end
+		server.close
+	end
 	
 	def serve_file(filename)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != "idle"
 		@state = "serving"
 		@working_workers = []
 		@workers.each do |worker|
@@ -86,14 +85,12 @@ class WorkerManager
 	end
 	
 	def download_file(filename, verify=false, reset=false)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != nil
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != "idle"
 		@state = "downloading"
-		# check that thats an ok file to write to
 		buffer = Buffer.new(filename)
-		#check that there are avliable workers
 		@working_workers = []
 		@workers.each do |worker|
-			@working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }
+			@working_workers << Thread.new{ worker.process_download(buffer, verify, reset) }
 		end
 		@working_workers.each do |thread|
 			thread.join
@@ -103,7 +100,16 @@ class WorkerManager
 	end
 	
 	def get_next_chunk
-		
+		if @stale_chunks.size > 0
+			return @stale_chunks.shift(1)
+		end
+		chunk_size = get_next_chunk_size
+		if chunk_size == 0
+			return nil
+		else
+			@id += 1 # here?
+			return {:id => @id, :data => @current_file.read(chunk_size)}
+		end		
 	end
 	
 	def get_stats

@@ -312,16 +312,44 @@ status.pack_start status_top_hbox, false, false, 0
 status.pack_start status_options, true, true, 0
 ####
 
-queue_top_hbox = Gtk::HBox.new(false, 0)
+
+queue_files = Gtk::VBox.new(false, 5)
+queue_tree = Gtk::ListStore.new(String, String, String, String)
+queue_top_hbox = Gtk::HBox.new(false, 5)
 queue_label = Gtk::Label.new
 queue_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queue</span>")
-image8 = Gtk::Button.new
 queue_top_hbox.pack_start queue_label, false, false, 0
-queue.pack_start queue_top_hbox, false, false, 0
-queue.pack_start image8, true, true, 0
+files = []
+files << {:filename => "file1", :size => "2.0 MB", :direction => "up", :details => "/root/file1 ==> /home/file1"}
+files << {:filename => "file2", :size => "18 KB", :direction => "down", :details => "/home/file2 <== /root/file2"}
+files << {:filename => "file3", :size => "128 bytes", :direction => "down", :details => "/home/file3 <== /root/file3"}
+files.each do |file|
+	row = queue_tree.append()
+	row[0] = file[:filename]
+	row[1] = file[:size]
+	row[2] = file[:direction]
+	row[3] = file[:details]
+end
+queue_view = Gtk::TreeView.new(queue_tree)
+queue_view.reorderable=true
+columns = ["File Name","Size","Direction","Details"]
+columns.each_with_index do |column, i|
+	renderer = Gtk::CellRendererText.new
+	colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+	colum.resizable = true
+	queue_view.append_column(colum)
+end
+scrolled_queue = Gtk::ScrolledWindow.new
+scrolled_queue.add(queue_view)
+scrolled_queue.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+queue_files.pack_start queue_top_hbox, false, false, 0
+queue_files.pack_start_defaults(scrolled_queue)
+
+
+
 #######################
 bottom_row.pack_start status, true, true, 0
-bottom_row.pack_start queue, true, true, 0
+bottom_row.pack_start queue_files, true, true, 0
 ### End Bottom Row
 
 

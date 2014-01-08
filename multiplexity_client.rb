@@ -4,15 +4,16 @@ require 'zlib'
 require './securesocket.rb'
 require './smp.rb'
 require 'openssl'
+require './workermanager.rb'
 
 class MultiplexityClient
-	def initialize(server_ip, server_port)
+	def initialize(server_ip, server_port, authentication=nil, server_secret=nil)
 		@server_ip = server_ip
 		@server_port = server_port
-		handshake
+		handshake(authentication, server_secret)
 	end
 	
-	def handshake
+	def handshake(authentication, server_secret)
 		begin
 			@server = SecureSocket.new
 			@server.open(@server_ip, @server_port)
@@ -22,7 +23,23 @@ class MultiplexityClient
 				@server.close
 				raise "Server did not respond to hello correctly"
 			end
-			# check if authentication is required and if username:password is required
+			authentication = "ANONYMOUS" if authentication == nil
+			@server.puts authentication
+			response = @server.gets
+			if response.split(" ")[1] == "NO"
+				@server.close
+				raise "Bad username:password"
+			end
+			auth_mandatory = @server.gets
+			if auth_mandatory.split(" ")[1] == "MANDATORY"
+				if server_secret == nil
+					@server.puts "NOSECRET"
+					@server.close
+					raise "Auth mandatory but no server secret"
+				end
+				safe = authenticate_server server_secret
+				# if failed?
+			end
 		rescue
 			return false
 		end
@@ -34,51 +51,22 @@ class MultiplexityClient
 		shared_secret = OpenSSL::Digest::SHA256.hexdigest "#{secret}#{@server.shared_secret}"
 		smp = SMP.new shared_secret
 		@server.puts smp.step1
-		@server.puts smp.step3 @server.gets
+		@server.puts(smp.step3(@server.gets))
 		smp.step5 @server.gets
 		return smp.match
 	end
 	
-	def create_imux_session
-		# create new worker manager, make connections
+	def create_imux_session(server_ip, multiplex_port, bind_ips)
+		# communicate with the sever about how many are going to open
+		@manager = WorkerManager.new
+		@manager.add_workers (server_ip, multiplex_port,bind_ips)
 	end
 	
-	
-{
-	#def create_multiplex_socket(bind_ip)
-		#begin
-			#lhost = Socket.pack_sockaddr_in(0, bind_ip)
-			#rhost = Socket.pack_sockaddr_in(@multiplex_port, @server_ip)
-			#socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-			#socket.bind(lhost)
-			#socket.connect(rhost)
-			#@multiplex_sockets << socket
-		#rescue
-		#end
-		#socket
-	#end
-
-	#def setup_multiplex(bind_ips)
-		#@multiplex_sockets = []
-		#if @server.gets.chomp != "OK"
-			#return false
-		#end
-		#@server.puts bind_ips.size
-		#if @server.gets.chomp != "OK"
-			#return false
-		#end	
-		#bind_threads = []
-		#bind_ips.each do |bind_ip|
-			#bind_threads << Thread.new{create_multiplex_socket(bind_ip)}
-		#end
-		#bind_threads.each do |thread|
-			#thread.join if thread != Thread.current
-		#end
-		#@server.puts "OK"
-		#@server.gets
-		#@multiplex_sockets.size
-	#end
-}
+	def recieve_imux_session(listen_ip, listen_port, count, sync_string)
+		# communicate with the client about what the sync string is
+		@manager = WorkerManager.new
+		recieve_workers(listen_ip, listen_port, count, sync_string)
+	end
 	
 	
 	
@@ -130,112 +118,14 @@ class MultiplexityClient
 	end
 	
 	def download_file(file, verify, reset)
-		#@downloaded = 0
-		#@workers = []
-		#@semaphore = Mutex.new
-		#@verify = verify
-		#@server.puts "download #{file}"
-		#busy = @server.gets.to_i
-		#if busy == 1
-			#raise "Server is current processing another transfer"
-		#end
-		#readable = @server.gets.to_i
-		#if readable == 1
-			#raise "Remote file is not readable"
-		#end
-		#@buffer = Buffer.new(file)
-		#@server.gets
-		#@multiplex_sockets.each_with_index do |socket, i|
-			#@workers << Thread.new{get_next_chunk(socket, verify, reset)}
-		#end
-		#@workers.each do |thread|
-			#thread.join
-		#end
-		#@workers = []
+	
 	end
 	
-{
-	#def get_next_chunk(socket, verify, reset)
-		#Thread.current[:close] = false
-		#Thread.current[:reset] = reset
-		#Thread.current[:pause] = false
-		#Thread.current[:bind_ip] = socket.local_address.ip_address
-		#Thread.current[:verify] = verify
-		#closed = false
-		#loop {
-			#until Thread.current[:pause] == false
-				#sleep 1
-			#end
-			#if closed
-				#begin
-					#socket = create_multiplex_socket(Thread.current[:bind_ip])
-					#closed = false
-				#rescue
-					#break
-				#end
-			#end
-			#if Thread.current[:close] == true
-				#socket.puts "CLOSE"
-				#@multiplex_sockets.delete socket
-				#@workers.delete Thread.current
-				#socket.close
-				#break
-			#end
-			#if Thread.current[:verify]
-				#socket.puts "GETNEXTWITHCRC"
-				#has_crc = true
-			#else
-				#socket.puts "GETNEXT"
-				#has_crc = false
-			#end
-			#response = socket.gets.chomp
-			#if response == "DONE"
-				#break
-			#end
-			#header = response.split(":")
-			#chunk_id = header[0].to_i
-			#chunk_size = header[1].to_i
-			#if has_crc
-				#chunk_crc = header[2].to_i
-			#end
-			#start = Time.now
-			
-			#begin
-				#chunk_data = socket.read(chunk_size)
-			#rescue
-				#@multiplex_sockets.delete socket
-				#@workers.delete Thread.current
-				#socket.close
-				#break
-			#end
-			#if Thread.current[:verify] and has_crc
-				#local_crc = Zlib::crc32(chunk_data)
-				#if local_crc == chunk_crc
-					#socket.puts "CRC OK"
-					#@semaphore.synchronize{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
-				#else
-					#socket.puts "CRC MISMATCH"
-				#end
-			#else
-				#socket.puts "NO VERIFY"
-				#@semaphore.synchronize{ @buffer.insert({:id => chunk_id, :data => chunk_data}) }
-			#end
-			#time = Time.now - start
-			#Thread.current[:speed] = chunk_size / time
-			#@downloaded += chunk_size
-			#if Thread.current[:reset]
-				#socket.puts "RESET"
-				#@multiplex_sockets.delete socket
-				#socket.close
-				#closed = true
-			#else
-				#socket.puts "NORESET"
-			#end
-		#}
-	#end
-}
+	def upload_file
+	
+	end
 
-	def download_progress
+	def transfer_progress
 		
 	end
 	

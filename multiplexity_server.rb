@@ -6,7 +6,13 @@ require './smp.rb'
 require 'openssl'
 
 class MultiplexityServer
-	def initialize(client)
+	def initialize(client, allow_anonymous=false, auth_mandatory=false, server_secret=nil)
+		@allow_anonymous = allow_anonymous
+		@auth_mandatory = auth_mandatory
+		@server_secret = server_secret
+		if @auth_mandatory && @server_secret == nil
+			raise "Cannot enforce authentication without shared secret"
+		end
 		@client = client
 		raise "handshake failed" if handshake != true
 		process_commands
@@ -20,7 +26,22 @@ class MultiplexityServer
 				return false
 			end
 			@client.puts "HELLO Client"
-			# check if authentication is required
+			login = @client.gets.chomp
+			if login == "ANONYMOUS"
+				if !@allow_anonymous
+					@client.puts "Anonymous NO"
+					@client.close
+					return false
+				else
+					@client.puts "Anonymous OK"
+			else
+					login = login.split(":")
+					username = login[0]
+					password = login[1]
+					# either @client.puts "user ok" or "user no"
+			end
+			@auth_mandatory ? @client.puts("AUTH MANDATORY") : @client.puts("AUTH NOMANDATORY")
+			
 			return true
 		rescue
 			@client.close
@@ -31,43 +52,9 @@ class MultiplexityServer
 	def authenticate_client(secret)
 		shared_secret = OpenSSL::Digest::SHA256.hexdigest "#{secret}#{@client.shared_secret}"
 		smp = SMP.new shared_secret
-		@client.puts smp.step2 @client.gets
-		@client.puts smp.step4 @client.gets
+		@client.puts(smp.step2(@client.gets))
+		@client.puts(smp.step4(@client.gets))
 		return smp.match
-	end
-
-
-
-	def recieve_multiplex_socket
-		#socket = @multiplex_server.accept
-		#@multiplex_sockets << socket
-		#socket
-	end
-
-	def setup_multiplex
-		#@multiplex_sockets = []
-		#begin
-			#@multiplex_server = TCPServer.new("0.0.0.0", @multiplex_port)
-		#rescue
-			#@client.puts "FAIL"
-			#return false
-		#end
-		#@client.puts "OK"
-		#begin
-			#socket_count = @client.gets.to_i
-			#socket_count.to_i.times do |i|
-				#Thread.new{ recieve_multiplex_socket }
-			#end
-		#rescue
-			#@client.puts "FAIL"
-			#return false
-		#end
-		#@client.puts "OK"
-		#@client.gets
-		#Thread.list.each do |thread|
-			#thread.terminate if thread != Thread.current
-		#end
-		#@client.puts "OK"
 	end
 
 	def process_commands
@@ -197,60 +184,7 @@ class MultiplexityServer
 		@workers = []
 		@downloading = false
 	end
-{
-	#def serve_chunk(socket)
-		#closed = false
-		#loop {
-			#if closed
-				#begin
-					#socket = recieve_multiplex_socket
-					#closed = false
-				#rescue
-					#break
-				#end
-			#end
-			#command = socket.gets.chomp
-			#if command == "CLOSE"
-				#@multiplex_sockets.delete socket
-				#@workers.delete Thread.current
-				#socket.close
-				#break
-			#elsif command == "GETNEXTWITHCRC"
-				#add_crc = true
-			#elsif command == "GETNEXT"
-				#add_crc = false
-			#end
-			#next_chunk = nil
-			#@semaphore.synchronize{ next_chunk = get_next_chunk }
-			#if next_chunk == nil
-				#socket.puts "DONE"
-				#break
-			#end
-			#chunk_header = "#{next_chunk[:id]}:#{next_chunk[:data].size}"
-			#chunk_header += ":#{Zlib::crc32(next_chunk[:data])}" if add_crc == true
-			#socket.puts chunk_header
-			#begin
-				#socket.write(next_chunk[:data])
-			#rescue
-				#@stale << next_chunk
-				#@multiplex_sockets.delete socket
-				#@workers.delete Thread.current
-				#socket.close
-				#break
-			#end
-			#error = socket.gets.chomp
-			#if error == "CRC MISMATCH"
-				#@stale << next_chunk
-			#end
-			#reset = socket.gets.chomp
-			#if reset == "RESET"
-				#@multiplex_sockets.delete socket
-				#socket.close
-				#closed = true
-			#end
-		#}
-	#end
-}
+
 	def get_next_chunk
 		if @stale.size > 0
 			return stale.shift(1)
