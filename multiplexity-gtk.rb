@@ -217,10 +217,8 @@ queue = Gtk::VBox.new(false, 5)
 status_top_hbox = Gtk::HBox.new(false, 0)
 status_label = Gtk::Label.new
 status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
-status_options = Gtk::VBox.new(false, 0)
+status_options = Gtk::VBox.new(false, 5)
 
-
-filler = Gtk::Button.new
 
 current_file_bar = Gtk::HBox.new(false, 5)
 current_file_label = Gtk::Label.new
@@ -241,12 +239,18 @@ worker_count = Gtk::Label.new("85")
 bound_ips_count_label = Gtk::Label.new
 bound_ips_count_label.set_markup("<span weight=\"bold\">Bound IPs:</span>")
 bound_ips_count = Gtk::Label.new("4")
+state_label = Gtk::Label.new
+state_label.set_markup("<span weight=\"bold\">State:</span>")
+state = Gtk::Label.new("transferring")
+
 current_stats_bar.pack_start pool_speed_label, false, false, 0
 current_stats_bar.pack_start pool_speed, false, false, 0
 current_stats_bar.pack_start worker_count_label, false, false, 0
 current_stats_bar.pack_start worker_count, false, false, 0
 current_stats_bar.pack_start bound_ips_count_label, false, false, 0
 current_stats_bar.pack_start bound_ips_count, false, false, 0
+current_stats_bar.pack_start state_label, false, false, 0
+current_stats_bar.pack_start state, false, false, 0
 
 authenticate_line = Gtk::HBox.new(false, 0)
 secret_label = Gtk::Label.new("Secret:")
@@ -263,6 +267,15 @@ authenticate_line.pack_start re_authenticate_button, false, false, 0
 authenticate_line.pack_start auth_status_label, false, false, 5
 authenticate_line.pack_start auth_status, false, false, 0
 
+buttons_bar = Gtk::HBox.new(false, 0)
+pause_button = Gtk::Button.new("Pause")
+resume_button = Gtk::Button.new("Resume")
+cancel_button = Gtk::Button.new("Cancel Transfer")
+disconnect_button = Gtk::Button.new("Disconnect")
+buttons_bar.pack_start pause_button, false, false, 0
+buttons_bar.pack_start resume_button, false, false, 0
+buttons_bar.pack_start cancel_button, false, false, 0
+buttons_bar.pack_start disconnect_button, false, false, 0
 
 small_options = Gtk::HBox.new(false, 0)
 verify = Gtk::CheckButton.new("CRC verify chunks")
@@ -303,7 +316,7 @@ change_worker_count.pack_start change_worker_button, false, false, 0
 
 status_options.pack_start current_file_bar, false, false, 0
 status_options.pack_start current_stats_bar, false, false, 0
-status_options.pack_start filler, true, true, 0
+status_options.pack_start buttons_bar, false, false, 0
 status_options.pack_start authenticate_line, false, false, 0
 status_options.pack_start small_options, false, false, 0
 status_options.pack_start change_worker_count, false, false, 0
