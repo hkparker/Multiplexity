@@ -6,11 +6,12 @@ require './smp.rb'
 require 'openssl'
 require './workermanager.rb'
 
-class MultiplexityClient
+class Host
 	def initialize(server_ip, server_port, authentication=nil, server_secret=nil)
 		@server_ip = server_ip
 		@server_port = server_port
 		handshake(authentication, server_secret)
+		queue = []
 	end
 	
 	def handshake(authentication, server_secret)
@@ -156,3 +157,10 @@ class MultiplexityClient
 		
 	end
 end
+
+
+
+# queue management?
+# host.get_queue
+# ok, so host-specific things are accessed directly, while transfered are addressed through the manager
+# site1.get_files # => array of hashes

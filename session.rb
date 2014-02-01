@@ -5,7 +5,7 @@ require './securesocket'
 require './smp.rb'
 require 'openssl'
 
-class MultiplexityServer
+class Session
 	def initialize(client, allow_anonymous=false, auth_mandatory=false, server_secret=nil)
 		@allow_anonymous = allow_anonymous
 		@auth_mandatory = auth_mandatory

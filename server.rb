@@ -30,3 +30,8 @@ multiplex_server = MultiplexityServer.new(client)
 multiplex_server.handshake
 multiplex_server.setup_multiplex
 multiplex_server.process_commands
+
+
+class Server
+
+end
