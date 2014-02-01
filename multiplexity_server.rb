@@ -158,7 +158,7 @@ class MultiplexityServer
 		end
 	end
 
-	def serve_file(file)
+	def serve_file(file)	# needs a queue for is tranfer request while busy worker manager.
 		@downloading = true
 		@id = 0
 		begin

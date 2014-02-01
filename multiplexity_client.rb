@@ -105,8 +105,6 @@ class MultiplexityClient
 		return success
 	end
 	
-	
-	
 	def format_bytes(bytes)
 		i = 0
 		until bytes < 1024
