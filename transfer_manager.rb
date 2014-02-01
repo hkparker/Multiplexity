@@ -9,12 +9,16 @@ class TransferManager
 		@queues = []
 	end
 	
-	def add_to_queue(Transfer, position) # The UI will now have to create Transfer objects and send them to the TransferManager.  position is top(1) or bottom(0)
+	def process_queue
+		# while there are pending transfers, do them.  Thread one of these for each queue object.
+	end
+	
+	def transfer_between(source, destination, filename)
 		# ** check @queues for s:d/d:s, raise error about needing queue if not in there
-		# define queue
-		file = destination.stat_file(filename)
+		# ensure there is only one queue for two hosts
+		file = source.stat_file(filename)
 		if file[:readable]
-			queue.add(transfer)#, position?) or make position (or priority) part of the transfer object)
+			queue.add(transfer)
 		else
 			return false
 		end
@@ -23,9 +27,9 @@ class TransferManager
 		# => false	(transfer cannot start)
 	end
 	
-	def create_queue(client, server)
-		# do multiplexing here
+	def queue(client, server)
 		queue = Queue.new()		# Queue object will hold a reference to client and server host objects to call WorkerManager actions.  It will FIFO process its array or transfer objects (or hashes).
+		# do multiplexing here
 		@queues << queue
 		return queue
 	end
