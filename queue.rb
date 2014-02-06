@@ -14,6 +14,4 @@ class Queue
 	def get_next_transfer
 		@pending_transfer.shift(1)
 	end
-	
-	
 end

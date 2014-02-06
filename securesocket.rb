@@ -5,6 +5,8 @@ require 'base64'
 class SecureSocket
 	attr_reader :shared_key
 	
+	# add recycle method?
+	
 	def initialize(key=nil, socket=nil)
 		@socket = socket
 		@shared_key = key

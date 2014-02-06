@@ -15,7 +15,7 @@ host1 = Host.new(remote_host)
 # IMUX between hosts by creating queues
 queue = manager.queue(localhost, host1)
 # Once a queue exists, tell the manager to tranfer between hosts
-status = manager.transfer_between(localhost, host1, filename)
+status = manager.transfer_between(localhost, host1, filename)	# start queue paused?
 # See whats in the queue
 puts queue.pending
 # Pause and resume a transfer
