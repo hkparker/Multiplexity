@@ -2,118 +2,122 @@
 
 require 'gtk2'
 
-multiplexity = Gtk::Window.new("Multiplexity")
-multiplexity.signal_connect("delete_event") {
-#	puts "You are still connected.  Quit?" if connected
-	false	# yes, we can close
-#	true	# no, we can't close
+## Create a new window
+window = Gtk::Window.new("Multiplexity")
+#window.set_default_size(300,500)
+window.signal_connect("destroy") { Gtk.main_quit }
+
+
+## Hosts
+hosts = Gtk::VBox.new(false, 5)
+hosts_tree = Gtk::ListStore.new(String, String)
+hosts_top_hbox = Gtk::HBox.new(false, 0)
+hosts_label = Gtk::Label.new
+hosts_label.set_markup("<span size=\"x-large\" weight=\"bold\">Hosts</span>")
+add_host = Gtk::Button.new("+")
+add_host.signal_connect("clicked"){
+	# add a host
 }
-multiplexity.signal_connect("destroy") {
-  Gtk.main_quit
+hosts_filler = Gtk::HBox.new(true, 0)
+hosts_top_hbox.pack_start hosts_label, false, false, 0
+hosts_top_hbox.pack_start hosts_filler, true, true, 0
+hosts_top_hbox.pack_start add_host, false, false, 0
+
+host_list = []
+host_list << {:state => " ", :hostname => "localhost"}
+host_list << {:state => " ", :hostname => "host1"} 
+host_list << {:state => " ", :hostname => "host2"}
+host_list.each do |host|
+	row = hosts_tree.append()
+	row[0] = host[:state]
+	row[1] = host[:hostname]
+end
+
+hosts_view = Gtk::TreeView.new(hosts_tree)
+columns = ["","Hostname"]
+columns.each_with_index do |column, i|
+	renderer = Gtk::CellRendererText.new
+	colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+	hosts_view.append_column(colum)
+end
+
+rclick_host_menu = Gtk::Menu.new
+host_connect_item = Gtk::MenuItem.new("Connect")
+host_connect_item.signal_connect("activate") {
+	puts "connect"
 }
-
-### Top Row
-top_row = Gtk::VBox.new(false, 0)
-upper = Gtk::HBox.new(false, 0)
-lower = Gtk::HBox.new(false, 0)
-server_ip_label = Gtk::Label.new("Server:")
-server_ip_input = Gtk::Entry.new
-control_port_label = Gtk::Label.new("Port:")
-control_port_input = Gtk::Entry.new
-control_port_input.width_chars=5
-control_port_input.insert_text("8000", 0)
-multiplex_port_label = Gtk::Label.new("Multiplex Port:")
-multiplex_port_input = Gtk::Entry.new
-multiplex_port_input.width_chars=5
-multiplex_port_input.insert_text("8001", 0)
-chunk_size_label = Gtk::Label.new("Chunk Size:")
-chunk_size_input = Gtk::Entry.new
-chunk_size_input.width_chars=5
-chunk_size_input.insert_text("5", 0)
-chunk_unit = Gtk::ComboBox.new
-chunk_unit.append_text("KB")
-chunk_unit.append_text("MB")
-chunk_unit.active = 1
-socket_count_label = Gtk::Label.new("Sockets/IP:")
-socket_count_input = Gtk::Entry.new
-socket_count_input.width_chars=5
-bind_ips_input = Gtk::Entry.new
-bind_ips_input.set_sensitive false
-bind_ips_input.width_chars=12
-network_mode = Gtk::CheckButton.new("Bind IPs:")
-network_mode.signal_connect("clicked") {
-	bind_ips_input.set_sensitive !bind_ips_input.sensitive?
+host_disconnect_item = Gtk::MenuItem.new("Disconnect")
+host_disconnect_item.signal_connect("activate") {
+	puts "disconnect"
 }
-route_helper_button = Gtk::Button.new("Route helper")
-route_helper_button.signal_connect("clicked") {
-	# Launch route help guide
+host_remove_item = Gtk::MenuItem.new("Remove")
+host_remove_item.signal_connect("activate") {
+	puts "remove"
 }
+rclick_host_menu.append(host_connect_item)
+rclick_host_menu.append(host_disconnect_item)
+rclick_host_menu.append(host_remove_item)
+rclick_host_menu.show_all
+hosts_view.signal_connect("button_press_event") do |widget, event|
+	rclick_host_menu.popup(nil, nil, event.button, event.time) if event.kind_of? Gdk::EventButton and event.button == 3
+end
 
-username = Gtk::Entry.new
-login_colon = Gtk::Label.new(":")
-password = Gtk::Entry.new
-login_option = Gtk::CheckButton.new("Login")
-login_option.signal_connect("clicked") {
-	username.set_sensitive !username.sensitive?
-	password.set_sensitive !password.sensitive?
+scrolled_hosts = Gtk::ScrolledWindow.new
+scrolled_hosts.add(hosts_view)
+scrolled_hosts.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+hosts.pack_start hosts_top_hbox, false, false, 0
+hosts.pack_start_defaults(scrolled_hosts)
+## End hosts
+
+
+# Queues
+queues = Gtk::VBox.new(false, 5)
+queues_tree = Gtk::ListStore.new(String, String, String)
+queues_top_hbox = Gtk::HBox.new(false, 0)
+queues_label = Gtk::Label.new
+queues_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queues</span>")
+add_queue = Gtk::Button.new("+")
+add_queue.signal_connect("clicked"){
+	# Add a queue
 }
-login_option.active = true
-username.set_sensitive true
-password.set_sensitive true
-password.visibility=false
-server_secret = Gtk::Entry.new
-authenticate_option = Gtk::CheckButton.new("Authenticate")
-authenticate_option.signal_connect("clicked") {
-	server_secret.set_sensitive !server_secret.sensitive?
-}
-authenticate_option.active = true
-server_secret.set_sensitive true
+queue_filler = Gtk::HBox.new(true, 0)
+queues_top_hbox.pack_start queues_label, false, false, 0
+queues_top_hbox.pack_start queue_filler, true, true, 0
+queues_top_hbox.pack_start add_queue, false, false, 0
 
-log_file = Gtk::Entry.new
-log_file.insert_text("/var/log/multiplexity.log", 0)
-log_file.set_sensitive false
-log_option = Gtk::CheckButton.new("Log")
-log_option.signal_connect("clicked") {
-	log_file.set_sensitive !log_file.sensitive?
-}
-connect_button = Gtk::Button.new("Connect")
-connect_button.signal_connect("clicked") {
-	#	Connect to server
-}
-upper.pack_start server_ip_label, false, false, 0
-upper.pack_start server_ip_input, false, false, 0
-upper.pack_start control_port_label, false, false, 0
-upper.pack_start control_port_input, false, false, 0
-upper.pack_start multiplex_port_label, false, false, 0
-upper.pack_start multiplex_port_input, false, false, 0
-upper.pack_start chunk_size_label, false, false, 0
-upper.pack_start chunk_size_input, false, false, 0
-upper.pack_start chunk_unit, false, false, 0
-upper.pack_start socket_count_label, false, false, 0
-upper.pack_start socket_count_input, false, false, 0
-upper.pack_start network_mode, false, false, 0
-upper.pack_start bind_ips_input, true, true, 0
-upper.pack_start route_helper_button, false, false, 0
+queue_list = []
+queue_list << {:state => " ", :client => "localhost", :server => "host1"}
+queue_list << {:state => " ", :client => "host1",  :server => "host2"}
+queue_list << {:state => " ", :client => "localhost",  :server => "host2"}
+queue_list.each do |queue|
+	row = queues_tree.append()
+	row[0] = queue[:state]
+	row[1] = queue[:client]
+	row[2] = queue[:server]
+end
 
-lower.pack_start login_option, false, false, 0
-lower.pack_start username, false, false, 0
-lower.pack_start login_colon, false, false, 0
-lower.pack_start password, false, false, 0
-lower.pack_start authenticate_option, false, false, 0
-lower.pack_start server_secret, true, true, 0
-lower.pack_start log_option, false, false, 0
-lower.pack_start log_file, false, false, 0
-lower.pack_start connect_button, false, false, 0
+queues_view = Gtk::TreeView.new(queues_tree)
+columns = ["","Client","Server"]
+columns.each_with_index do |column, i|
+	renderer = Gtk::CellRendererText.new
+	colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+	colum.resizable = true if i > 0
+	queues_view.append_column(colum)
+end
+scrolled_queues = Gtk::ScrolledWindow.new
+scrolled_queues.add(queues_view)
+scrolled_queues.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+queues.pack_start queues_top_hbox, false, false, 0
+queues.pack_start_defaults(scrolled_queues)
+## End Queues
 
-top_row.pack_start upper, false, false, 0
-top_row.pack_start lower, false, false, 0
-### End top row
+## Tabbed section
+tabbed = Gtk::Notebook.new
+tabbed.set_size_request(600,400)
 
+queue1_box = Gtk::VBox.new(true, 5)
 
-
-
-
-### Middle Row
+### Hosts's files
 middle_row = Gtk::HBox.new(true, 10)
 local_files = Gtk::VBox.new(false, 5)
 remote_files = Gtk::VBox.new(false, 5)
@@ -122,15 +126,8 @@ local_tree = Gtk::ListStore.new(String, String, String, String, String, String)
 local_top_hbox = Gtk::HBox.new(false, 0)
 local_label = Gtk::Label.new
 local_label.set_markup("<span size=\"x-large\" weight=\"bold\">Local Files    </span>")
-#print_local_directory = Gtk::Button.new("pwd")
-#local_directory = Gtk::Entry.new
-#change_local_directory = Gtk::Button.new("cd")
 local_top_hbox.pack_start local_label, false, false, 0
-#local_top_hbox.pack_start print_local_directory, false, false, 0
-#local_top_hbox.pack_start local_directory, false, false, 0
-#local_top_hbox.pack_start change_local_directory, false, false, 0
 
-##
 files = []
 files << {:filename => "file1", :path => "/root", :size => "1 MB", :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
 files << {:filename => "file2", :path => "/root", :size => "234 KB", :type => "file", :last_write => "1/1/13 2:00 PM", :readable => "true"}
@@ -146,7 +143,7 @@ files.each do |file|
 	row[4] = file[:last_write]
 	row[5] = file[:readable]
 end
-##
+
 local_view = Gtk::TreeView.new(local_tree)
 local_view.reorderable=true
 columns = ["File Name","Path","Size","Type","Last Write","Readable"]
@@ -161,13 +158,13 @@ scrolled_local.add(local_view)
 scrolled_local.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
 local_files.pack_start local_top_hbox, false, false, 0
 local_files.pack_start_defaults(scrolled_local)
-##########
+
 remote_tree = Gtk::ListStore.new(String, String, String, String, String, String)
 remote_top_hbox = Gtk::HBox.new(false, 5)
 remote_label = Gtk::Label.new
 remote_label.set_markup("<span size=\"x-large\" weight=\"bold\">Remote Files</span>")
 remote_top_hbox.pack_start remote_label, false, false, 0
-##
+
 files = []
 files << {:filename => "file1", :path => "/root", :size => "2.0 MB", :type => "file", :last_write => "1/1/13 1:00 PM", :readable => "true"}
 files << {:filename => "file2", :path => "/root", :size => "18 KB", :type => "file", :last_write => "1/1/13 2:00 PM", :readable => "true"}
@@ -183,7 +180,7 @@ files.each do |file|
 	row[4] = file[:last_write]
 	row[5] = file[:readable]
 end
-##
+
 remote_view = Gtk::TreeView.new(remote_tree)
 remote_view.reorderable=true
 columns = ["File Name","Path","Size","Type","Last Write","Readable"]
@@ -198,27 +195,19 @@ scrolled_remote.add(remote_view)
 scrolled_remote.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
 remote_files.pack_start remote_top_hbox, false, false, 0
 remote_files.pack_start_defaults(scrolled_remote)
-#######################
+
 middle_row.pack_start local_files, true, true, 0
 middle_row.pack_start remote_files, true, true, 0
 
-
-
-
-
-
-
-
-### Bottom Row
+### Stats and Queue
 bottom_row = Gtk::HBox.new(true, 10)
 status = Gtk::VBox.new(false, 5)
 queue = Gtk::VBox.new(false, 5)
-#######################
+
 status_top_hbox = Gtk::HBox.new(false, 0)
 status_label = Gtk::Label.new
 status_label.set_markup("<span size=\"x-large\" weight=\"bold\">Status</span>")
 status_options = Gtk::VBox.new(false, 5)
-
 
 current_file_bar = Gtk::HBox.new(false, 5)
 current_file_label = Gtk::Label.new
@@ -311,9 +300,6 @@ change_worker_count.pack_start add_bind_ip, false, false, 0
 change_worker_count.pack_start bind_ip_to_add, false, false, 0
 change_worker_count.pack_start change_worker_button, false, false, 0
 
-
-
-
 status_options.pack_start current_file_bar, false, false, 0
 status_options.pack_start current_stats_bar, false, false, 0
 status_options.pack_start buttons_bar, false, false, 0
@@ -323,8 +309,6 @@ status_options.pack_start change_worker_count, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
 status.pack_start status_options, true, true, 0
-####
-
 
 queue_files = Gtk::VBox.new(false, 5)
 queue_tree = Gtk::ListStore.new(String, String, String, String)
@@ -358,19 +342,28 @@ scrolled_queue.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
 queue_files.pack_start queue_top_hbox, false, false, 0
 queue_files.pack_start_defaults(scrolled_queue)
 
-
-
-#######################
 bottom_row.pack_start status, true, true, 0
 bottom_row.pack_start queue_files, true, true, 0
-### End Bottom Row
+### tabbed page1
 
+queue1_box.pack_start_defaults middle_row
+queue1_box.pack_start_defaults bottom_row
 
+tabbed.append_page(queue1_box, Gtk::Label.new("localhost <--> host1"))
+tabbed.append_page(Gtk::VBox.new, Gtk::Label.new("host1 <--> host2"))
+## End tabbed section
 
-all_rows = Gtk::VBox.new(false, 10)
-all_rows.pack_start top_row, false, false, 0
-all_rows.pack_start middle_row, true, true, 0
-all_rows.pack_start bottom_row, true, true, 0
-multiplexity.add(all_rows)
-multiplexity.show_all
+## Create new vbox for left side
+vbox = Gtk::VBox.new(true, 0)
+vbox.set_size_request(300,400)
+vbox.pack_start hosts, true, true, 0
+vbox.pack_start queues, true, true, 0
+
+## Create new hbox for left and tabbed
+hbox = Gtk::HBox.new(false, 0)
+hbox.pack_start vbox, false, false, 0
+hbox.pack_start tabbed, true, true, 0
+## Add hbox to window and start GTK
+window.add(hbox)
+window.show_all
 Gtk.main
