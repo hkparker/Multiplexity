@@ -4,7 +4,7 @@ require 'gtk2'
 
 ## Create a new window
 window = Gtk::Window.new("Multiplexity")
-#window.set_default_size(300,500)
+window.set_default_size(1300,700)
 window.signal_connect("destroy") { Gtk.main_quit }
 
 
@@ -113,7 +113,7 @@ queues.pack_start_defaults(scrolled_queues)
 
 ## Tabbed section
 tabbed = Gtk::Notebook.new
-tabbed.set_size_request(600,400)
+tabbed.set_size_request(900,400)
 
 queue1_box = Gtk::VBox.new(true, 5)
 
