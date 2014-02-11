@@ -101,7 +101,7 @@ class WorkerManager
 	
 	def get_next_chunk
 		if @stale_chunks.size > 0
-			return @stale_chunks.shift(1)
+			return @stale_chunks.shift
 		end
 		chunk_size = get_next_chunk_size
 		if chunk_size == 0

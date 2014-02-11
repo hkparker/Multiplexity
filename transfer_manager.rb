@@ -9,7 +9,12 @@ class TransferManager
 		@queues = []
 	end
 	
-	def process_queue
+	def process_queue(queue)
+		loop {
+			transfer = queue.get_next_transfer
+			# ensure queue is not nil.  What kind of loop to use?
+			
+		}
 		# while there are pending transfers, do them.  Thread one of these for each queue object.
 	end
 	

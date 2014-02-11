@@ -187,7 +187,7 @@ class Session
 
 	def get_next_chunk
 		if @stale.size > 0
-			return stale.shift(1)
+			return stale.shift
 		end
 		chunk_size = get_size
 		if chunk_size == 0

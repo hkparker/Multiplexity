@@ -113,7 +113,7 @@ queues.pack_start_defaults(scrolled_queues)
 
 ## Tabbed section
 tabbed = Gtk::Notebook.new
-tabbed.set_size_request(900,400)
+tabbed.set_size_request(1000,500)
 
 queue1_box = Gtk::VBox.new(true, 5)
 
@@ -354,10 +354,12 @@ tabbed.append_page(Gtk::VBox.new, Gtk::Label.new("host1 <--> host2"))
 ## End tabbed section
 
 ## Create new vbox for left side
-vbox = Gtk::VBox.new(true, 0)
+vbox = Gtk::VBox.new(false, 0)
 vbox.set_size_request(300,400)
+settings = Gtk::Button.new("Settings")
 vbox.pack_start hosts, true, true, 0
 vbox.pack_start queues, true, true, 0
+vbox.pack_start settings, false, false, 0
 
 ## Create new hbox for left and tabbed
 hbox = Gtk::HBox.new(false, 0)

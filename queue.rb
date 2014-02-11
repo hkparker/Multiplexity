@@ -1,9 +1,10 @@
 class Queue
 	attr_reader :pending
+	
 
 	def initialize(client, server)
 		@state = "new"
-		@pending = []
+		@pending = []	# {:filename => "", :source => "", :destination => "" }
 	end
 	
 	def create_imux_session
@@ -12,6 +13,6 @@ class Queue
 	end
 	
 	def get_next_transfer
-		@pending_transfer.shift(1)
+		@pending.shift
 	end
 end

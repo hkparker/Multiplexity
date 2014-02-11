@@ -59,3 +59,21 @@ host1.close # disconnect control socket, close any queues involving it unless th
 #		add_workers
 #		clear
 #
+
+
+
+# Other Idea:
+
+
+
+# localhost = Localhost.new
+
+#class Localhost < Host
+#	def initialize
+		# copy Host's init but fill in params
+#	end
+#end
+
+#box = Host.new("box.net","hayden","password") # no imux settings, just control socket
+
+#queue = Queue.new(host1, host2, imus settings) # Maybe make imux settings its own object?  Like IMUXConfig.new(socket count, ) # 
