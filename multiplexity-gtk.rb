@@ -228,9 +228,6 @@ worker_count = Gtk::Label.new("85")
 bound_ips_count_label = Gtk::Label.new
 bound_ips_count_label.set_markup("<span weight=\"bold\">Bound IPs:</span>")
 bound_ips_count = Gtk::Label.new("4")
-state_label = Gtk::Label.new
-state_label.set_markup("<span weight=\"bold\">State:</span>")
-state = Gtk::Label.new("transferring")
 
 current_stats_bar.pack_start pool_speed_label, false, false, 0
 current_stats_bar.pack_start pool_speed, false, false, 0
@@ -238,8 +235,6 @@ current_stats_bar.pack_start worker_count_label, false, false, 0
 current_stats_bar.pack_start worker_count, false, false, 0
 current_stats_bar.pack_start bound_ips_count_label, false, false, 0
 current_stats_bar.pack_start bound_ips_count, false, false, 0
-current_stats_bar.pack_start state_label, false, false, 0
-current_stats_bar.pack_start state, false, false, 0
 
 authenticate_line = Gtk::HBox.new(false, 0)
 secret_label = Gtk::Label.new("Secret:")
@@ -267,10 +262,8 @@ buttons_bar.pack_start cancel_button, false, false, 0
 buttons_bar.pack_start disconnect_button, false, false, 0
 
 small_options = Gtk::HBox.new(false, 0)
-verify = Gtk::CheckButton.new("CRC verify chunks")
-recycle = Gtk::CheckButton.new("Recycle sockets")
-small_options.pack_start verify, false, false, 0
-small_options.pack_start recycle, false, false, 0
+recycle_sockets = Gtk::CheckButton.new("Recycle sockets")
+small_options.pack_start recycle_sockets, false, false, 0
 
 change_worker_count = Gtk::HBox.new
 add_or_remove = Gtk::ComboBox.new
