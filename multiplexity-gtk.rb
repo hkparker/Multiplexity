@@ -228,6 +228,7 @@ worker_count = Gtk::Label.new("85")
 bound_ips_count_label = Gtk::Label.new
 bound_ips_count_label.set_markup("<span weight=\"bold\">Bound IPs:</span>")
 bound_ips_count = Gtk::Label.new("4")
+recycle_sockets = Gtk::CheckButton.new("Recycle sockets")
 
 current_stats_bar.pack_start pool_speed_label, false, false, 0
 current_stats_bar.pack_start pool_speed, false, false, 0
@@ -235,34 +236,9 @@ current_stats_bar.pack_start worker_count_label, false, false, 0
 current_stats_bar.pack_start worker_count, false, false, 0
 current_stats_bar.pack_start bound_ips_count_label, false, false, 0
 current_stats_bar.pack_start bound_ips_count, false, false, 0
+current_stats_bar.pack_start recycle_sockets, false, false, 0
 
-authenticate_line = Gtk::HBox.new(false, 0)
-secret_label = Gtk::Label.new("Secret:")
-server_secret_2 = Gtk::Entry.new
-re_authenticate_button = Gtk::Button.new("Authenticate")
-re_authenticate_button.signal_connect("clicked") {
-	# Authenticate
-}
-auth_status_label = Gtk::Label.new("Authentication status:")
-auth_status = Gtk::Label.new("Secure")
-authenticate_line.pack_start secret_label, false, false, 0
-authenticate_line.pack_start server_secret_2, false, false, 0
-authenticate_line.pack_start re_authenticate_button, false, false, 0
-authenticate_line.pack_start auth_status_label, false, false, 5
-authenticate_line.pack_start auth_status, false, false, 0
 
-buttons_bar = Gtk::HBox.new(false, 0)
-process_queue = Gtk::CheckButton.new("Process Queue")
-empty_queue = Gtk::Button.new("Empty queue")
-disconnect_button = Gtk::Button.new("Disconnect")
-recycle_sockets = Gtk::CheckButton.new("Recycle sockets")
-buttons_bar.pack_start process_queue, false, false, 0
-buttons_bar.pack_start empty_queue, false, false, 0
-buttons_bar.pack_start disconnect_button, false, false, 0
-buttons_bar.pack_start recycle_sockets, false, false, 0
-
-#small_options = Gtk::HBox.new(false, 0)
-#small_options.pack_start recycle_sockets, false, false, 0
 
 change_worker_count = Gtk::HBox.new
 add_or_remove = Gtk::ComboBox.new
@@ -281,7 +257,7 @@ bind_ip_to_add.set_sensitive false
 add_bind_ip.signal_connect("clicked") {
 	bind_ip_to_add.set_sensitive !bind_ip_to_add.sensitive?
 }
-change_worker_button = Gtk::Button.new("Do it")
+change_worker_button = Gtk::Button.new("Ok")
 change_worker_button.signal_connect("clicked") {
 	# Add or remove the number of workers
 }
@@ -302,8 +278,6 @@ messages = Gtk::TextView.new
 
 status_options.pack_start current_file_bar, false, false, 0
 status_options.pack_start current_stats_bar, false, false, 0
-status_options.pack_start buttons_bar, false, false, 0
-status_options.pack_start authenticate_line, false, false, 0
 status_options.pack_start change_worker_count, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
@@ -318,7 +292,14 @@ queue_tree = Gtk::ListStore.new(String, String, String, String)
 queue_top_hbox = Gtk::HBox.new(false, 5)
 queue_label = Gtk::Label.new
 queue_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queue</span>")
+process_queue = Gtk::CheckButton.new("Process Queue")
+empty_queue = Gtk::Button.new("Empty queue")
 queue_top_hbox.pack_start queue_label, false, false, 0
+queue_top_hbox.pack_start process_queue, false, false, 0
+queue_top_hbox.pack_start empty_queue, false, false, 0
+
+
+# queue files
 files = []
 files << {:filename => "file1", :size => "2.0 MB", :direction => "up", :details => "/root/file1 ==> /home/file1"}
 files << {:filename => "file2", :size => "18 KB", :direction => "down", :details => "/home/file2 <== /root/file2"}
@@ -360,9 +341,11 @@ tabbed.append_page(Gtk::VBox.new, Gtk::Label.new("host1 <--> host2"))
 vbox = Gtk::VBox.new(false, 0)
 vbox.set_size_request(300,400)
 settings = Gtk::Button.new("Settings")
+route_help = Gtk::Button.new("Routing help")
 vbox.pack_start hosts, true, true, 0
 vbox.pack_start queues, true, true, 0
 vbox.pack_start settings, false, false, 0
+vbox.pack_start route_help, false, false, 0
 
 ## Create new hbox for left and tabbed
 hbox = Gtk::HBox.new(false, 0)
