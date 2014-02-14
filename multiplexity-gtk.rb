@@ -252,18 +252,17 @@ authenticate_line.pack_start auth_status_label, false, false, 5
 authenticate_line.pack_start auth_status, false, false, 0
 
 buttons_bar = Gtk::HBox.new(false, 0)
-pause_button = Gtk::Button.new("Pause")
-resume_button = Gtk::Button.new("Resume")
-cancel_button = Gtk::Button.new("Cancel Transfer")
+process_queue = Gtk::CheckButton.new("Process Queue")
+empty_queue = Gtk::Button.new("Empty queue")
 disconnect_button = Gtk::Button.new("Disconnect")
-buttons_bar.pack_start pause_button, false, false, 0
-buttons_bar.pack_start resume_button, false, false, 0
-buttons_bar.pack_start cancel_button, false, false, 0
-buttons_bar.pack_start disconnect_button, false, false, 0
-
-small_options = Gtk::HBox.new(false, 0)
 recycle_sockets = Gtk::CheckButton.new("Recycle sockets")
-small_options.pack_start recycle_sockets, false, false, 0
+buttons_bar.pack_start process_queue, false, false, 0
+buttons_bar.pack_start empty_queue, false, false, 0
+buttons_bar.pack_start disconnect_button, false, false, 0
+buttons_bar.pack_start recycle_sockets, false, false, 0
+
+#small_options = Gtk::HBox.new(false, 0)
+#small_options.pack_start recycle_sockets, false, false, 0
 
 change_worker_count = Gtk::HBox.new
 add_or_remove = Gtk::ComboBox.new
@@ -293,16 +292,27 @@ change_worker_count.pack_start add_bind_ip, false, false, 0
 change_worker_count.pack_start bind_ip_to_add, false, false, 0
 change_worker_count.pack_start change_worker_button, false, false, 0
 
+messages_top_bar = Gtk::HBox.new(false, 0)
+messages_label = Gtk::Label.new
+messages_label.set_markup("<span size=\"x-large\" weight=\"bold\">Messages</span>")
+messages_top_bar.pack_start messages_label, false, false, 0
+messages = Gtk::TextView.new
+
+
+
 status_options.pack_start current_file_bar, false, false, 0
 status_options.pack_start current_stats_bar, false, false, 0
 status_options.pack_start buttons_bar, false, false, 0
 status_options.pack_start authenticate_line, false, false, 0
-status_options.pack_start small_options, false, false, 0
 status_options.pack_start change_worker_count, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
-status.pack_start status_options, true, true, 0
+status.pack_start status_options, false, false, 0
+status.pack_start messages_top_bar, false, false, 0
+status.pack_start messages, true, true, 0
 
+
+# start queue
 queue_files = Gtk::VBox.new(false, 5)
 queue_tree = Gtk::ListStore.new(String, String, String, String)
 queue_top_hbox = Gtk::HBox.new(false, 5)
