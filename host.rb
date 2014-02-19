@@ -158,6 +158,9 @@ class Host
 	end
 end
 
+class Localhost << Host
+
+end
 
 
 # queue management?

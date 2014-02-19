@@ -1,6 +1,6 @@
 require 'thread'
 
-class FileQueue
+class FileReadQueue
 	attr_reader :filename
 	attr_accessor :read_ahead_depth # allow it to be adjusted dynamically
 	def initialize(filename,read_ahead=false,read_ahead_depth=0)
