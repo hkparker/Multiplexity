@@ -19,8 +19,7 @@ status = manager.transfer_between(localhost, host1, filename)	# start queue paus
 # See whats in the queue
 puts queue.pending
 # Pause and resume a transfer
-queue.pause
-queue.resume
+queue.process=true/false
 # Get information about a current transfer
 manager.stat_transfer(queue)
 # Calcel the current tranfer
@@ -62,18 +61,17 @@ host1.close # disconnect control socket, close any queues involving it unless th
 
 
 
-# Other Idea:
 
-
-
+:Yes
 # localhost = Localhost.new
-
 #class Localhost < Host
 #	def initialize
 		# copy Host's init but fill in params
 #	end
 #end
 
+
 #box = Host.new("box.net","hayden","password") # no imux settings, just control socket
 
-#queue = Queue.new(host1, host2, imus settings) # Maybe make imux settings its own object?  Like IMUXConfig.new(socket count, ) # 
+#queue = Queue.new(localhost, host2, imux settings) # Maybe make imux settings its own object?  Like IMUXConfig.new(socket count, ) # 
+#queue.transfer(source(Host),destination(Host),filename)

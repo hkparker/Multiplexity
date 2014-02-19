@@ -1,4 +1,4 @@
-class TransferManager
+class TransferManager			# replacing with queue
 	attr_reader :localhost
 
 	def initialize
