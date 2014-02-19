@@ -1,0 +1,3 @@
+class Localhost << Host
+
+end
