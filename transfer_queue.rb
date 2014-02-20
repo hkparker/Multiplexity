@@ -41,11 +41,17 @@ class TransferQueue
 		@process_thread = Thread.new{ process_queue } if @process_thread.status == false and @processing	# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
 	end
 	
+	#
+	#
+	#
 	def pause
 		@processing = false
 		# pause the current transfer if there is one
 	end
 	
+	#
+	#
+	#
 	def process
 		@processing = true
 		# resumme the current transfer if there is one
@@ -67,7 +73,7 @@ class TransferQueue
 	
 	#
 	# This method will run in it's own thread and preform every transfer in @pending.
-	# It assumes @pending could changed by the user between interations.
+	# It assumes @pending could be changed by the user between interations.
 	#
 	def process_queue
 		until @pending.size == 0											# The array will likely change as the thread runs, better to check its size each time then iterate

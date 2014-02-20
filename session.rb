@@ -5,6 +5,13 @@ require './securesocket'
 require './smp.rb'
 require 'openssl'
 
+#
+# This class represents the server side part of a control socket.  Sessions
+# are created by MultiplexityServers and respond to commands from a Host.
+# They send information back to the Host as well as create IMUXManagers to 
+# manage imux sessions with whoever the Host instructs.
+#
+
 class Session
 	def initialize(client, allow_anonymous=false, auth_mandatory=false, server_secret=nil)
 		@allow_anonymous = allow_anonymous

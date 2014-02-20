@@ -1,7 +1,16 @@
-require './worker.rb'
-require './buffer.rb'
+require './imux_socket.rb'
+require './file_write_buffer.rb'
 
-class WorkerManager
+#
+# This class controls instances of IMUXSocket.  It provides higher level
+# control over an inverse multiplex session, such as opening all the imux
+# sockets, adding and removing them dynamically, and providing fault
+# tolerance if one of the sockets is closed.  It can also be used to get
+# information on the status of the imux session.
+#
+
+
+class IMUXManager
 	attr_writer :stale_chunks	# This needs to be tested
 	
 	def initialize
@@ -13,7 +22,7 @@ class WorkerManager
 		@paused = false
 	end
 	
-	def add_workers(server_ip, multiplex_port, bind_ips)
+	def add_workers(server_ip, multiplex_port, bind_ips)	# going to be moved into TransferQueue
 		added = 0
 		bind_ips.each do |bind_ip|
 			begin

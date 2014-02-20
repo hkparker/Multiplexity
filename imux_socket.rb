@@ -1,6 +1,13 @@
 require 'zlib'
 
-class Worker
+#
+# This class represents a single socket used to transfer file chunks as part of
+# an inverse multiplex session.  It is controlled by an instance of IMUXManager.
+# This class controls opening, closing, or recycling the socket, as well as serving
+# or recieving chunks of a file.
+#
+
+class IMUXSocket
 	attr_reader :state
 	attr_accessor :reset
 	attr_accessor :pause

@@ -6,6 +6,14 @@ require './smp.rb'
 require 'openssl'
 require './workermanager.rb'
 
+#
+# The Host class wraps around multiplexity's control socket.  In scripts or user interfaces
+# an instance of Host can be used to list the files on the remote host and preform other
+# filesystem operations.  Hosts are also passed into TransferQueues to transfer files.
+# When a TransferQueue sets up inverse multiplexing, it uses Host's methods for opening and
+# recieving the imux sockets.
+#
+
 class Host
 	def initialize(server_ip, server_port, authentication=nil, server_secret=nil)
 		@server_ip = server_ip
@@ -116,18 +124,6 @@ class Host
 		"#{bytes} #{suffixes[i]}"
 	end
 	
-	def download_file(file, verify, reset)
-	
-	end
-	
-	def upload_file
-	
-	end
-
-	def transfer_progress
-		
-	end
-	
 	#def remove_interface(ip)
 		#raise "There are no active workers" if (defined? @workers) == nil
 		#@workers.each do |worker|
@@ -144,26 +140,11 @@ class Host
 		#end
 		#@verify = !@verify
 	end
-	
-	def change_recycling
-		
-	end
-	
-	def pause_transfer
-		
-	end
-	
-	def resume_transfer
-		
-	end
+
 end
 
 class Localhost << Host
-
+	def initialize
+	
+	end
 end
-
-
-# queue management?
-# host.get_queue
-# ok, so host-specific things are accessed directly, while transfered are addressed through the manager
-# site1.get_files # => array of hashes

@@ -1,8 +1,16 @@
 require 'thread'
 
+#
+# The FileReadQueue is used by MultiplexitySession objects to read chunks
+# of a file from disk.  It is thread safe, so each thread serving chunks
+# can use the same FileReadQueue to grab chunks.  It also supports a read
+# ahead level as an experimental feature.
+#
+
 class FileReadQueue
 	attr_reader :filename
-	attr_accessor :read_ahead_depth # allow it to be adjusted dynamically
+	attr_accessor :read_ahead_depth		# Number of chunks to cache in RAM.  Can be adjusted dynamically.  Experimental.
+	
 	def initialize(filename,read_ahead=false,read_ahead_depth=0)
 		@filename = filename
 		@read_ahead = read_ahead
@@ -17,13 +25,13 @@ class FileReadQueue
 		# use real queue
 		
 		# fork a new thread to do this: if there isn't one running already
-		(@read_ahead_depth-@chunk_queue.size).times do |i|
-			queue_next_chunk
-		end
+		
 	end
 
 	def fill_chunk_queue
-		
+		(@read_ahead_depth-@chunk_queue.size).times do |i|
+			queue_next_chunk
+		end
 	end
 
 	def queue_next_chunk
