@@ -114,12 +114,24 @@ class Host
 	#
 	# Change the chunk size the remote host is creating
 	#
-	def change_chunk_size(i)
+	def change_chunk_size(port, i)
 		@server.puts "updatechunk #{port}:#{i}"
 		success = @server.gets.to_i
 		@chunk_size = i if success == 0
 		return success	#return a boolean
 	end
+	
+	#
+	# Change if the Session recycles sockets when it downloads
+	#
+	def set_recycling(port, recycle)
+		@server.puts "setrecycle #{port}:#{recycle.to_s}"
+		return @server.gets.to_i
+	end
+	
+	##
+	## Worker operations:
+	##
 end
 
 class Localhost << Host

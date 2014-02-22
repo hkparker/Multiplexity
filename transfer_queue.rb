@@ -66,20 +66,32 @@ class TransferQueue
 	end
 
 	##
-	##	Change imux settings:
+	##	IMUX settings:
 	##
 
 	#
 	# Change the chunk size both the server and client are using to create chunks.
 	#
-	def change_chunk_size()
-		size_changed = @client.set_chunk_size()
+	def change_chunk_size(i)
+		size_changed = @client.change_chunk_size(@port, i)
 		@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed
-		size_changed = @server.set_chunk_size()
+		size_changed = @server.change_chunk_size(@port, i)
 		@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
 	end
 
-	# place other imux settings here
+	#
+	# Set socket recycling for both hosts while they download
+	#
+	def set_recycling(recycle)
+		recycling_changed = @client.set_recycling(@port, recycle)
+		@message_queue << "Could not change #{@client.peer_ip}'s recycle state to #{recycle.to_s}" if !recycling_changed
+		recycling_changed = @server.set_recycling(@port, i)
+		@message_queue << "Could not change #{@server.peer_ip}'s recycle state to #{recycle.to_s}" if !recycling_changed
+	end
+
+	##
+	## Worker operations:
+	##
 
 	private
 
