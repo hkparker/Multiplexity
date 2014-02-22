@@ -1,4 +1,5 @@
 require 'thread'
+require 'securerandom'
 
 #
 # This class is used by the user interface to create an inverse multiplexed
@@ -21,16 +22,17 @@ class TransferQueue
 		@process_thread = Thread.new{}														# Create a new thread to empty the queue
 		@message_queue = Queue.new															# UIs will access to queue to recieve messages and errors
 		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}"
+		@port = imux_config.port															# Used to identify the imux session to the multiplexity session object
 		create_imux_session(imux_config)													# Use the configuration information in imux_config to set up inverse multiplexing
 	end
-	
+
 	#
 	# This method is used by the user interface to add a tranfer to a queue.
 	# The method ensures both of the hosts are either the server or client.
 	# It then adds the tranfer to the @pending array and if the last thread
 	# used to empty the queue has finished (and we aren't paused), it starts a new one.
 	#
-	def add_transfer(source, destination, filename)
+	def add_transfer(source, destination, filename, destination_name=filename)
 		if not [@server,@client].include? source															# If the source host is not our server or client
 			raise "source host does not belong to tranfer queue"											# raise an exception to indicate we don't know the source
 		end
@@ -38,29 +40,49 @@ class TransferQueue
 			raise "destination host does not belong to tranfer queue"										# This ensures the hosts have a good imux connection, because we set it up
 		end
 		@pending << {:filename => filename, :source => source, :destination => destination}					# Add the transfer information to the queue
-		@process_thread = Thread.new{ process_queue } if @process_thread.status == false and @processing	# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
+		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
 	end
-	
+
 	#
-	#
+	# This method is used to the user interface to pause a current transfer or prevent the queue from starting
 	#
 	def pause
+		if @process_thread.status != false
+			# tell the running thread to pause its transfer
+		end
 		@processing = false
-		# pause the current transfer if there is one
 	end
-	
+
 	#
-	#
+	# This method is used by the user interface to resume transfers or start a queue
 	#
 	def process
+		if @process_thread.status == false
+			@process_thread = Thread.new{ process_queue } if @pending.size > 0
+		else
+			# tell the running thread to resume its tranfer.
+		end
 		@processing = true
-		# resumme the current transfer if there is one
-		# start the queu processor
-		
 	end
-	
+
+	##
+	##	Change imux settings:
+	##
+
+	#
+	# Change the chunk size both the server and client are using to create chunks.
+	#
+	def change_chunk_size()
+		size_changed = @client.set_chunk_size()
+		@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed
+		size_changed = @server.set_chunk_size()
+		@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
+	end
+
+	# place other imux settings here
+
 	private
-	
+
 	#
 	# This method creates an inverse multiplexed session between two hosts
 	#
@@ -70,7 +92,7 @@ class TransferQueue
 		successfully_created = @client.create_imux_session(imux_config.client_config)	# Send a command telling the client to open the imux sockets
 		raise "client could not connect to imux server" if not successfully_created		# How will I send back the number of correctly opened sockets?  Just report errors?
 	end
-	
+
 	#
 	# This method will run in it's own thread and preform every transfer in @pending.
 	# It assumes @pending could be changed by the user between interations.
@@ -88,4 +110,5 @@ class TransferQueue
 				@message_queue << "Error transferring #{transfer[:filename]} from #{transfer[:source].peer_ip} to #{transfer[:destination].peer_ip}: #{exception.to_s}"
 			end
 		end
+	end
 end

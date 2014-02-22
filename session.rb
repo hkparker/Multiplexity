@@ -63,6 +63,18 @@ class Session
 		@client.puts(smp.step4(@client.gets))
 		return smp.match
 	end
+	
+	#def create_imux_session(server_ip, multiplex_port, bind_ips)
+		## communicate with the sever about how many are going to open
+		#@manager = WorkerManager.new
+		#@manager.add_workers (server_ip, multiplex_port,bind_ips)
+	#end
+	
+	#def recieve_imux_session(listen_ip, listen_port, count, sync_string)
+		## communicate with the client about what the sync string is
+		#@manager = WorkerManager.new
+		#recieve_workers(listen_ip, listen_port, count, sync_string)
+	#end
 
 	def process_commands
 		loop{

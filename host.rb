@@ -19,7 +19,6 @@ class Host
 		@server_ip = server_ip
 		@server_port = server_port
 		handshake(authentication, server_secret)
-		queue = []
 	end
 	
 	def handshake(authentication, server_secret)
@@ -64,32 +63,30 @@ class Host
 		smp.step5 @server.gets
 		return smp.match
 	end
+
+	##
+	## Filesystem operations:
+	##
 	
-	def create_imux_session(server_ip, multiplex_port, bind_ips)
-		# communicate with the sever about how many are going to open
-		@manager = WorkerManager.new
-		@manager.add_workers (server_ip, multiplex_port,bind_ips)
-	end
-	
-	def recieve_imux_session(listen_ip, listen_port, count, sync_string)
-		# communicate with the client about what the sync string is
-		@manager = WorkerManager.new
-		recieve_workers(listen_ip, listen_port, count, sync_string)
-	end
-	
-	
-	
-	
+	#
+	# Get the working directory of the remote host
+	#
 	def get_remote_dir
 		@server.puts "pwd"
 		return @server.gets.chomp
 	end
-	
+
+	#
+	# Change the working directory on the remote host
+	#
 	def change_remote_directory(directory)
 		@server.puts "cd #{directory}"
 		return @server.gets.to_i
 	end
-	
+
+	#
+	# Get a list of files in a directory on the remote host
+	#
 	def get_remote_files(directory=".")
 		files = []
 		@server.puts "ls #{directory}"
@@ -101,50 +98,32 @@ class Host
 		end
 		files
 	end
-	
+
+	#
+	# Remove a file from the remote host
+	#
 	def delete_remote_item(item)
 		@server.puts "rm #{item}"
 		return @server.gets.to_i
 	end
-	
+
+	##
+	## IMUX settings:
+	##
+
+	#
+	# Change the chunk size the remote host is creating
+	#
 	def change_chunk_size(i)
-		@server.puts "updatechunk #{i}"
+		@server.puts "updatechunk #{port}:#{i}"
 		success = @server.gets.to_i
 		@chunk_size = i if success == 0
-		return success
+		return success	#return a boolean
 	end
-	
-	def format_bytes(bytes)
-		i = 0
-		until bytes < 1024
-			bytes = (bytes / 1024).round(1)
-			i += 1
-		end
-		suffixes = ["bytes","KB","MB","GB","TB"]
-		"#{bytes} #{suffixes[i]}"
-	end
-	
-	#def remove_interface(ip)
-		#raise "There are no active workers" if (defined? @workers) == nil
-		#@workers.each do |worker|
-			#if worker[:bind_ip] == ip
-				#worker[:close] = true
-			#end
-		#end
-	#end
-
-	
-	def change_verification
-		#@workers.each do |worker|
-			#worker[:verify] = !worker[:verify]
-		#end
-		#@verify = !@verify
-	end
-
 end
 
 class Localhost << Host
 	def initialize
-	
+		# create new multiplexity server on localhost, handshake with it, close it
 	end
 end

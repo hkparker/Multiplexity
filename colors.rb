@@ -43,3 +43,14 @@ class String
 		"Executing: ".red + self
 	end
 end
+
+
+def format_bytes(bytes)
+	i = 0
+	until bytes < 1024
+		bytes = (bytes / 1024).round(1)
+		i += 1
+	end
+	suffixes = ["bytes","KB","MB","GB","TB"]
+	"#{bytes} #{suffixes[i]}"
+end
