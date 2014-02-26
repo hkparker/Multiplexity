@@ -19,7 +19,7 @@ class IMUXSocket
 	attr_accessor :transfer_speed
 	attr_accessor :bytes_transfered
 
-	def initialize(manager, client_semaphore, server_semaphore)
+	def initialize(manager, read_semaphore, write_semaphore)
 		@manager = manager
 		@client_semaphore = client_semaphore
 		@server_semaphore = server_semaphore

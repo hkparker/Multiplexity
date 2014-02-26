@@ -1,6 +1,8 @@
 require 'openssl'
 require 'securerandom'
 
+
+
 class SMP
 	attr_reader :match
 	# Need to add proofs that neither party is using 0

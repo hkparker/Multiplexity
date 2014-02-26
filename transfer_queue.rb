@@ -24,13 +24,14 @@ class TransferQueue
 		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}"
 		@port = imux_config.port															# Used to identify the imux session to the multiplexity session object
 		create_imux_session(imux_config)													# Use the configuration information in imux_config to set up inverse multiplexing
+		@session_key = SecureRandom.hex.to_s
 	end
 
 	#
 	# This method is used by the user interface to add a tranfer to a queue.
 	# The method ensures both of the hosts are either the server or client.
 	# It then adds the tranfer to the @pending array and if the last thread
-	# used to empty the queue has finished (and we aren't paused), it starts a new one.
+	# used to empty the queue has finished, and we aren't paused, it starts a new one.
 	#
 	def add_transfer(source, destination, filename, destination_name=filename)
 		if not [@server,@client].include? source															# If the source host is not our server or client
@@ -78,7 +79,17 @@ class TransferQueue
 		size_changed = @server.change_chunk_size(@port, i)
 		@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
 	end
-
+	
+	#
+	# Set socket recycling for both hosts for this session
+	#
+	def set_recycling
+		recycling_changed = @client.set_recycling(@session_key, state)
+		@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
+		recycling_changed = @server.set_recycling(@session_key, state)
+		@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
+	end
+	
 	#
 	# Set socket recycling for both hosts while they download
 	#
@@ -88,10 +99,16 @@ class TransferQueue
 		recycling_changed = @server.set_recycling(@port, i)
 		@message_queue << "Could not change #{@server.peer_ip}'s recycle state to #{recycle.to_s}" if !recycling_changed
 	end
-
-	##
-	## Worker operations:
-	##
+	
+	#
+	# This method changes the number of workers in an imux session.  Change can be 
+	# :add or :remove, count is the number of workers, and bind_ip optionally only removes
+	# workers bound to that IP.  If no bind IP is specified it will remove evenly across all bind
+	# ips, if there are any.
+	#
+	def change_worker_count(change, count, bind_ip)
+	
+	end
 
 	private
 
@@ -99,7 +116,7 @@ class TransferQueue
 	# This method creates an inverse multiplexed session between two hosts
 	#
 	def create_imux_session(imux_config)
-		can_recieve = @server.recieve_imux_session(imux_config.server_config)			# Send a command telling the server to listen for imux sockets
+		can_recieve = @server.create_imux_session(imux_config.server_config)			# Send a command telling the server to listen for imux sockets
 		raise "server cannot recieve an imux session" if not can_recieve				# Raise an exception the server can't for any reason
 		successfully_created = @client.create_imux_session(imux_config.client_config)	# Send a command telling the client to open the imux sockets
 		raise "client could not connect to imux server" if not successfully_created		# How will I send back the number of correctly opened sockets?  Just report errors?

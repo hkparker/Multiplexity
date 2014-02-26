@@ -109,7 +109,20 @@ class Host
 
 	##
 	## IMUX settings:
+	##	These methods are used to interact with the Session's IMUXManager(s)
+	##	They are meant to be used by a transfer queue, and require the session keys
+	##	transfer queues create with each imux session.
 	##
+
+	#
+	# Tell the Session to create a new imux session with someone else
+	#
+	def create_imux_session(session_key, session)
+		@server.puts "createsession #{session}"
+		success = @server.gets.to_i
+		@chunk_size = i if success == 0
+		return success	#return a boolean
+	end
 
 	#
 	# Change the chunk size the remote host is creating
@@ -128,10 +141,6 @@ class Host
 		@server.puts "setrecycle #{port}:#{recycle.to_s}"
 		return @server.gets.to_i
 	end
-	
-	##
-	## Worker operations:
-	##
 end
 
 class Localhost << Host
