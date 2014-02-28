@@ -74,30 +74,32 @@ class TransferQueue
 	# Change the chunk size both the server and client are using to create chunks.
 	#
 	def change_chunk_size(i)
-		size_changed = @client.change_chunk_size(@port, i)
-		@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed
-		size_changed = @server.change_chunk_size(@port, i)
-		@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
+		client_change = Thread.new{
+			size_changed = @client.change_chunk_size(@port, i)
+			@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed
+		}
+		server_change = Thread.new{
+			size_changed = @server.change_chunk_size(@port, i)
+			@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
+		}
+		client_change.join
+		server_change.join
 	end
 	
 	#
 	# Set socket recycling for both hosts for this session
 	#
-	def set_recycling
-		recycling_changed = @client.set_recycling(@session_key, state)
-		@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
-		recycling_changed = @server.set_recycling(@session_key, state)
-		@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
-	end
-	
-	#
-	# Set socket recycling for both hosts while they download
-	#
-	def set_recycling(recycle)
-		recycling_changed = @client.set_recycling(@port, recycle)
-		@message_queue << "Could not change #{@client.peer_ip}'s recycle state to #{recycle.to_s}" if !recycling_changed
-		recycling_changed = @server.set_recycling(@port, i)
-		@message_queue << "Could not change #{@server.peer_ip}'s recycle state to #{recycle.to_s}" if !recycling_changed
+	def set_recycling(state)
+		client_change = Thread.new{
+			recycling_changed = @client.set_recycling(@session_key, state)
+			@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
+		}
+		server_change = Thread.new{
+			recycling_changed = @server.set_recycling(@session_key, state)
+			@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
+		}
+		client_change.join
+		server_change.join
 	end
 	
 	#
@@ -107,7 +109,16 @@ class TransferQueue
 	# ips, if there are any.
 	#
 	def change_worker_count(change, count, bind_ip)
-	
+		client_change = Thread.new{
+			worker_difference = @client.set_recycling(@session_key, change, count, bind_ip)
+			@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}"
+		}
+		server_change = Thread.new{
+			worker_difference = @server.set_recycling(@session_key, change, count, bind_ip)
+			@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}"
+		}
+		client_change.join
+		server_change.join
 	end
 
 	private
@@ -116,10 +127,10 @@ class TransferQueue
 	# This method creates an inverse multiplexed session between two hosts
 	#
 	def create_imux_session(imux_config)
-		can_recieve = @server.create_imux_session(imux_config.server_config)			# Send a command telling the server to listen for imux sockets
-		raise "server cannot recieve an imux session" if not can_recieve				# Raise an exception the server can't for any reason
-		successfully_created = @client.create_imux_session(imux_config.client_config)	# Send a command telling the client to open the imux sockets
-		raise "client could not connect to imux server" if not successfully_created		# How will I send back the number of correctly opened sockets?  Just report errors?
+		workers_opened = @server.create_imux_session(@session_key, imux_config.server_config)	# Send a command telling the server to listen for imux sockets
+		@message_queue << "#{@server.peer_ip} "
+		workers_opened = @client.create_imux_session(@session_key,, imux_config.client_config)	# Send a command telling the client to open the imux sockets
+		raise "client could not connect to imux server" if !successfully_created				# How will I send back the number of correctly opened sockets?  Just report errors?
 	end
 
 	#

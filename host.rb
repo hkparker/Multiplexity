@@ -118,28 +118,25 @@ class Host
 	# Tell the Session to create a new imux session with someone else
 	#
 	def create_imux_session(session_key, session)
-		@server.puts "createsession #{session}"
-		success = @server.gets.to_i
-		@chunk_size = i if success == 0
-		return success	#return a boolean
+		# load informatin fron session hash
+		@server.puts "createsession #{}"
+		return @server.gets.to_i
 	end
 
 	#
 	# Change the chunk size the remote host is creating
 	#
-	def change_chunk_size(port, i)
-		@server.puts "updatechunk #{port}:#{i}"
-		success = @server.gets.to_i
-		@chunk_size = i if success == 0
-		return success	#return a boolean
+	def change_chunk_size(session_key, i)
+		@server.puts "updatechunk #{session_key}:#{i}"
+		return @server.gets.to_i == 0 ? true : false
 	end
 	
 	#
 	# Change if the Session recycles sockets when it downloads
 	#
-	def set_recycling(port, recycle)
-		@server.puts "setrecycle #{port}:#{recycle.to_s}"
-		return @server.gets.to_i
+	def set_recycling(session_key, state)
+		@server.puts "setrecycle #{session_key}:#{state.to_s}"
+		return @server.gets.to_i == 0 ? true : false
 	end
 end
 
