@@ -12,7 +12,7 @@ class FileReadQueue
 	attr_reader	:read_ahread			# To check if a queue is reading ahead
 	attr_accessor :read_ahead_depth		# Number of chunks to cache in RAM.  Can be adjusted dynamically.  Experimental.
 	
-	def initialize(filename,read_ahead=false,read_ahead_depth=0)
+	def initialize(filename,starting_position=0,read_ahead=false,read_ahead_depth=0)
 		@filename = filename
 		@read_ahead = read_ahead
 		@read_ahead_depth = read_ahead_depth

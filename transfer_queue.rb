@@ -14,17 +14,16 @@ class TransferQueue
 	attr_reader :processing		# Check if the queue is paused
 	attr_reader :message_queue	# Access messages and errors
 
-	def initialize(client, server,imux_config)
+	def initialize(client, server, imux_config)
 		@pending = []																		# Create a new array of pending transfers
 		@processing = false																	# By default transfers won't start unless the queue is told to begin processing
 		@server = server																	# Create instance variables for server and client
 		@client = client
 		@process_thread = Thread.new{}														# Create a new thread to empty the queue
 		@message_queue = Queue.new															# UIs will access to queue to recieve messages and errors
-		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}"
-		@port = imux_config.port															# Used to identify the imux session to the multiplexity session object
-		create_imux_session(imux_config)													# Use the configuration information in imux_config to set up inverse multiplexing
 		@session_key = SecureRandom.hex.to_s
+		create_imux_session(imux_config)													# Use the configuration information in imux_config to set up inverse multiplexing
+		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}"
 	end
 
 	#
@@ -110,13 +109,13 @@ class TransferQueue
 	#
 	def change_worker_count(change, count, bind_ip)
 		client_change = Thread.new{
-			worker_difference = @client.set_recycling(@session_key, change, count, bind_ip)
-			@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}"
+			worker_difference = @client.change_worker_count(@session_key, change, count, bind_ip)
+			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{change}. on #{@client.peer_ip}"
 		}
-		server_change = Thread.new{
-			worker_difference = @server.set_recycling(@session_key, change, count, bind_ip)
-			@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}"
-		}
+		#server_change = Thread.new{
+			#worker_difference = @server.change_worker_count(@session_key, change, count, bind_ip)
+			#@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}"
+		#}
 		client_change.join
 		server_change.join
 	end

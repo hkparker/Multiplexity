@@ -118,8 +118,8 @@ class Host
 	# Tell the Session to create a new imux session with someone else
 	#
 	def create_imux_session(session_key, session)
-		# load informatin fron session hash
-		@server.puts "createsession #{}"
+		# load informatin fron session hash, puts open or reciece socket to correct host
+		# @server.puts "createsession #{}"
 		return @server.gets.to_i
 	end
 

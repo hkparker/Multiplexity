@@ -22,6 +22,17 @@ class Session
 		end
 		@client = client
 		raise "handshake failed" if handshake != true
+		@command_processors = {"cd" => change_dir,
+							  "ls" => send_file_list,
+							  "rm" => delete_item,
+							  "pwd" => send_pwd,
+							  "mkdir" => create_directory,
+							  "updatechunk" => change_chunk_size,
+							  "setrecycle" => set_recycling,
+							  "createsession" => create_imux_session,
+							  "verify" => authenticate_client,
+							  "closesession" => close_session
+							  }
 		process_commands
 	end
 
@@ -77,39 +88,12 @@ class Session
 	#end
 
 	def process_commands
-		loop{
+		loop {
 			command = @client.gets.chomp.split(" ")
-			case command[0]
-				when "ls"
-					send_file_list command[1]
-				when "rm"
-					delete_item command[1]
-				when "cd"
-					change_dir command[1]
-				when "pwd"
-					send_pwd
-				when "mkdir"
-					create_directory command[1]
-				when "download"
-					if @downloading
-						@client.puts "1"
-					else
-						@client.puts "0"
-						Thread.new{ serve_file command[1] }
-					end
-				when "upload"
-					
-				when "updatechunk"
-					change_chunk_size command[1]
-			#	when "updateworkers"
-			#	when "changeverification"
-			#	CONNECTTO, RECIEVEFROM (for settingup imux), get_remote_connections, sentto
-				when "halt"
-					@multiplex_sockets.each do |socket|
-						socket.close
-					end
-					@client.close
-					return 0
+			if @command_processors[command[0]] != nil
+				@command_processors[command[0]] command[1]
+			else
+				@client.puts "REQUEST NOT UNDERSTOOD"
 			end
 		}
 	end
