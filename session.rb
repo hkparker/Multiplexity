@@ -13,79 +13,27 @@ require 'openssl'
 #
 
 class Session
-	def initialize(client, allow_anonymous=false, auth_mandatory=false, server_secret=nil)
-		@allow_anonymous = allow_anonymous
-		@auth_mandatory = auth_mandatory
-		@server_secret = server_secret
-		if @auth_mandatory && @server_secret == nil
-			raise "Cannot enforce authentication without shared secret"
-		end
+	def initialize(client, shared_secret, session_key)
 		@client = client
-		raise "handshake failed" if handshake != true
-		@command_processors = {"cd" => change_dir,
-							  "ls" => send_file_list,
-							  "rm" => delete_item,
+		@shared_secret = shared_secret	# used to reauthenitcate
+		@command_processors = {"ls" => send_file_list,
 							  "pwd" => send_pwd,
+							  "cd" => change_dir,
 							  "mkdir" => create_directory,
+							  "rm" => delete_item,
+							  "createsession" => new_imux_session,
+							  "closesession" => close_imux_session,
 							  "updatechunk" => change_chunk_size,
 							  "setrecycle" => set_recycling,
-							  "createsession" => create_imux_session,
-							  "verify" => authenticate_client,
-							  "closesession" => close_session
+							  "upload" => upload,
+							  "download" => download,
+							  "verify" => authenticate_client
+							  "close" => close_session,
 							  }
 		process_commands
 	end
 
-	def handshake
-		begin
-			hello = @client.gets.chomp
-			if hello != "HELLO Multiplexity"
-				@client.close
-				return false
-			end
-			@client.puts "HELLO Client"
-			login = @client.gets.chomp
-			if login == "ANONYMOUS"
-				if !@allow_anonymous
-					@client.puts "Anonymous NO"
-					@client.close
-					return false
-				else
-					@client.puts "Anonymous OK"
-			else
-					login = login.split(":")
-					username = login[0]
-					password = login[1]
-					# either @client.puts "user ok" or "user no"
-			end
-			@auth_mandatory ? @client.puts("AUTH MANDATORY") : @client.puts("AUTH NOMANDATORY")
-			
-			return true
-		rescue
-			@client.close
-			return false
-		end
-	end
-
-	def authenticate_client(secret)
-		shared_secret = OpenSSL::Digest::SHA256.hexdigest "#{secret}#{@client.shared_secret}"
-		smp = SMP.new shared_secret
-		@client.puts(smp.step2(@client.gets))
-		@client.puts(smp.step4(@client.gets))
-		return smp.match
-	end
-	
-	#def create_imux_session(server_ip, multiplex_port, bind_ips)
-		## communicate with the sever about how many are going to open
-		#@manager = WorkerManager.new
-		#@manager.add_workers (server_ip, multiplex_port,bind_ips)
-	#end
-	
-	#def recieve_imux_session(listen_ip, listen_port, count, sync_string)
-		## communicate with the client about what the sync string is
-		#@manager = WorkerManager.new
-		#recieve_workers(listen_ip, listen_port, count, sync_string)
-	#end
+	private
 
 	def process_commands
 		loop {
@@ -97,6 +45,10 @@ class Session
 			end
 		}
 	end
+
+	##
+	## Filesystem operations
+	##
 
 	def send_file_list(directory)
 		directory = Dir.getwd if directory == nil
@@ -119,14 +71,9 @@ class Session
 		end
 		@client.puts file_list
 	end
-
-	def delete_item(item)
-		begin
-			FileUtils.rm_rf item
-			@client.puts "0"
-		rescue
-			@client.puts "1"
-		end
+	
+	def send_pwd
+		@client.puts Dir.pwd
 	end
 	
 	def change_dir(dir)
@@ -138,6 +85,52 @@ class Session
 		end
 	end
 	
+	def create_directory(directory)
+		begin
+			Dir.mkdir("#{Dir.pwd}/#{directory}")
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
+	end
+	
+	def delete_item(item)
+		begin
+			FileUtils.rm_rf item
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
+	end
+	
+	##
+	## Imux operations
+	##
+	
+	def new_imux_session(settings)
+		# based on settings, create or recieve a sessions
+	end
+	
+	def create_imux_session(server_ip, multiplex_port, bind_ips)
+		## communicate with the sever about how many are going to open
+		@manager = WorkerManager.new
+		@manager.add_workers(server_ip, multiplex_port,bind_ips)
+	end
+	
+	def recieve_imux_session(listen_ip, listen_port, count, sync_string)
+		## communicate with the client about what the sync string is
+		@manager = WorkerManager.new
+		recieve_workers(listen_ip, listen_port, count, sync_string)
+	end
+	
+	def close_imux_session
+		# close workermanager but leave control socket open
+	end
+	
+	##
+	## Imux settings
+	##
+	
 	def change_chunk_size(i)
 		begin
 			i = i.to_i
@@ -148,67 +141,58 @@ class Session
 		end
 	end
 	
-	def send_pwd
-		@client.puts Dir.pwd
+	def set_recycling
+		
 	end
 	
-	def create_directory(directory)
-		begin
-			Dir.mkdir("#{Dir.pwd}/#{directory}")
-			@client.puts "0"
-		rescue
-			@client.puts "1"
-		end
-	end
+	##
+	## Transfer operations
+	##
 
-	def serve_file(file)	# needs a queue for is tranfer request while busy worker manager.
-		@downloading = true
-		@id = 0
-		begin
-			@current_file = File.open(file, 'rb')
-			@client.puts "0"
-		rescue
-			@client.puts "1"
-			@downloading = false
-			return
-		end
-		@semaphore = Mutex.new
-		@stale = []
-		@file_remaining = File.size(file)
-		@workers = []
-		@multiplex_sockets.each do |socket|
-			@workers << Thread.new{ serve_chunk(socket) }
-		end
-		@client.puts "OK"
-		@workers.each do |thread|
-			thread.join
-		end
-		@current_file.close
-		@workers = []
-		@downloading = false
-	end
-
-	def get_next_chunk
-		if @stale.size > 0
-			return stale.shift
-		end
-		chunk_size = get_size
-		if chunk_size == 0
-			return nil
-		else
-			@id += 1
-			return {:id => @id, :data => @current_file.read(chunk_size)}
-		end
+	def upload
+		
 	end
 	
-	def get_size
-		if (@file_remaining - @chunk_size) > 0
-			size = @chunk_size
-			@file_remaining = @file_remaining - @chunk_size
-		else
-			size = @file_remaining
-			@file_remaining = 0
-		end
-		size
+	def download
+		
+	end
+	
+	#def serve_file(file)	# needs a queue for is tranfer request while busy worker manager.
+		#@downloading = true
+		#@id = 0
+		#begin
+			#@current_file = File.open(file, 'rb')
+			#@client.puts "0"
+		#rescue
+			#@client.puts "1"
+			#@downloading = false
+			#return
+		#end
+		#@semaphore = Mutex.new
+		#@stale = []
+		#@file_remaining = File.size(file)
+		#@workers = []
+		#@multiplex_sockets.each do |socket|
+			#@workers << Thread.new{ serve_chunk(socket) }
+		#end
+		#@client.puts "OK"
+		#@workers.each do |thread|
+			#thread.join
+		#end
+		#@current_file.close
+		#@workers = []
+		#@downloading = false
+	#end
+
+	##
+	## Session operations
+	##
+
+	def authenticate_client
+	
+	end
+	
+	def cloes_session
+	
 	end
 end

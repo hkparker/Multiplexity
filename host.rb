@@ -69,7 +69,7 @@ class Host
 	##
 	
 	#
-	# Get the working directory of the remote host
+	# Get the working directory of the remote host.  Returns true if successful.
 	#
 	def get_remote_dir
 		@server.puts "pwd"
@@ -77,15 +77,15 @@ class Host
 	end
 
 	#
-	# Change the working directory on the remote host
+	# Change the working directory on the remote host.  Returns true if successful.
 	#
 	def change_remote_directory(directory)
 		@server.puts "cd #{directory}"
-		return @server.gets.to_i
+		return @server.gets.to_i == 0 ? true : false
 	end
 
 	#
-	# Get a list of files in a directory on the remote host
+	# Get a list of files on the remote host as an array of hashes
 	#
 	def get_remote_files(directory=".")
 		files = []
@@ -96,7 +96,7 @@ class Host
 			line = line.split("#")
 			files << {:filename => line[0], :path => line[1], :size => line[2].to_i, :type => line[3], :last_write => line[4], :readable => line[5]}
 		end
-		files
+		return files
 	end
 
 	#
@@ -104,7 +104,7 @@ class Host
 	#
 	def delete_remote_item(item)
 		@server.puts "rm #{item}"
-		return @server.gets.to_i
+		return @server.gets.to_i == 0 ? true : false
 	end
 
 	##
