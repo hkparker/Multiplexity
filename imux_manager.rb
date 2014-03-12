@@ -83,8 +83,9 @@ class IMUXManager
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != "idle"
 		@state = "serving"
 		@working_workers = []
+		file_queue = FileReadQueue.new(filename)
 		@workers.each do |worker|
-			@working_workers << Thread.new{ worker.serve_download }
+			@working_workers << Thread.new{ worker.serve_download(file_queue) }
 		end
 		@working_workers.each do |thread|
 			thread.join

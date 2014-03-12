@@ -12,26 +12,29 @@ class FileReadQueue
 	attr_reader	:read_ahread			# To check if a queue is reading ahead
 	attr_accessor :read_ahead_depth		# Number of chunks to cache in RAM.  Can be adjusted dynamically.  Experimental.
 	
-	def initialize(filename,starting_position=0,read_ahead=false,read_ahead_depth=0)
-		@filename = filename
+	def initialize(filename, starting_position=0, read_ahead=false, read_ahead_depth=0)
+		@file = File.open(filename, 'rb')
 		@read_ahead = read_ahead
 		@read_ahead_depth = read_ahead_depth
 		if @read_ahead
 			@chunk_queue = Queue.new
 			@chunk_queue << 0
 			@chunk_queue.shift
+			@fill_thread = Thread.new{}
 		end
+		@id = 0
 		@next_chunk_semaphore = Mutex.new
 	end
 
 	def next_chunk
 		@next_chunk_semaphore.synchronize {
-			# if we are not using read ahead
-				# just read the next chunk from file
-			# if we are using read ahread
-				# grab a chunk from the queue
-				# fork a new thread to fill queue if there isn't one running already
-			#end
+			if !@read_ahead
+				return {:id => @id, :data => @file.read(chunk_size)}
+			else
+				return {:id => @id, :data => @chunk_queue.pop}
+				@fill_thread = Thread.new{ fill_chunk_queue } if @fill_thread.status == false
+			end
+			@id += 1
 		}
 	end
 
@@ -43,7 +46,6 @@ class FileReadQueue
 	end
 
 	def queue_next_chunk
-		# use instance variable for where we are in the file, and read out chunk size.  Support resuming a file transfer here.
+		@chunk_queue << @file.read(chunk_size)
 	end
-
 end

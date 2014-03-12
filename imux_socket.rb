@@ -8,18 +8,7 @@ require 'zlib'
 #
 
 class IMUXSocket
-	attr_reader :state
-	attr_accessor :reset
-	attr_accessor :pause
-	attr_accessor :bind_ip
-	attr_accessor :verify
-	attr_accessor :server_ip
-	attr_accessor :multiplex_port
-	attr_accessor :finish	
-	attr_accessor :transfer_speed
-	attr_accessor :bytes_transfered
-
-	def initialize(manager, read_semaphore, write_semaphore)
+	def initialize(manager)
 		@manager = manager
 		@client_semaphore = client_semaphore
 		@server_semaphore = server_semaphore
@@ -92,7 +81,7 @@ class IMUXSocket
 		@state = "idle"
 	end
 	
-	def serve_download
+	def serve_download(file_queue)
 		@state = "serving"
 		@bytes_transfered = 0
 		loop{
@@ -101,7 +90,7 @@ class IMUXSocket
 			break if command == "CLOSE"
 			add_crc = add_crc? command
 			next_chunk = nil
-			@server_semaphore.synchronize{ next_chunk = @manager.get_next_chunk }
+			@server_semaphore.synchronize{ next_chunk = file_queue.get_next_chunk }
 			@socket.puts "DONE"; break if next_chunk == nil
 			chunk_header = build_chunk_header(next_chunk, add_crc)
 			success = send_chunk_data(chunk_header, next_chunk)
