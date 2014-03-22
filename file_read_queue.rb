@@ -22,7 +22,7 @@ class FileReadQueue
 			@chunk_queue.shift
 			@fill_thread = Thread.new{}
 		end
-		@id = 0
+		@id = 1
 		@next_chunk_semaphore = Mutex.new
 	end
 

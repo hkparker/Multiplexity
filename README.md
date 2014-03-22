@@ -6,7 +6,7 @@ Multiplexity is an inverse multiplexer for file transfers.  Files are split into
 Current status
 --------------
 
-Ruby has given me scaling and threading issues that are difficult to track down.  While downloads are currently working well, I will likely be using either C or Go to write a production version after I'm done prototyping.
+My goal is to get a basic unencrypted prototype done in ruby, then move onto Go and C to write the final application.
 
 Multiplexity API
 ----------------
