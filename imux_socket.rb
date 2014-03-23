@@ -50,11 +50,12 @@ class IMUXSocket
 				@socket = TCPSocket.new(@peer_ip, @port)
 			end
 			@closed = false
+			@state = :idle
 			return true
 		rescue
+			@state = :failed
 			return false
 		end
-		@state = :idle
 	end
 	
 	def recieve_connection(server)
@@ -81,7 +82,7 @@ class IMUXSocket
 			chunk_data = recieve_chunk_data(chunk_size)
 			close_socket; break if chunk_data == nil	# how should I handle broken pipes here?
 			chunk_ok = verify_chunk(chunk_data, chunk_crc)
-			@manager.write_semaphore.synchronize{ buffer.insert {:id => chunk_id, :data =>chunk_data} } if chunk_ok # where does the semaphore come from?
+			@manager.write_semaphore.synchronize{ buffer.insert({:id => chunk_id, :data => chunk_data}) } if chunk_ok # where does the semaphore come from?
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
 			@bytes_transfered += chunk_size

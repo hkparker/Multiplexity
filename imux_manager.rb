@@ -1,5 +1,7 @@
-require './imux_socket.rb'
-require './file_write_buffer.rb'
+#require './imux_socket.rb'
+#require './file_write_buffer.rb'
+require 'socket'
+require 'timeout'
 
 #
 # This class controls instances of IMUXSocket.  It provides higher level
@@ -33,15 +35,15 @@ class IMUXManager
 		workers_created = 0
 		bind_ips.each do |bind_ip|
 			begin
-				worker = Worker.new(self)
+				worker = IMUXSocket.new(self)
 				worker.open_socket(peer_ip, port, bind_ip)
 				@workers << worker
 				workers_created += 1
 			rescue
 			end
 		end
-		return workers_created
 		@state = :idle
+		return workers_created
 	end
 	
 	#
@@ -58,13 +60,13 @@ class IMUXManager
 		elsif change < 0
 			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
 			socket_change = 0
-			change.times do |i|
+			change.abs.times do |i|
 				success = remove_worker(bind_ip)
 				socket_change -= 1 if success
 			end
 		end
-		return socket_change
 		@state = old_state
+		return socket_change
 	end
 	
 	#
@@ -75,11 +77,18 @@ class IMUXManager
 		server = TCPServer.new(listen_ip, listen_port)
 		waiting = []
 		count.times do |i|
-			worker = Worker.new(self)
-			waiting << Thread.new{ worker.recieve_connection(server) }
+			worker = IMUXSocket.new(self)
+			waiting << Thread.new{
+				Thread.current[:worker]  = worker
+				worker.recieve_connection(server)
+				}
 		end
 		waiting.each do |thread|
-			thread.join
+			begin
+				Timeout::timeout(5) { thread.join }
+				@workers << thread[:worker]
+			rescue
+			end
 		end
 		server.close
 		@state = :idle
@@ -150,8 +159,8 @@ class IMUXManager
 			end
 			pool_speed += worker.transfer_speed
 		end
-		return {:server_ip => @server_ip,
-				:multiplex_port => @multiplex_port,
+		return {:server_ip => @peer_ip,
+				:multiplex_port => @port,
 				:worker_count => @workers.size,
 				:idle_workers => idle_workers,
 				:connecting_workers => connecting_workers,
