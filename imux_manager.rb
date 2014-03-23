@@ -9,94 +9,106 @@ require './file_write_buffer.rb'
 # information on the status of the imux session.
 #
 
-
 class IMUXManager
-	attr_writer :stale_chunks	# This needs to be tested
+	attr_accessor :stale_chunks
 	
 	def initialize
-		@client_semaphore = Mutex.new
-		@server_semaphore = Mutex.new
 		@workers = []
 		@stale_chunks = []
-		@state = "idle"
+		@state = :new
 		@paused = false
+		@reset = false
+		@verify = false
+		@peer_ip = nil
+		@port = nil
 	end
 	
-	#def add_workers(server_ip, multiplex_port, bind_ips)	# going to be moved into TransferQueue
-		#added = 0
-		#bind_ips.each do |bind_ip|
-			#begin
-				#worker = Worker.new(self, @client_semaphore, @server_semaphore)
-				#worker.open_socket(server_ip, multiplex_port, bind_ip)
-	##			case @state
-	##				when "serving"
-	##					@working_workers << Thread.new{ worker.serve_download }
-	##				when "downloading"
-	##					@working_workers << Thread.new{ worker.process_download(verify, reset, buffer) }
-	##			end
-				#@workers << worker
-				#added += 1
-			#rescue
-			#end
-		#end
-		#return added
-	#end
+	#
+	# This method should be called only once during the creation of the IMUX session
+	#
+	def create_workers(peer_ip, port, bind_ips)
+		@state = :creating_workers
+		@peer_ip = peer_ip
+		@port = port
+		workers_created = 0
+		bind_ips.each do |bind_ip|
+			begin
+				worker = Worker.new(self)
+				worker.open_socket(peer_ip, port, bind_ip)
+				@workers << worker
+				workers_created += 1
+			rescue
+			end
+		end
+		return workers_created
+		@state = :idle
+	end
 	
-	#def remove_workers_by_ip(bind_ip, count)
-		#stopped = 0
-		#@workers.each do |worker|
-			#break if stopped == count
-			#if worker.bind_ip == bind_ip
-				#remove_worker worker
-				#stopped += 1
-			#end
-		#end
-	#end
+	#
+	# This method should be used to adjust the worker setup after the IMUX session is created
+	#
+	def change_worker_count(change, bind_ip)
+		old_state = @state
+		@state = :adjusting_workers
+		old_size = @workers.size
+		socket_change = 0
+		raise "Add workers with WorkerManager#create_workers first" if old_size == 0
+		if change > 0
+			socket_change = create_workers(@peer_ip, @port, Array.new(change, bind_ip))
+		elsif change < 0
+			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
+			socket_change = 0
+			change.times do |i|
+				success = remove_worker(bind_ip)
+				socket_change -= 1 if success
+			end
+		end
+		return socket_change
+		@state = old_state
+	end
 	
-	#def change_worker_count(change)
-		#old_size = @workers.size
-		#raise "Add workers with WorkerManager#add_workers first" if old_size == 0
-		#if change > 0
-			#change = add_workers (@workers[0].server_ip,@workers[0].multiplex_port,Array.new(change,@workers[0].bind_ip))
-			## add evenly across multiple IPs if there are any
-		#elsif change < 0
-			#raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
-			## remove even across multiple IPs if there are any
-		#end
-		#old_size+change
-	#end
-	
-	def recieve_workers(listen_ip, listen_port, count, sync_string)
+	#
+	# This method creates a server and accepts IMUX sockets
+	#
+	def recieve_workers(listen_ip, listen_port, count)
+		@state = :recieving_workers
 		server = TCPServer.new(listen_ip, listen_port)
 		waiting = []
 		count.times do |i|
-			worker = Worker.new(self, @client_semaphore, @server_semaphore)
+			worker = Worker.new(self)
 			waiting << Thread.new{ worker.recieve_connection(server) }
 		end
 		waiting.each do |thread|
 			thread.join
 		end
 		server.close
+		@state = :idle
 	end
 	
+	#
+	# This method reads a file and serves it across the workers
+	#
 	def serve_file(filename)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != "idle"
-		@state = "serving"
-		@working_workers = []
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
+		@state = :serving
+		@imux_socket_threads = []
 		file_queue = FileReadQueue.new(filename)
 		@workers.each do |worker|
-			@working_workers << Thread.new{ worker.serve_download(file_queue) }
+			@imux_socket_threads << Thread.new{ worker.serve_download(file_queue) }
 		end
-		@working_workers.each do |thread|
+		@imux_socket_threads.each do |thread|
 			thread.join
 		end
-		@working_workers = []
-		@state = "idle"
+		@imux_socket_threads = []
+		@state = :idle
 	end
 	
-	def download_file(filename, verify=false, reset=false)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != "idle"
-		@state = "downloading"
+	#
+	# This method has all the workers download chunks into a buffer
+	#
+	def download_file(filename, verify, reset)
+		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
+		@state = :downloading
 		buffer = Buffer.new(filename)
 		@working_workers = []
 		@workers.each do |worker|
@@ -109,19 +121,9 @@ class IMUXManager
 		@state = "idle"
 	end
 	
-	def get_next_chunk
-		if @stale_chunks.size > 0
-			return @stale_chunks.shift
-		end
-		chunk_size = get_next_chunk_size
-		if chunk_size == 0
-			return nil
-		else
-			@id += 1 # here?
-			return {:id => @id, :data => @current_file.read(chunk_size)}
-		end		
-	end
-	
+	#
+	# This method returns all information about the IMUXManager's state
+	#
 	def get_stats
 		idle_workers = 0
 		connecting_workers = 0
@@ -131,27 +133,22 @@ class IMUXManager
 		bound_ips = {}
 		@workers.each do |worker|
 			case worker.state
-				when "idle"
+				when :idle
 					idle_workers += 1
-				when "connecting"
+				when :connecting
 					connecting_workers += 1
-				when "downloading"
+				when :downloading
 					downloading_workers += 1
-				when "serving"
+				when :serving
 					serving_workers += 1
 			end
 			bound_ip = worker.bind_ip
-			if bound_ips.include? bound_ip
+			if bound_ips[bound_ip] != nil
 				bound_ips[bound_ip] += 1
 			elsif
-				bound_ips << bound_ip
 				bound_ips.merge!(bound_ip => 1)
 			end
 			pool_speed += worker.transfer_speed
-		end
-		bound_ips_string = ""
-		bound_ips.each_pair do |ip, count|
-			bound_ips_string += "#{ip}:#{count};"
 		end
 		return {:server_ip => @server_ip,
 				:multiplex_port => @multiplex_port,
@@ -162,7 +159,7 @@ class IMUXManager
 				:serving_workers => serving_workers,
 				:state => @state,
 				:pause => @pause,
-				:bound_ips => bound_ips_string,
+				:bound_ips => bound_ips,
 				:pool_speed => pool_speed}
 	end
 	
@@ -175,20 +172,52 @@ class IMUXManager
 	end
 	
 	def resume_workers
-		return 1 if not @paused
+		return 1 if !@paused
 		@workers.each do |worker|
 			worker.pause = false
 		end
 		@paused = false
 	end
 	
-	# methods to turn on/off crc and recycle on all workers
-	
-	private
-	
-	def remove_worker(worker)
-		worker.close_connections
-		@workers.delete worker
+	def enable_reset
+		return 1 if @reset
+		@workers.each do |worker|
+			worker.reset = true
+		end
+		@reset = true
 	end
 	
+	def disable_reset
+		return 1 if !@reset
+		@workers.each do |worker|
+			worker.reset = false
+		end
+		@reset = false
+	end
+	
+	def enable_verification
+		return 1 if @verify
+		@workers.each do |worker|
+			worker.verify = true
+		end
+		@verify = true
+	end
+	
+	def disable_verification
+		return 1 if !@verify
+		@workers.each do |worker|
+			worker.verify = false
+		end
+		@verify = false
+	end
+	
+	def remove_worker(bind_ip)
+		@workers.each do |worker|
+			if worker.bind_ip == bind_ip
+				@workers.delete worker
+				return true
+			end
+			return false
+		end
+	end
 end
