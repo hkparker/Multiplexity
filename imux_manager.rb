@@ -23,6 +23,7 @@ class IMUXManager
 		@verify = false
 		@peer_ip = nil
 		@port = nil
+		@server = nil
 	end
 	
 	#
@@ -74,13 +75,15 @@ class IMUXManager
 	#
 	def recieve_workers(listen_ip, listen_port, count)
 		@state = :recieving_workers
-		server = TCPServer.new(listen_ip, listen_port)
+		if @server == nil
+			@server = TCPServer.new(listen_ip, listen_port)
+		end
 		waiting = []
 		count.times do |i|
 			worker = IMUXSocket.new(self)
 			waiting << Thread.new{
 				Thread.current[:worker]  = worker
-				worker.recieve_connection(server)
+				worker.recieve_connection(@server)
 				}
 		end
 		waiting.each do |thread|
@@ -90,7 +93,6 @@ class IMUXManager
 			rescue
 			end
 		end
-		server.close
 		@state = :idle
 	end
 	
@@ -229,5 +231,10 @@ class IMUXManager
 			end
 			return false
 		end
+	end
+	
+	def close_session
+		@workers.each { |worker| worker.close_connection }
+		@server.close if @server != nil
 	end
 end

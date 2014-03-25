@@ -4,7 +4,7 @@ require './imux_manager.rb'
 
 class IMUXManagerTest
 	def initialize
-		@socket_count = 100
+		@socket_count = 15
 	end
 	
 	def test_can_create_unbound_session
@@ -13,6 +13,7 @@ class IMUXManagerTest
 		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
+		@server.close_session
 		return true
 	end
 
@@ -22,6 +23,7 @@ class IMUXManagerTest
 		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
+		@server.close_session
 		return true
 	end
 
@@ -34,6 +36,7 @@ class IMUXManagerTest
 		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, 10) }
 		@client.change_worker_count(10, nil)
 		recieve.join
+		@server.close_session
 		return @client.get_stats[:worker_count] == @socket_count+10
 	end
 
@@ -46,6 +49,7 @@ class IMUXManagerTest
 		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, 10) }
 		@client.change_worker_count(10, "127.0.0.1")
 		recieve.join
+		@server.close_session
 		return @client.get_stats[:worker_count] == @socket_count+10
 	end
 	
@@ -56,6 +60,7 @@ class IMUXManagerTest
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		@client.change_worker_count(-10,nil)
+		@server.close_session
 		return (@client.get_stats[:worker_count] == @socket_count-10)
 	end
 	
@@ -66,6 +71,7 @@ class IMUXManagerTest
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
 		@client.change_worker_count(-10,"127.0.0.1")
+		@server.close_session
 		return (@client.get_stats[:worker_count] == @socket_count-10)
 	end
 	
@@ -76,6 +82,7 @@ class IMUXManagerTest
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		@client.get_stats
 		@server.get_stats
+		@server.close_session
 		recieve.join
 		return true
 	end

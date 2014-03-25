@@ -31,6 +31,10 @@ class Host
 			return false
 		end
 	end
+	
+	def close
+		@control_socket.close
+	end
 
 	##
 	## Filesystem operations:
@@ -68,9 +72,17 @@ class Host
 	end
 
 	#
+	# Create a new directory on the server.  Returns true if sucessful
+	#
+	def create_directory(dir)
+		@control_socket.puts "mkdir #{dir}"
+		return @control_socket.gets.to_i == 0 ? true : false
+	end
+
+	#
 	# Remove a item from the remote host.  Returns true if sucessful
 	#
-	def delete_remote_item(item)
+	def delete_item(item)
 		@control_socket.puts "rm #{item}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
@@ -84,9 +96,9 @@ class Host
 	#
 	# Tell the Session to create a new imux session with someone else
 	#
-	def create_imux_session()
+	def create_imux_session(settings)
 		# load informatin fron session hash, puts open or reciece socket to correct host
-		# @control_socket.puts "createsession #{}"
+		@control_socket.puts "createsession #{settings}"
 		return @control_socket.gets.to_i
 	end
 
@@ -109,6 +121,10 @@ end
 
 class Localhost < Host
 	def initialize
-		# create new server on localhost, create a session, handshake with it, close it
+		server = TCPServer.new("0.0.0.0", 8000)
+		Thread.new{ Session.new(server.accept) }
+		@control_socket = TCPSocket.new("127.0.0.1", 8000)
+		@control_socket.puts "Hello Multiplexity"
+		return ("Hello Client" == @control_socket.gets.chomp)
 	end
 end

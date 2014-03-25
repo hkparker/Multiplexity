@@ -9,10 +9,12 @@ class HostSessionTest
 	end
 	
 	def test_can_connect_host_to_session
-		server = TCPServer.new("0.0.0.0", 8000)
-		Thread.new{ Session.new(server.accept) }
-		@host = Host.new("127.0.0.1", 8000)
-		return @host.handshake
+	#	server = TCPServer.new("0.0.0.0", 8000)
+	#	Thread.new{ Session.new(server.accept) }
+	#	@host = Host.new("127.0.0.1", 8000)
+	#	return @host.handshake
+		@host = Localhost.new
+		return true
 	end
 
 	def test_can_get_remote_files
@@ -27,9 +29,25 @@ class HostSessionTest
 
 	def test_can_change_directory
 		@host.change_remote_directory ".."
+		@host.change_remote_directory "multiplexity"
+		return true
+	end
+	
+	def test_can_create_directory
+		@host.create_directory "testdir"
 		return true
 	end
 
+	def test_can_remove_item
+		@host.delete_item "testdir"
+		return true
+	end
+	
+	def test_can_close_socket
+		@host.close
+		return true
+	end
+	
 end
 
 test = HostSessionTest.new
@@ -37,3 +55,6 @@ puts "test_can_connect_host_to_session => #{test.test_can_connect_host_to_sessio
 puts "test_can_get_remote_files => #{test.test_can_get_remote_files}"
 puts "test_can_get_pwd => #{test.test_can_get_pwd}"
 puts "test_can_change_directory => #{test.test_can_change_directory}"
+puts "test_can_create_directory => #{test.test_can_create_directory}"
+puts "test_can_remove_item => #{test.test_can_remove_item}"
+puts "test_can_close_socket => #{test.test_can_close_socket}"

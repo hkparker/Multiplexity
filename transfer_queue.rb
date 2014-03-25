@@ -74,11 +74,11 @@ class TransferQueue
 	#
 	def change_chunk_size(i)
 		client_change = Thread.new{
-			size_changed = @client.change_chunk_size(@port, i)
+			size_changed = @client.change_chunk_size(i)
 			@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed
 		}
 		server_change = Thread.new{
-			size_changed = @server.change_chunk_size(@port, i)
+			size_changed = @server.change_chunk_size(i)
 			@message_queue << "Could not change #{@server.peer_ip}'s chunk size to #{}" if !size_changed
 		}
 		client_change.join
@@ -90,11 +90,11 @@ class TransferQueue
 	#
 	def set_recycling(state)
 		client_change = Thread.new{
-			recycling_changed = @client.set_recycling(@session_key, state)
+			recycling_changed = @client.set_recycling(state)
 			@message_queue << "Could not set recycling to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
 		}
 		server_change = Thread.new{
-			recycling_changed = @server.set_recycling(@session_key, state)
+			recycling_changed = @server.set_recycling(state)
 			@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
 		}
 		client_change.join
@@ -108,16 +108,8 @@ class TransferQueue
 	# ips, if there are any.
 	#
 	def change_worker_count(change, count, bind_ip)
-		client_change = Thread.new{
-			worker_difference = @client.change_worker_count(@session_key, change, count, bind_ip)
-			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{change}. on #{@client.peer_ip}"
-		}
-		#server_change = Thread.new{
-			#worker_difference = @server.change_worker_count(@session_key, change, count, bind_ip)
-			#@message_queue << "Could not set recycling to #{state.to_s} on #{@server.peer_ip}"
-		#}
-		client_change.join
-		server_change.join
+		worker_difference = @client.change_worker_count(@session_key, change, count, bind_ip)
+		@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{change}. on #{@client.peer_ip}"
 	end
 
 	private
