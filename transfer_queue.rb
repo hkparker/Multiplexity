@@ -10,9 +10,9 @@ require 'securerandom'
 #
 
 class TransferQueue
-	attr_accessor :pending		# Access and modify the contents of the queue as an array
-	attr_reader :processing		# Check if the queue is paused
-	attr_reader :message_queue	# Access messages and errors
+	attr_accessor :pending			# Access and modify the contents of the queue as an array
+	attr_reader :processing			# Check if the queue is paused
+	attr_accessor :message_queue	# Access messages and errors
 
 	def initialize(client, server, imux_config)
 		@pending = []																		# Create a new array of pending transfers
@@ -128,7 +128,7 @@ class TransferQueue
 	def create_imux_session(imux_config)
 		workers_opened = @server.create_imux_session(@session_key, imux_config.server_config)	# Send a command telling the server to listen for imux sockets
 		@message_queue << "#{@server.peer_ip} "
-		workers_opened = @client.create_imux_session(@session_key,, imux_config.client_config)	# Send a command telling the client to open the imux sockets
+		workers_opened = @client.create_imux_session(@session_key, imux_config.client_config)	# Send a command telling the client to open the imux sockets
 		raise "client could not connect to imux server" if !successfully_created				# How will I send back the number of correctly opened sockets?  Just report errors?
 	end
 

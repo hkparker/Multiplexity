@@ -1,5 +1,5 @@
-#require './imux_socket.rb'
-#require './file_write_buffer.rb'
+require './imux_socket.rb'
+require './file_write_buffer.rb'
 require 'socket'
 require 'timeout'
 
@@ -85,7 +85,7 @@ class IMUXManager
 		end
 		waiting.each do |thread|
 			begin
-				Timeout::timeout(5) { thread.join }
+				Timeout::timeout(5) { thread.join }	# I dont like this -> http://stackoverflow.com/questions/231647/how-do-i-set-the-socket-timeout-in-ruby#comment4769504_231662
 				@workers << thread[:worker]
 			rescue
 			end
@@ -223,6 +223,7 @@ class IMUXManager
 	def remove_worker(bind_ip)
 		@workers.each do |worker|
 			if worker.bind_ip == bind_ip
+				worker.close_connection
 				@workers.delete worker
 				return true
 			end

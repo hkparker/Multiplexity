@@ -96,7 +96,7 @@ class IMUXSocket
 		@state = :serving
 		@bytes_transfered = 0
 		loop{
-			recieve_connection if @closed
+			recieve_connection if @closed	# server is closed at this point?
 			request = @socket.gets.chomp
 			add_crc = add_crc? request
 			chunk = nil
@@ -119,7 +119,7 @@ class IMUXSocket
 	end
 
 	def close_connection
-		@socket.close
+		@socket.close if @socket != nil
 	end
 
 	private

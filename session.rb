@@ -1,47 +1,64 @@
 require 'zlib'
 require 'fileutils'
 require 'thread'
-require './securesocket'
-require './smp.rb'
 require 'openssl'
 
 #
 # This class represents the server side part of a control socket.  Sessions
 # are created by MultiplexityServers and respond to commands from a Host.
 # They send information back to the Host as well as create IMUXManagers to 
-# manage imux sessions with whoever the Host instructs.
+# manage imux sessions with other Sessions per the Host's instructions.
 #
 
 class Session
-	def initialize(client, shared_secret, session_key)
+	def initialize(client)
 		@client = client
-		@shared_secret = shared_secret	# used to reauthenitcate
-		@command_processors = {"ls" => send_file_list,
-							  "pwd" => send_pwd,
-							  "cd" => change_dir,
-							  "mkdir" => create_directory,
-							  "rm" => delete_item,
-							  "createsession" => new_imux_session,
-							  "closesession" => close_imux_session,
-							  "updatechunk" => change_chunk_size,
-							  "setrecycle" => set_recycling,
-							  "upload" => upload,
-							  "download" => download,
-							  "verify" => authenticate_client
-							  "close" => close_session,
-							  }
+		handshake
 		process_commands
 	end
 
 	private
+	
+	def handshake
+		init = @client.gets.chomp
+		return false if init != "Hello Multiplexity"
+		@client.puts "Hello Client"
+	end
 
 	def process_commands
 		loop {
 			command = @client.gets.chomp.split(" ")
-			if @command_processors[command[0]] != nil
-				@command_processors[command[0]] command[1]
-			else
-				@client.puts "REQUEST NOT UNDERSTOOD"
+			case command[0]
+				when "ls"
+					send_file_list command[1]
+				when "pwd"
+					send_pwd
+				when "cd"
+					change_dir command[1]
+				when "mkdir"
+					create_directory command[1]
+				when "rm"
+					delete_item command[1]
+				when "createsession"
+					create_imux_session command[1]
+				when "recievesession"
+					recieve_imux_session command[1]
+				when "updatesession"
+					change_worker_count command[1]
+				when "closesession"
+					close_imux_session
+				when "updatechunk"
+					change_chunk_size command[1]
+				when "setrecycle"
+					set_recycling command[1]
+				when "upload"
+					upload command[1]
+				when "download"
+					download command[1]
+				when "close"
+					close
+				else
+					@client.puts "REQUEST NOT UNDERSTOOD"
 			end
 		}
 	end
@@ -107,24 +124,33 @@ class Session
 	## Imux operations
 	##
 	
-	def new_imux_session(settings)
-		# based on settings, create or recieve a sessions
+	def create_imux_session(settings)
+		# parse settings into peer_ip, port, socket_count, and bind_ip
+		@imux_manager = IMUXManager.new
+		begin
+			@imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
 	end
 	
-	def create_imux_session(server_ip, multiplex_port, bind_ips)
-		## communicate with the sever about how many are going to open
-		@manager = WorkerManager.new
-		@manager.add_workers(server_ip, multiplex_port,bind_ips)
+	def recieve_imux_session(settings)
+		@imux_manager = IMUXManager.new
+		begin
+			@imux_manager.recieve_workers(listen_ip, port, socket_count)
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
 	end
 	
-	def recieve_imux_session(listen_ip, listen_port, count, sync_string)
-		## communicate with the client about what the sync string is
-		@manager = WorkerManager.new
-		recieve_workers(listen_ip, listen_port, count, sync_string)
+	def change_worker_count(settings)
+		#
 	end
 	
 	def close_imux_session
-		# close workermanager but leave control socket open
+		#
 	end
 	
 	##
@@ -187,12 +213,9 @@ class Session
 	##
 	## Session operations
 	##
-
-	def authenticate_client
 	
-	end
+	def close
 	
-	def cloes_session
-	
+		Thread.current.terminate
 	end
 end
