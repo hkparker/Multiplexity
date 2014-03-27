@@ -37,7 +37,7 @@ class IMUXConfig
 		bound_ip_hash.each do |ip, count|
 			bind_ip_string += "#{ip}-#{count};"
 		end
-		return "#{bind_ip_string}:#{@port}:#{@recycle_sockets.to_s}:#{@veriy.to_s}"
+		return "#{bind_ip_string}:#{@port}:#{@recycle_sockets.to_s}:#{@verify.to_s}"
 	end
 	
 	def server_config
