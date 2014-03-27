@@ -97,8 +97,12 @@ class Host
 	# Tell the Session to create a new imux session with someone else
 	#
 	def create_imux_session(settings)
-		# load informatin fron session hash, puts open or reciece socket to correct host
 		@control_socket.puts "createsession #{settings}"
+		return @control_socket.gets.to_i
+	end
+	
+	def recieve_imux_session(settings)
+		@control_socket.puts "recievesession #{settings}"
 		return @control_socket.gets.to_i
 	end
 

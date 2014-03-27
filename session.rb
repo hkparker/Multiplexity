@@ -126,6 +126,7 @@ class Session
 	
 	def create_imux_session(settings)
 		# parse settings into peer_ip, port, socket_count, and bind_ip
+		settings = settings.split(":")
 		@imux_manager = IMUXManager.new
 		begin
 			@imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
@@ -136,6 +137,10 @@ class Session
 	end
 	
 	def recieve_imux_session(settings)
+		settings = settings.split(":")
+		listen_ip = settings[0]
+		port = settings[1]
+		socket_count = settings[2]
 		@imux_manager = IMUXManager.new
 		begin
 			@imux_manager.recieve_workers(listen_ip, port, socket_count)

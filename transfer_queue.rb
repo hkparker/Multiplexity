@@ -118,10 +118,9 @@ class TransferQueue
 	# This method creates an inverse multiplexed session between two hosts
 	#
 	def create_imux_session(imux_config)
-		workers_opened = @server.create_imux_session(@session_key, imux_config.server_config)	# Send a command telling the server to listen for imux sockets
-		@message_queue << "#{@server.peer_ip} "
-		workers_opened = @client.create_imux_session(@session_key, imux_config.client_config)	# Send a command telling the client to open the imux sockets
-		raise "client could not connect to imux server" if !successfully_created				# How will I send back the number of correctly opened sockets?  Just report errors?
+		@server.recieve_imux_session(imux_config.server_config)
+		workers_opened = @client.create_imux_session(imux_config.client_config)	# Send a command telling the client to open the imux sockets  Just report errors?
+		@message_queue << "Opened #{workers_opened} in new imux session with #{@server.peer_ip} and #{@client.peer_ip}"
 	end
 
 	#
