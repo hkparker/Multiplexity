@@ -13,6 +13,7 @@ require 'timeout'
 
 class IMUXManager
 	attr_accessor :stale_chunks
+	attr_accessor :chunk_size
 	
 	def initialize
 		@workers = []
@@ -24,6 +25,7 @@ class IMUXManager
 		@peer_ip = nil
 		@port = nil
 		@server = nil
+		@chunk_size = 0
 	end
 	
 	#
@@ -103,7 +105,7 @@ class IMUXManager
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
 		@state = :serving
 		@imux_socket_threads = []
-		file_queue = FileReadQueue.new(filename)
+		file_queue = FileReadQueue.new(filename, @chunk_size)
 		@workers.each do |worker|
 			@imux_socket_threads << Thread.new{ worker.serve_download(file_queue) }
 		end

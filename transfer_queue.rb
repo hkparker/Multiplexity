@@ -118,8 +118,8 @@ class TransferQueue
 	# This method creates an inverse multiplexed session between two hosts
 	#
 	def create_imux_session(imux_config)
-		@server.recieve_imux_session(imux_config.server_config)
-		workers_opened = @client.create_imux_session(imux_config.client_config)	# Send a command telling the client to open the imux sockets  Just report errors?
+		session_key = @server.recieve_imux_session(imux_config.server_config)
+		workers_opened = @client.create_imux_session(imux_config.client_config+session_key)
 		@message_queue << "Opened #{workers_opened} in new imux session with #{@server.peer_ip} and #{@client.peer_ip}"
 	end
 

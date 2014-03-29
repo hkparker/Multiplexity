@@ -98,12 +98,12 @@ class Host
 	#
 	def create_imux_session(settings)
 		@control_socket.puts "createsession #{settings}"
-		return @control_socket.gets.to_i
+		return @control_socket.gets.chomp
 	end
 	
 	def recieve_imux_session(settings)
 		@control_socket.puts "recievesession #{settings}"
-		return @control_socket.gets.to_i
+		return @control_socket.gets.chomp
 	end
 
 	#
@@ -129,6 +129,6 @@ class Localhost < Host
 		Thread.new{ Session.new(server.accept) }
 		@control_socket = TCPSocket.new("127.0.0.1", 8000)
 		@control_socket.puts "Hello Multiplexity"
-		return ("Hello Client" == @control_socket.gets.chomp)
+		@control_socket.gets
 	end
 end

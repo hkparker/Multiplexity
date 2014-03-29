@@ -13,6 +13,7 @@ require 'openssl'
 class Session
 	def initialize(client)
 		@client = client
+		@imux_connections = {} # stores imux managers that are looked up when doing transfers or imux adjustments
 		handshake
 		process_commands
 	end
@@ -125,14 +126,19 @@ class Session
 	##
 	
 	def create_imux_session(settings)
-		# parse settings into peer_ip, port, socket_count, and bind_ip
 		settings = settings.split(":")
-		@imux_manager = IMUXManager.new
+		bind_ip_config = settings[0]
+		port = settings[1]
+		recycle = settings[2]
+		verify = settings[3]
+		session_key = settings[4]
+		imux_manager = IMUXManager.new
+		@imux_connections.merge!(session_key => imux_manager)
 		begin
-			@imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
-			@client.puts "0"
+			workers_opened = imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
+			@client.puts "#{session_key}:#{workers_opened}"
 		rescue
-			@client.puts "1"
+			@client.puts "ERROR"
 		end
 	end
 	
@@ -141,12 +147,15 @@ class Session
 		listen_ip = settings[0]
 		port = settings[1]
 		socket_count = settings[2]
-		@imux_manager = IMUXManager.new
+		imux_manager = IMUXManager.new
+		session_key = SecureRandom.hex.to_s
+		@imux_connections.merge!(session_key => imux_manager)
+		@imux_manager.chunk_size = settings[3]
 		begin
-			@imux_manager.recieve_workers(listen_ip, port, socket_count)
-			@client.puts "0"
+			Thread.new{ imux_manager.recieve_workers(listen_ip, port, socket_count) }
+			@client.puts session_key
 		rescue
-			@client.puts "1"
+			@client.puts "ERROR"
 		end
 	end
 	
@@ -155,7 +164,7 @@ class Session
 	end
 	
 	def close_imux_session
-		#
+		@imux_manager.close_session
 	end
 	
 	##
@@ -164,8 +173,8 @@ class Session
 	
 	def change_chunk_size(i)
 		begin
-			i = i.to_i
-			@chunk_size = i
+			# need to know for which connection, send it to that imux manager's current transfer queue
+			@chunk_size = i.to_i
 			@client.puts "0"
 		rescue
 			@client.puts "1"
@@ -180,47 +189,19 @@ class Session
 	## Transfer operations
 	##
 
-	def upload
+	def upload(filename)
 		
 	end
 	
-	def download
+	def download(filename)
 		
 	end
-	
-	#def serve_file(file)	# needs a queue for is tranfer request while busy worker manager.
-		#@downloading = true
-		#@id = 0
-		#begin
-			#@current_file = File.open(file, 'rb')
-			#@client.puts "0"
-		#rescue
-			#@client.puts "1"
-			#@downloading = false
-			#return
-		#end
-		#@semaphore = Mutex.new
-		#@stale = []
-		#@file_remaining = File.size(file)
-		#@workers = []
-		#@multiplex_sockets.each do |socket|
-			#@workers << Thread.new{ serve_chunk(socket) }
-		#end
-		#@client.puts "OK"
-		#@workers.each do |thread|
-			#thread.join
-		#end
-		#@current_file.close
-		#@workers = []
-		#@downloading = false
-	#end
 
 	##
 	## Session operations
 	##
 	
 	def close
-	
 		Thread.current.terminate
 	end
 end

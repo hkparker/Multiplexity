@@ -100,7 +100,7 @@ class IMUXSocket
 			request = @socket.gets.chomp
 			add_crc = add_crc? request
 			chunk = nil
-			@server_semaphore.synchronize{ chunk = file_queue.next_chunk }	# where should the queue come from?
+			chunk = file_queue.next_chunk
 			if chunk == nil
 				@socket.puts "DONE"
 				#puts "Telling client we are out of chunks"
@@ -110,7 +110,7 @@ class IMUXSocket
 			success = send_chunk_data(chunk_header, chunk)
 			if !success
 				# puts "Chunk #{chunk[id]} is now stale"
-				@manager.stale_chunks << chunk
+				file_queue.stale_chunks << chunk
 			end
 			client_confirm_crc(chunk)
 			reset_socket_server
