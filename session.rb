@@ -126,34 +126,34 @@ class Session
 	##
 	
 	def create_imux_session(settings)
-		settings = settings.split(":")
-		bind_ip_config = settings[0]
-		port = settings[1]
-		recycle = settings[2]
-		verify = settings[3]
-		session_key = settings[4]
-		imux_manager = IMUXManager.new
-		@imux_connections.merge!(session_key => imux_manager)
 		begin
+			settings = settings.split(":")
+			bind_ip_config = settings[0]
+			port = settings[1]
+			recycle = settings[2]
+			verify = settings[3]
+			session_key = settings[4]
+			imux_manager = IMUXManager.new
+			@imux_connections.merge!(session_key => imux_manager)
 			workers_opened = imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
-			@client.puts "#{session_key}:#{workers_opened}"
+			@client.puts "#{workers_opened}"
 		rescue
 			@client.puts "ERROR"
 		end
 	end
 	
 	def recieve_imux_session(settings)
-		settings = settings.split(":")
-		listen_ip = settings[0]
-		port = settings[1]
-		socket_count = settings[2]
-		imux_manager = IMUXManager.new
-		session_key = SecureRandom.hex.to_s
-		@imux_connections.merge!(session_key => imux_manager)
-		@imux_manager.chunk_size = settings[3]
 		begin
+			settings = settings.split(":")
+			listen_ip = settings[0]
+			port = settings[1]
+			socket_count = settings[2]
+			imux_manager = IMUXManager.new
+			session_key = settings[4]
+			@imux_connections.merge!(session_key => imux_manager)
+			@imux_manager.chunk_size = settings[3]
 			Thread.new{ imux_manager.recieve_workers(listen_ip, port, socket_count) }
-			@client.puts session_key
+			@client.puts "0"
 		rescue
 			@client.puts "ERROR"
 		end
@@ -163,18 +163,20 @@ class Session
 		#
 	end
 	
-	def close_imux_session
-		@imux_manager.close_session
+	def close_imux_session(session_key)
+		@imux_connections[session_key].close_session
 	end
 	
 	##
 	## Imux settings
 	##
 	
-	def change_chunk_size(i)
+	def change_chunk_size(settings)
+		settings = settings.split(":")
+		session_key = settings[0]
+		size = settings[1]
 		begin
-			# need to know for which connection, send it to that imux manager's current transfer queue
-			@chunk_size = i.to_i
+			#@chunk_size = size.to_i # tell the imux manager?
 			@client.puts "0"
 		rescue
 			@client.puts "1"
@@ -189,11 +191,11 @@ class Session
 	## Transfer operations
 	##
 
-	def upload(filename)
+	def upload(settings)
 		
 	end
 	
-	def download(filename)
+	def download(settings)
 		
 	end
 

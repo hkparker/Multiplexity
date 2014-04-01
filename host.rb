@@ -109,8 +109,8 @@ class Host
 	#
 	# Change the chunk size the remote host is creating
 	#
-	def change_chunk_size(i)
-		@control_socket.puts "updatechunk #{i}"
+	def change_chunk_size(session_key, i)
+		@control_socket.puts "updatechunk #{session_key}:#{i}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
 	
