@@ -13,7 +13,7 @@ require 'openssl'
 class Session
 	def initialize(client)
 		@client = client
-		@imux_connections = {} # stores imux managers that are looked up when doing transfers or imux adjustments
+		@imux_connections = {}
 		handshake
 		process_commands
 	end
@@ -22,7 +22,7 @@ class Session
 	
 	def handshake
 		init = @client.gets.chomp
-		return false if init != "Hello Multiplexity"
+		raise "Connection not from a multiplexity client" if init != "Hello Multiplexity"
 		@client.puts "Hello Client"
 	end
 
@@ -44,8 +44,10 @@ class Session
 					create_imux_session command[1]
 				when "recievesession"
 					recieve_imux_session command[1]
-				when "updatesession"
-					change_worker_count command[1]
+				when "createworkers"
+					create_more_workers command[1]
+				when "recieveworkers"
+					recieve_workers command[1]
 				when "closesession"
 					close_imux_session
 				when "updatechunk"
@@ -159,7 +161,11 @@ class Session
 		end
 	end
 	
-	def change_worker_count(settings)
+	def create_more_workers(settings)
+		#
+	end
+	
+	def recieve_more_workers(settings)
 		#
 	end
 	

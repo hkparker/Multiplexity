@@ -84,7 +84,7 @@ class IMUXManager
 		count.times do |i|
 			worker = IMUXSocket.new(self)
 			waiting << Thread.new{
-				Thread.current[:worker]  = worker
+				Thread.current[:worker] = worker
 				worker.recieve_connection(@server)
 				}
 		end

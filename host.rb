@@ -106,6 +106,25 @@ class Host
 		return @control_socket.gets.chomp
 	end
 
+	def create_more_workers(settings)
+		@control_socket.puts "createworkers #{settings}"
+		return @control_socket.gets.chomp
+	end
+	
+	def recieve_more_workers(settings)
+		@control_socket.puts "recieveworkers #{settings}"
+		return @control_socket.gets.chomp
+	end
+
+	def remove_workers
+	
+	end
+
+	def close_session(settings)
+		@control_socket.puts "closesession #{settings}"
+		return @control_socket.gets.chomp
+	end
+
 	#
 	# Change the chunk size the remote host is creating
 	#

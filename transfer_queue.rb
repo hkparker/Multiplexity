@@ -33,11 +33,13 @@ class TransferQueue
 	# used to empty the queue has finished, and we aren't paused, it starts a new one.
 	#
 	def add_transfer(source, destination, filename, destination_name=filename)
-		if not [@server,@client].include? source															# If the source host is not our server or client
-			raise "source host does not belong to tranfer queue"											# raise an exception to indicate we don't know the source
+		if not [@server,@client].include? source
+			@message_queue << "Source is not part of this transfer queue, aborting transfer"
+			return false
 		end
-		if not [@server,@client].include? destination														# Do the same thing for the client
-			raise "destination host does not belong to tranfer queue"										# This ensures the hosts have a good imux connection, because we set it up
+		if not [@server,@client].include? destination
+			@message_queue << "Destination is not part of this transfer queue, aborting transfer"
+			return false
 		end
 		@pending << {:filename => filename, :source => source, :destination => destination}					# Add the transfer information to the queue
 		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
@@ -108,9 +110,13 @@ class TransferQueue
 	# ips, if there are any.
 	#
 	def change_worker_count(change, count, bind_ip)
-		# tell the server to recieve the correct amount of sockets
-		worker_difference = @client.change_worker_count(@session_key, change, count, bind_ip)
-		@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{change}. on #{@client.peer_ip}"
+		if change == :add
+			@server.recieve_more_workers(@session_key, count)
+			worker_change = @client.create_more_workers(@session_key, count, bind_ip)
+			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{worker_change}"
+		elsif change == :remove
+			
+		end
 	end
 
 	private
