@@ -116,8 +116,9 @@ class Host
 		return @control_socket.gets.chomp
 	end
 
-	def remove_workers
-	
+	def remove_workers(settings)
+		@control_socket.puts "removeworkers #{settings}"
+		return @control_socket.gets.chomp
 	end
 
 	def close_session(settings)
@@ -137,7 +138,7 @@ class Host
 	# Change if the Session recycles sockets when it downloads
 	#
 	def set_recycling(state)
-		@control_socket.puts "setrecycle #{state.to_s}"
+		@control_socket.puts "setrecycle #{session_key}:#{state.to_s}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
 end

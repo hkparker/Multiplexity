@@ -48,12 +48,16 @@ class Session
 					create_more_workers command[1]
 				when "recieveworkers"
 					recieve_workers command[1]
+				when "removeworkers"
+					remove_workers command[1]
 				when "closesession"
 					close_imux_session
 				when "updatechunk"
 					change_chunk_size command[1]
 				when "setrecycle"
 					set_recycling command[1]
+				when "setverification"
+					set_verification command[1]
 				when "upload"
 					upload command[1]
 				when "download"
@@ -137,7 +141,8 @@ class Session
 			session_key = settings[4]
 			imux_manager = IMUXManager.new
 			@imux_connections.merge!(session_key => imux_manager)
-			workers_opened = imux_manager.create_workers(peer_ip, port, Array.new(socket_count, bind_ip))
+			#construct bind ip array from bind_ip_config
+			workers_opened = imux_manager.create_workers(peer_ip, port, bind_ip_array)
 			@client.puts "#{workers_opened}"
 		rescue
 			@client.puts "ERROR"
@@ -154,7 +159,7 @@ class Session
 			session_key = settings[4]
 			@imux_connections.merge!(session_key => imux_manager)
 			@imux_manager.chunk_size = settings[3]
-			Thread.new{ imux_manager.recieve_workers(listen_ip, port, socket_count) }
+			Thread.new{ imux_manager.recieve_workers(socket_count, listen_ip, port) }
 			@client.puts "0"
 		rescue
 			@client.puts "ERROR"
@@ -162,11 +167,32 @@ class Session
 	end
 	
 	def create_more_workers(settings)
-		#
+		# parse session key from settings
+		#IMUXManager.change_worker_count
 	end
 	
 	def recieve_more_workers(settings)
-		#
+		begin
+			settings = settings.split(":")
+			count = settings[0]
+			session_key = settings[1]
+			Thread.new{ @imux_connections[session_key].recieve_workers(count) }
+		rescue
+			@client.puts "ERROR"
+		end
+	end
+	
+	def remove_workers(settings)
+		begin
+			settings = settings.split(":")
+			change = settings[0].to_i
+			bind_ip = settings[1]
+			bind_ip = nil if bind_ip == "nil"
+			session_key = settings[2]
+			@imux_connections[session_key].change_worker_count(change, bind_ip)
+		rescue
+			@client.puts "ERROR"
+		end
 	end
 	
 	def close_imux_session(session_key)
@@ -182,15 +208,20 @@ class Session
 		session_key = settings[0]
 		size = settings[1]
 		begin
-			#@chunk_size = size.to_i # tell the imux manager?
+			@imux_connections[session_key].chunk_size = size
 			@client.puts "0"
 		rescue
 			@client.puts "1"
 		end
 	end
 	
-	def set_recycling
-		
+	def set_recycling(setings)
+		# get the session key and decide to enable or disable reset
+		@imux_connections[session_key].enable_reset
+	end
+	
+	def set_verification
+	
 	end
 	
 	##

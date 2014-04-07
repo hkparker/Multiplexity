@@ -50,7 +50,7 @@ class TransferQueue
 	#
 	def pause
 		if @process_thread.status != false
-			# tell the running thread to pause its transfer
+			# tell both server and client to pause their imux managers
 		end
 		@processing = false
 	end
@@ -62,7 +62,7 @@ class TransferQueue
 		if @process_thread.status == false
 			@process_thread = Thread.new{ process_queue } if @pending.size > 0
 		else
-			# tell the running thread to resume its tranfer.
+			# tell both server and client to resume their imux managers
 		end
 		@processing = true
 	end
@@ -103,6 +103,19 @@ class TransferQueue
 		server_change.join
 	end
 	
+	def set_verification(state)
+		client_change = Thread.new{
+			recycling_changed = @client.set_verification(@session_key, state)
+			@message_queue << "Could not set verification to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
+		}
+		server_change = Thread.new{
+			recycling_changed = @server.set_verification(@session_key, state)
+			@message_queue << "Could not set verification to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
+		}
+		client_change.join
+		server_change.join
+	end
+	
 	#
 	# This method changes the number of workers in an imux session.  Change can be 
 	# :add or :remove, count is the number of workers, and bind_ip optionally only removes
@@ -111,11 +124,17 @@ class TransferQueue
 	#
 	def change_worker_count(change, count, bind_ip)
 		if change == :add
-			@server.recieve_more_workers(@session_key, count)
-			worker_change = @client.create_more_workers(@session_key, count, bind_ip)
+			@server.recieve_more_workers("#{count}:#{@session_key}")
+			worker_change = @client.create_more_workers("#{count}:#{bind_ip}:#{@session_key}")
 			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{worker_change}"
 		elsif change == :remove
-			
+			bind_ip = "nil" if bind_ip == nil
+			changed = @client.remove_workers("#{0-count}:#{bind_ip}:#{@session_key}")
+			if changed == "ERROR"
+				@message_queue << "Failed to remove #{count} workers from queue between #{@client.peer_ip} and #{@server.peer_ip}"
+			else
+				@message_queue << "Removed #{count} workers from queue between #{@client.peer_ip} and #{@server.peer_ip}"
+			end
 		end
 	end
 
@@ -149,9 +168,9 @@ class TransferQueue
 				transfer = @pending.shift									# Grab the next transfer
 				file = transfer[:source].stat_file(transfer[:filename])		# Get detailed information about the source file
 				raise "file unreadable on source" if not file[:readable]	# Raise an exception if we cannot read the source file
-				ready = transfer[:destination].recieve_file()				#what to pass?
+				ready = transfer[:destination].recieve_file(@session_key)	# what to pass?
 				raise "destination cannot recieve file" if not ready		# Raise an exception if the destination could not prepare to recieve a file for any reason
-				transfer[:source].send_file()								#what to pass?
+				transfer[:source].send_file(@session_key)					# what to pass?
 			rescue exception
 				@message_queue << "Error transferring #{transfer[:filename]} from #{transfer[:source].peer_ip} to #{transfer[:destination].peer_ip}: #{exception.to_s}"
 			end

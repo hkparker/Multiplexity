@@ -53,6 +53,7 @@ class IMUXManager
 	# This method should be used to adjust the worker setup after the IMUX session is created
 	#
 	def change_worker_count(change, bind_ip)
+		return "This must be done while idle" if @state != :idle
 		old_state = @state
 		@state = :adjusting_workers
 		old_size = @workers.size
@@ -75,7 +76,7 @@ class IMUXManager
 	#
 	# This method creates a server and accepts IMUX sockets
 	#
-	def recieve_workers(listen_ip, listen_port, count)
+	def recieve_workers(count, listen_ip=nil, listen_port=nil)
 		@state = :recieving_workers
 		if @server == nil
 			@server = TCPServer.new(listen_ip, listen_port)

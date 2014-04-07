@@ -10,7 +10,7 @@ class IMUXManagerTest
 	def test_can_create_unbound_session
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		@server.close_session
@@ -20,7 +20,7 @@ class IMUXManagerTest
 	def test_can_create_bound_session
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
 		@server.close_session
@@ -30,10 +30,10 @@ class IMUXManagerTest
 	def test_can_add_unbound_workers
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, 10) }
+		recieve = Thread.new{ @server.recieve_workers(10) }
 		@client.change_worker_count(10, nil)
 		recieve.join
 		@server.close_session
@@ -43,10 +43,10 @@ class IMUXManagerTest
 	def test_can_add_bound_workers
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, 10) }
+		recieve = Thread.new{ @server.recieve_workers(10) }
 		@client.change_worker_count(10, "127.0.0.1")
 		recieve.join
 		@server.close_session
@@ -56,7 +56,7 @@ class IMUXManagerTest
 	def test_can_remove_unbound_workers
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		@client.change_worker_count(-10,nil)
@@ -67,7 +67,7 @@ class IMUXManagerTest
 	def test_can_remove_bound_workers
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
 		@client.change_worker_count(-10,"127.0.0.1")
@@ -78,7 +78,7 @@ class IMUXManagerTest
 	def test_can_get_stats
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers("0.0.0.0", 8001, @socket_count) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		@client.get_stats
 		@server.get_stats
