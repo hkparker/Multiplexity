@@ -74,7 +74,7 @@ class TransferQueue
 	#
 	# Change the chunk size both the server and client are using to create chunks.
 	#
-	def change_chunk_size(i)
+	def set_chunk_size(i)
 		client_change = Thread.new{
 			size_changed = @client.change_chunk_size(@session_key, i)
 			@message_queue << "Could not change #{@client.peer_ip}'s chunk size to #{}" if !size_changed

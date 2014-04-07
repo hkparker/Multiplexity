@@ -9,10 +9,6 @@ class HostSessionTest
 	end
 	
 	def test_can_connect_host_to_session
-	#	server = TCPServer.new("0.0.0.0", 8000)
-	#	Thread.new{ Session.new(server.accept) }
-	#	@host = Host.new("127.0.0.1", 8000)
-	#	return @host.handshake
 		@host = Localhost.new
 		return true
 	end

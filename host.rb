@@ -16,6 +16,7 @@ require './imux_manager.rb'
 class Host
 	attr_reader :server_ip
 	attr_reader :server_port
+	alias :peer_ip :server_ip
 
 	def initialize(server_ip, server_port)
 		@control_socket_ip = server_ip
@@ -144,10 +145,10 @@ class Host
 end
 
 class Localhost < Host
-	def initialize
-		server = TCPServer.new("0.0.0.0", 8000)
+	def initialize(port = 8000)
+		server = TCPServer.new("0.0.0.0", port)
 		Thread.new{ Session.new(server.accept) }
-		@control_socket = TCPSocket.new("127.0.0.1", 8000)
+		@control_socket = TCPSocket.new("127.0.0.1", port)
 		@control_socket.puts "Hello Multiplexity"
 		@control_socket.gets
 	end

@@ -3,6 +3,8 @@ require 'fileutils'
 require 'thread'
 require 'openssl'
 
+require './imux_manager.rb'
+
 #
 # This class represents the server side part of a control socket.  Sessions
 # are created by MultiplexityServers and respond to commands from a Host.
@@ -141,7 +143,14 @@ class Session
 			session_key = settings[4]
 			imux_manager = IMUXManager.new
 			@imux_connections.merge!(session_key => imux_manager)
-			#construct bind ip array from bind_ip_config
+			bind_ip_config = bind_ip_config.split(";")
+			bind_ip_array = []
+			bind_ip_config.each do |config|
+				config = config.split("-")
+				config[1].times do |i|
+					bind_ip_array << config[0]
+				end
+			end
 			workers_opened = imux_manager.create_workers(peer_ip, port, bind_ip_array)
 			@client.puts "#{workers_opened}"
 		rescue
