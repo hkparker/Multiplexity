@@ -14,9 +14,9 @@ require './imux_manager.rb'
 
 
 class Host
-	attr_reader :server_ip
-	attr_reader :server_port
-	alias :peer_ip :server_ip
+	attr_reader :control_socket_ip
+	attr_reader :control_socket_port
+	alias :peer_ip :control_socket_ip
 
 	def initialize(server_ip, server_port)
 		@control_socket_ip = server_ip
@@ -138,7 +138,7 @@ class Host
 	#
 	# Change if the Session recycles sockets when it downloads
 	#
-	def set_recycling(state)
+	def set_recycling(session_key, state)
 		@control_socket.puts "setrecycle #{session_key}:#{state.to_s}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
@@ -146,9 +146,11 @@ end
 
 class Localhost < Host
 	def initialize(port = 8000)
-		server = TCPServer.new("0.0.0.0", port)
+		@control_socket_ip = "127.0.0.1"
+		@control_socket_port = port
+		server = TCPServer.new("0.0.0.0", @control_socket_port)
 		Thread.new{ Session.new(server.accept) }
-		@control_socket = TCPSocket.new("127.0.0.1", port)
+		@control_socket = TCPSocket.new("127.0.0.1", @control_socket_port)
 		@control_socket.puts "Hello Multiplexity"
 		@control_socket.gets
 	end

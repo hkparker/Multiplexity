@@ -11,7 +11,7 @@ class TransferQueueTest
 	
 	def test_can_create_tranfer_queue
 		local1 = Localhost.new
-		local2 = Localhost.new(8080)
+		local2 = Localhost.new(8081)
 		imux_config = IMUXConfig.new
 		@transfer_queue = TransferQueue.new(local1, local2, imux_config)
 		collect_messages
@@ -24,7 +24,11 @@ class TransferQueueTest
 	end
 	
 	def test_can_change_recycling
-	
+		@transfer_queue.set_recycling(true)
+		sleep 2
+		@transfer_queue.set_recycling(false)
+		sleep 5
+		return true
 	end
 	
 	def test_can_change_verification
@@ -55,5 +59,6 @@ class TransferQueueTest
 end
 
 test = TransferQueueTest.new
-puts "test_can_create_tranfer_queue\t=>\t#{test.test_can_create_tranfer_queue}"
-#puts "test_can_change_chunk_size\t=>\t#{test.test_can_change_chunk_size}"
+test.test_can_create_tranfer_queue
+test.test_can_change_chunk_size
+test.test_can_change_recycling

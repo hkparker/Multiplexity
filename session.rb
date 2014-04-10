@@ -140,21 +140,22 @@ class Session
 			port = settings[1]
 			recycle = settings[2]
 			verify = settings[3]
-			session_key = settings[4]
+			peer_ip = settings[4]
+			session_key = settings[5]
 			imux_manager = IMUXManager.new
 			@imux_connections.merge!(session_key => imux_manager)
 			bind_ip_config = bind_ip_config.split(";")
 			bind_ip_array = []
 			bind_ip_config.each do |config|
-				config = config.split("-")
-				config[1].times do |i|
-					bind_ip_array << config[0]
+				ip_pair = config.split("-")
+				ip_pair[1].to_i.times do |i|
+					bind_ip_array << ip_pair[0]
 				end
 			end
-			workers_opened = imux_manager.create_workers(peer_ip, port, bind_ip_array)
-			@client.puts "#{workers_opened}"
-		rescue
-			@client.puts "ERROR"
+			imux_manager.create_workers(peer_ip, port, bind_ip_array)
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
 		end
 	end
 	
@@ -164,14 +165,14 @@ class Session
 			listen_ip = settings[0]
 			port = settings[1]
 			socket_count = settings[2]
-			imux_manager = IMUXManager.new
+			@imux_manager = IMUXManager.new
 			session_key = settings[4]
-			@imux_connections.merge!(session_key => imux_manager)
+			@imux_connections.merge!(session_key => @imux_manager)
 			@imux_manager.chunk_size = settings[3]
 			Thread.new{ imux_manager.recieve_workers(socket_count, listen_ip, port) }
 			@client.puts "0"
-		rescue
-			@client.puts "ERROR"
+		rescue StandardError => e
+			@client.puts e.inspect
 		end
 	end
 	
@@ -225,8 +226,19 @@ class Session
 	end
 	
 	def set_recycling(setings)
-		# get the session key and decide to enable or disable reset
-		@imux_connections[session_key].enable_reset
+		settings = settings.split(":")
+		session_key = settings[0]
+		state = settings[1]
+		begin
+			if state == "true"
+				@imux_connections[session_key].enable_reset
+			elsif state == "false"
+				@imux_connections[session_key].disable_reset
+			end
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
 	end
 	
 	def set_verification
