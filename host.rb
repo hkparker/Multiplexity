@@ -142,6 +142,14 @@ class Host
 		@control_socket.puts "setrecycle #{session_key}:#{state.to_s}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
+	
+	#
+	# Change if the Session asks for CRCs on chunks it downloads
+	#
+	def set_verification(session_key, state)
+		@control_socket.puts "setverification #{session_key}:#{state.to_s}"
+		return @control_socket.gets.to_i == 0 ? true : false
+	end
 end
 
 class Localhost < Host

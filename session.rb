@@ -47,7 +47,7 @@ class Session
 				when "recievesession"
 					recieve_imux_session command[1]
 				when "createworkers"
-					create_more_workers command[1]
+					create_workers command[1]
 				when "recieveworkers"
 					recieve_workers command[1]
 				when "removeworkers"
@@ -176,19 +176,28 @@ class Session
 		end
 	end
 	
-	def create_more_workers(settings)
-		# parse session key from settings
-		#IMUXManager.change_worker_count
+	def create_workers(settings)
+		begin
+			settings = settings.split(":")
+			count = settings[0].to_i
+			bind_ip = settings[1]
+			session_key = settings[2]
+			@imux_connections[session_key].change_worker_count(count,bind_ip)
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
+		end
 	end
 	
-	def recieve_more_workers(settings)
+	def recieve_workers(settings)
 		begin
 			settings = settings.split(":")
 			count = settings[0]
 			session_key = settings[1]
 			Thread.new{ @imux_connections[session_key].recieve_workers(count) }
-		rescue
-			@client.puts "ERROR"
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
 		end
 	end
 	
@@ -200,8 +209,9 @@ class Session
 			bind_ip = nil if bind_ip == "nil"
 			session_key = settings[2]
 			@imux_connections[session_key].change_worker_count(change, bind_ip)
-		rescue
-			@client.puts "ERROR"
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
 		end
 	end
 	
@@ -225,7 +235,7 @@ class Session
 		end
 	end
 	
-	def set_recycling(setings)
+	def set_recycling(settings)
 		settings = settings.split(":")
 		session_key = settings[0]
 		state = settings[1]
@@ -241,8 +251,20 @@ class Session
 		end
 	end
 	
-	def set_verification
-	
+	def set_verification(settings)
+		settings = settings.split(":")
+		session_key = settings[0]
+		state = settings[1]
+		begin
+			if state == "true"
+				@imux_connections[session_key].enable_verification
+			elsif state == "false"
+				@imux_connections[session_key].disable_verification
+			end
+			@client.puts "0"
+		rescue
+			@client.puts "1"
+		end
 	end
 	
 	##

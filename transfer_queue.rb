@@ -110,12 +110,14 @@ class TransferQueue
 	
 	def set_verification(state)
 		client_change = Thread.new{
-			recycling_changed = @client.set_verification(@session_key, state)
-			@message_queue << "Could not set verification to #{state.to_s} on #{@client.peer_ip}" if !recycling_changed
+			verification_changed = @client.set_verification(@session_key, state)
+			@message_queue << "Could not set verification to #{state.to_s} on #{@client.peer_ip}" if !verification_changed
+			@message_queue << "Set verification to #{state.to_s} on #{@client.peer_ip}" if verification_changed
 		}
 		server_change = Thread.new{
-			recycling_changed = @server.set_verification(@session_key, state)
-			@message_queue << "Could not set verification to #{state.to_s} on #{@server.peer_ip}" if !recycling_changed
+			verification_changed = @server.set_verification(@session_key, state)
+			@message_queue << "Could not set verification to #{state.to_s} on #{@server.peer_ip}" if !verification_changed
+			@message_queue << "Set verification to #{state.to_s} on #{@server.peer_ip}" if verification_changed
 		}
 		client_change.join
 		server_change.join
@@ -128,18 +130,17 @@ class TransferQueue
 	# ips, if there are any.
 	#
 	def change_worker_count(change, count, bind_ip)
+		bind_ip = "nil" if bind_ip == nil
 		if change == :add
 			@server.recieve_more_workers("#{count}:#{@session_key}")
-			worker_change = @client.create_more_workers("#{count}:#{bind_ip}:#{@session_key}")
-			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} changed by #{worker_change}"
+			error = @client.create_more_workers("#{count}:#{bind_ip}:#{@session_key}")
+			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} increased by #{count}" if error == "0"
+			@message_queue << "Failed to add workers between #{@client.peer_ip} and #{@server.peer_ip}: #{error}" if error != "0"
 		elsif change == :remove
-			bind_ip = "nil" if bind_ip == nil
-			changed = @client.remove_workers("#{0-count}:#{bind_ip}:#{@session_key}")
-			if changed == "ERROR"
-				@message_queue << "Failed to remove #{count} workers from queue between #{@client.peer_ip} and #{@server.peer_ip}"
-			else
-				@message_queue << "Removed #{count} workers from queue between #{@client.peer_ip} and #{@server.peer_ip}"
-			end
+			error = @client.remove_workers("#{0-count}:#{bind_ip}:#{@session_key}")
+			
+			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} decreased by #{count.abs}" if error == "0"
+			@message_queue << "Failed to remove #{count.abs} workers between #{@client.peer_ip} and #{@server.peer_ip}" if error != "0"
 		end
 	end
 

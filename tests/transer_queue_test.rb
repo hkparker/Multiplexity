@@ -25,22 +25,30 @@ class TransferQueueTest
 	
 	def test_can_change_recycling
 		@transfer_queue.set_recycling(true)
-		sleep 2
+		sleep 1
 		@transfer_queue.set_recycling(false)
-		sleep 5
+		sleep 1
 		return true
 	end
 	
 	def test_can_change_verification
-	
+		@transfer_queue.set_verification(true)
+		sleep 1
+		@transfer_queue.set_verification(false)
+		sleep 1
+		return true
 	end
 	
 	def test_can_add_workers
-	
+		@transfer_queue.change_worker_count(:add, 5, nil)
+		sleep 1
+		return true
 	end
 	
 	def test_can_remove_workers
-	
+		@transfer_queue.change_worker_count(:remove, 5, nil)
+		sleep 1
+		return true
 	end
 	
 	def test_can_transfer_file
@@ -62,3 +70,6 @@ test = TransferQueueTest.new
 test.test_can_create_tranfer_queue
 test.test_can_change_chunk_size
 test.test_can_change_recycling
+test.test_can_change_verification
+test.test_can_add_workers
+test.test_can_remove_workers
