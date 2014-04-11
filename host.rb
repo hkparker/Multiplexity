@@ -21,6 +21,7 @@ class Host
 	def initialize(server_ip, server_port)
 		@control_socket_ip = server_ip
 		@control_socket_port = server_port
+		handshake
 	end
 	
 	def handshake
@@ -149,6 +150,20 @@ class Host
 	def set_verification(session_key, state)
 		@control_socket.puts "setverification #{session_key}:#{state.to_s}"
 		return @control_socket.gets.to_i == 0 ? true : false
+	end
+	
+	##
+	## Transfer methods
+	##
+	
+	def send_file(filename, session_key)
+		@control_socket.puts "sendfile #{session_key}:#{filename}"
+		return @control_socket.gets.chomp
+	end
+	
+	def recieve_file(filename, session_key)
+		@control_socket.puts "recievefile #{session_key}:#{filename}"
+		return @control_socket.gets.chomp
 	end
 end
 

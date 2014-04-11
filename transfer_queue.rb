@@ -16,7 +16,7 @@ class TransferQueue
 
 	def initialize(client, server, imux_config)
 		@pending = []																		# Create a new array of pending transfers
-		@processing = false																	# By default transfers won't start unless the queue is told to begin processing
+		@processing = true																	# By default transfers won't start unless the queue is told to begin processing
 		@server = server																	# Create instance variables for server and client
 		@client = client
 		@process_thread = Thread.new{}														# Create a new thread to empty the queue
@@ -42,7 +42,7 @@ class TransferQueue
 			@message_queue << "Destination is not part of this transfer queue, aborting transfer"
 			return false
 		end
-		@pending << {:filename => filename, :source => source, :destination => destination}					# Add the transfer information to the queue
+		@pending << {:filename => filename, :source => source, :destination => destination, :destination_name => destination_name}			# Add the transfer information to the queue
 		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
 	end
 
@@ -172,10 +172,18 @@ class TransferQueue
 			begin															# Execeptions will be fed into an error queue for the user interface
 				transfer = @pending.shift									# Grab the next transfer
 				file = transfer[:source].stat_file(transfer[:filename])		# Get detailed information about the source file
-				raise "file unreadable on source" if not file[:readable]	# Raise an exception if we cannot read the source file
-				ready = transfer[:destination].recieve_file(@session_key)	# what to pass?
-				raise "destination cannot recieve file" if not ready		# Raise an exception if the destination could not prepare to recieve a file for any reason
-				transfer[:source].send_file(@session_key)					# what to pass?
+				if !file[:readable]
+					@message_queue << "File unreadable on source, aborting transfer"
+					raise "File unreadable on source, aborting transfer"
+				end
+				ready = transfer[:destination].recieve_file(transfer[:destination_name], @session_key)
+				@message_queue << ready
+				if ready != "0"
+					@message_queue << "Destination unable to recieve file: #{ready}"
+					raise "Destination unable to recieve file"
+				end
+				sent = transfer[:source].send_file(transfer[:filename], @session_key)
+				@message_queue << sent
 			rescue exception
 				@message_queue << "Error transferring #{transfer[:filename]} from #{transfer[:source].peer_ip} to #{transfer[:destination].peer_ip}: #{exception.to_s}"
 			end

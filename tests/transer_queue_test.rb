@@ -10,10 +10,11 @@ class TransferQueueTest
 	end
 	
 	def test_can_create_tranfer_queue
-		local1 = Localhost.new
-		local2 = Localhost.new(8081)
+		@client = Localhost.new
+		@server = Host.new("box.rutlen.net", 8000)
+		#@server = Localhost.new(8081)
 		imux_config = IMUXConfig.new
-		@transfer_queue = TransferQueue.new(local1, local2, imux_config)
+		@transfer_queue = TransferQueue.new(@client, @server, imux_config)
 		collect_messages
 		return true
 	end
@@ -52,7 +53,8 @@ class TransferQueueTest
 	end
 	
 	def test_can_transfer_file
-	
+		@transfer_queue.add_transfer(@client, @server, "../largefile", "largefiledst")
+		sleep 100
 	end
 	
 	private
@@ -68,8 +70,9 @@ end
 
 test = TransferQueueTest.new
 test.test_can_create_tranfer_queue
-test.test_can_change_chunk_size
-test.test_can_change_recycling
-test.test_can_change_verification
-test.test_can_add_workers
-test.test_can_remove_workers
+#test.test_can_change_chunk_size
+#test.test_can_change_recycling
+#test.test_can_change_verification
+#test.test_can_add_workers
+#test.test_can_remove_workers
+test.test_can_transfer_file

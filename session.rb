@@ -60,10 +60,10 @@ class Session
 					set_recycling command[1]
 				when "setverification"
 					set_verification command[1]
-				when "upload"
-					upload command[1]
-				when "download"
-					download command[1]
+				when "sendfile"
+					send_file command[1]
+				when "recievefile"
+					recieve_file command[1]
 				when "close"
 					close
 				else
@@ -271,12 +271,28 @@ class Session
 	## Transfer operations
 	##
 
-	def upload(settings)
-		
+	def send_file(settings)
+		begin
+			settings = settings.split(":")
+			session_key = settings[0]
+			filename = settings[1]
+			Thread.new{ @imux_connections[session_key].serve_file(filename) }
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
+		end
 	end
 	
-	def download(settings)
-		
+	def recieve_file(settings)
+		begin
+			settings = settings.split(":")
+			session_key = settings[0]
+			filename = settings[1]
+			Thread.new{ @imux_connections[session_key].download_file(filename) }
+			@client.puts "0"
+		rescue StandardError => e
+			@client.puts e.inspect
+		end
 	end
 
 	##
