@@ -1,3 +1,5 @@
+require 'socket'
+require 'resolv'
 require 'zlib'
 
 #
@@ -38,7 +40,7 @@ class IMUXSocket
 		@state = :connecting
 		@bind_ip = bind_ip
 		@port = port
-		@peer_ip = peer_ip
+		@peer_ip = Resolv::getaddress(peer_ip)
 		begin
 			if @bind_ip != nil
 				lhost = Socket.pack_sockaddr_in(0, @bind_ip)
@@ -52,8 +54,8 @@ class IMUXSocket
 			@closed = false
 			@state = :idle
 			return true
-		rescue
-			@state = :failed
+		rescue StandardError => e
+			@state = "failed: #{e.inspect}"
 			return false
 		end
 	end
@@ -63,7 +65,7 @@ class IMUXSocket
 	end
 	
 	def process_download(buffer, verify, reset)
-		raise "Socket in use" if @state != :idle
+		raise "Socket in use: #{@state}" if @state != :idle
 		@state = :downloading
 		@verify = verify
 		@reset = reset
@@ -92,7 +94,7 @@ class IMUXSocket
 	end
 	
 	def serve_download(file_queue)
-		raise "Socket in use" if @state != :idle
+		raise "Socket in use: #{@state}" if @state != :idle
 		@state = :serving
 		@bytes_transfered = 0
 		loop{
