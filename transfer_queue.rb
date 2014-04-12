@@ -171,11 +171,11 @@ class TransferQueue
 		until @pending.size == 0											# The array will likely change as the thread runs, better to check its size each time then iterate
 			begin															# Execeptions will be fed into an error queue for the user interface
 				transfer = @pending.shift									# Grab the next transfer
-				file = transfer[:source].stat_file(transfer[:filename])		# Get detailed information about the source file
-				if !file[:readable]
-					@message_queue << "File unreadable on source, aborting transfer"
-					raise "File unreadable on source, aborting transfer"
-				end
+			#	file = transfer[:source].stat_file(transfer[:filename])		# Get detailed information about the source file
+			#	if !file[:readable]
+			#		@message_queue << "File unreadable on source, aborting transfer"
+			#		raise "File unreadable on source, aborting transfer"
+			#	end
 				ready = transfer[:destination].recieve_file(transfer[:destination_name], @session_key)
 				@message_queue << ready
 				if ready != "0"

@@ -67,7 +67,7 @@ class Session
 				when "close"
 					close
 				else
-					@client.puts "REQUEST NOT UNDERSTOOD"
+					@client.puts "REQUEST NOT UNDERSTOOD: #{command[0]}"
 			end
 		}
 	end
