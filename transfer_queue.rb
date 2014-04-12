@@ -172,7 +172,6 @@ class TransferQueue
 			begin															# Execeptions will be fed into an error queue for the user interface
 				transfer = @pending.shift									# Grab the next transfer
 				ready = transfer[:destination].recieve_file(transfer[:destination_name], @session_key)
-				@message_queue << ready
 				if ready != "0"
 					@message_queue << "Destination unable to recieve file: #{ready}"
 					raise "Destination unable to recieve file"
