@@ -112,11 +112,11 @@ class IMUXSocket
 			end
 			chunk_header = build_chunk_header(chunk, add_crc)
 			success = send_chunk_data(chunk_header, chunk)
+			puts "SERVER DATA SENT"
 			if !success
 				puts "Chunk #{chunk[id]} is now stale"
 				file_queue.stale_chunks << chunk
 			end
-			puts "Server confirming crc"
 			client_confirm_crc(chunk)
 			reset_socket_server
 		}
