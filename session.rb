@@ -163,13 +163,13 @@ class Session
 		begin
 			settings = settings.split(":")
 			listen_ip = settings[0]
-			port = settings[1]
-			socket_count = settings[2]
+			port = settings[1].to_i
+			socket_count = settings[2].to_i
 			@imux_manager = IMUXManager.new
 			session_key = settings[4]
 			@imux_connections.merge!(session_key => @imux_manager)
 			@imux_manager.chunk_size = settings[3]
-			Thread.new{ imux_manager.recieve_workers(socket_count, listen_ip, port) }
+			Thread.new{ @imux_manager.recieve_workers(socket_count, listen_ip, port) }
 			@client.puts "0"
 		rescue StandardError => e
 			@client.puts e.inspect
@@ -276,7 +276,6 @@ class Session
 			settings = settings.split(":")
 			session_key = settings[0]
 			filename = settings[1]
-			#Thread.new{ @imux_connections[session_key].serve_file(filename) }
 			@imux_connections[session_key].serve_file(filename)
 			@client.puts "0"
 		rescue StandardError => e

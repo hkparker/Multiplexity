@@ -1,10 +1,11 @@
 class Buffer
 	attr_accessor :filename
-	def initialize(file)
+	
+	def initialize(filename)
 		@chunkArray = []
 		@fileTop = 0
-		@file = File.open(file, 'w')
-		@filename = file
+		@filename = filename
+		@file = File.open(@filename, 'w')
 	end
 	
 	def checkNext(newChunk, i)

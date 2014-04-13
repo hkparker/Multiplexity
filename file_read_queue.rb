@@ -13,7 +13,7 @@ class FileReadQueue
 	
 	def initialize(filename, chunk_size, starting_position=0)
 		@file = File.open(filename, 'rb')
-		#discard the beginning if needed
+		@file.read(starting_position) if starting_position > 0
 		@chunk_size = chunk_size
 		@stale_chunks = []
 		@id = 0

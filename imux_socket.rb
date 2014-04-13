@@ -39,6 +39,7 @@ class IMUXSocket
 	def open_socket(peer_ip, port, bind_ip=nil)
 		@state = :connecting
 		@bind_ip = bind_ip
+		@bind_ip = nil if @bind_ip == "nil"
 		@port = port
 		@peer_ip = Resolv::getaddress(peer_ip)
 		begin
@@ -55,13 +56,14 @@ class IMUXSocket
 			@state = :idle
 			return true
 		rescue StandardError => e
-			@state = "failed: #{e.inspect}"
+			@state = :failed
 			return false
 		end
 	end
 	
 	def recieve_connection(server)
 		@socket = server.accept
+		@state = :idle
 	end
 	
 	def process_download(buffer, verify, reset)
@@ -76,13 +78,13 @@ class IMUXSocket
 			request_next_chunk
 			response = @socket.gets.chomp
 			if response == "DONE"
-				# puts "Server has sent out of chunks"
+				puts "No more chunks, exiting"
 				return
 			end
 			chunk_id, chunk_size, chunk_crc = parse_chunk_header response
 			start = Time.now
 			chunk_data = recieve_chunk_data(chunk_size)
-			close_socket; break if chunk_data == nil	# how should I handle broken pipes here?
+			close_connection; break if chunk_data == nil	# how should I handle broken pipes here?
 			chunk_ok = verify_chunk(chunk_data, chunk_crc)
 			@manager.write_semaphore.synchronize{ buffer.insert({:id => chunk_id, :data => chunk_data}) } if chunk_ok # where does the semaphore come from?
 			time_elapsed = Time.now - start
@@ -98,22 +100,23 @@ class IMUXSocket
 		@state = :serving
 		@bytes_transfered = 0
 		loop{
-			recieve_connection if @closed	# server is closed at this point?
+			#recieve_connection if @closed	# server is closed at this point?
 			request = @socket.gets.chomp
 			add_crc = add_crc? request
 			chunk = nil
 			chunk = file_queue.next_chunk
 			if chunk == nil
 				@socket.puts "DONE"
-				#puts "Telling client we are out of chunks"
+				puts "Telling client we are out of chunks"
 				return
 			end
 			chunk_header = build_chunk_header(chunk, add_crc)
 			success = send_chunk_data(chunk_header, chunk)
 			if !success
-				# puts "Chunk #{chunk[id]} is now stale"
+				puts "Chunk #{chunk[id]} is now stale"
 				file_queue.stale_chunks << chunk
 			end
+			puts "Server confirming crc"
 			client_confirm_crc(chunk)
 			reset_socket_server
 		}
@@ -160,6 +163,7 @@ class IMUXSocket
 	end
 
 	def verify_chunk(chunk_data, chunk_crc)
+		puts "Asked to verify (#{@verify}) with crc: #{chunk_crc}"
 		if @verify && chunk_crc != nil
 			local_crc = Zlib::crc32(chunk_data)
 			if local_crc == chunk_crc
@@ -219,7 +223,9 @@ class IMUXSocket
 	end
 
 	def client_confirm_crc(chunk)
+		puts "Server waiting for crc instructions"
 		success = @socket.gets.chomp
+		puts "Server crc instructions recieved: #{success}"
 		if success == "CRCMISMATCH"
 			@manager.stale_chunks << chunk
 		end
