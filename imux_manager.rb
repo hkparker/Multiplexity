@@ -27,7 +27,7 @@ class IMUXManager
 		@peer_ip = nil
 		@port = nil
 		@server = nil
-		@chunk_size = 0
+		@chunk_size = 5242880
 	end
 	
 	#
@@ -41,8 +41,8 @@ class IMUXManager
 		bind_ips.each do |bind_ip|
 			begin
 				worker = IMUXSocket.new(self)
-				worker.open_socket(peer_ip, port, bind_ip)
-				@workers << worker
+				opened = worker.open_socket(peer_ip, port, bind_ip)
+				@workers << worker if opened
 				workers_created += 1
 			rescue
 			end
@@ -122,13 +122,13 @@ class IMUXManager
 	#
 	# This method has all the workers download chunks into a buffer
 	#
-	def download_file(filename, verify, reset)
+	def download_file(filename)
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
 		@state = :downloading
 		buffer = Buffer.new(filename)
 		@working_workers = []
 		@workers.each do |worker|
-			@working_workers << Thread.new{ worker.process_download(buffer, verify, reset) }
+			@working_workers << Thread.new{ worker.process_download(buffer, @verify, @reset) }
 		end
 		@working_workers.each do |thread|
 			thread.join

@@ -56,7 +56,6 @@ class IMUXSocket
 			@state = :idle
 			return true
 		rescue StandardError => e
-			puts e.inspect
 			@state = :failed
 			return false
 		end
@@ -110,6 +109,7 @@ class IMUXSocket
 			chunk = nil
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
+			#	puts "Finishing socket"
 				@socket.puts "DONE"
 				return
 			end

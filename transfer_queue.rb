@@ -43,6 +43,7 @@ class TransferQueue
 			return false
 		end
 		@pending << {:filename => filename, :source => source, :destination => destination, :destination_name => destination_name}			# Add the transfer information to the queue
+		@message_queue << "Adding tranfer: #{filename} (#{source.peer_ip}) -> #{destination_name} (#{destination.peer_ip})"
 		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
 	end
 
@@ -138,7 +139,7 @@ class TransferQueue
 			@message_queue << "Failed to add workers between #{@client.peer_ip} and #{@server.peer_ip}: #{error}" if error != "0"
 		elsif change == :remove
 			error = @client.remove_workers("#{0-count}:#{bind_ip}:#{@session_key}")
-			
+			 \
 			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} decreased by #{count.abs}" if error == "0"
 			@message_queue << "Failed to remove #{count.abs} workers between #{@client.peer_ip} and #{@server.peer_ip}" if error != "0"
 		end
@@ -155,11 +156,13 @@ class TransferQueue
 			@message_queue << "#{@server.peer_ip} could not recieve imux session: #{error}"
 			return false
 		end
+		@message_queue << "#{@server.peer_ip} ready to accept imux session"
 		error = @client.create_imux_session(imux_config.client_config+":"+@server.peer_ip+":"+@session_key)
 		if error != "0"
 			@message_queue << "#{@client.peer_ip} could not create imux session: #{error}"
 			return false
 		end
+		@message_queue << "#{@client.peer_ip} successfully created imux session"
 		return true
 	end
 
@@ -168,16 +171,22 @@ class TransferQueue
 	# It assumes @pending could be changed by the user between interations.
 	#
 	def process_queue
+		@message_queue << "Processing all items in queue"
 		until @pending.size == 0											# The array will likely change as the thread runs, better to check its size each time then iterate
+			@message_queue << "#{@pending.size} items left in queue"
 			begin															# Execeptions will be fed into an error queue for the user interface
 				transfer = @pending.shift									# Grab the next transfer
-				ready = transfer[:destination].recieve_file(transfer[:destination_name], @session_key)
-				if ready != "0"
-					@message_queue << "Destination unable to recieve file: #{ready}"
-					raise "Destination unable to recieve file"
+				@message_queue << "Processing transfer: #{transfer[:filename]} (#{transfer[:source].peer_ip}) -> #{transfer[:destination_name]} (#{transfer[:destination].peer_ip})"
+				serving = transfer[:source].send_file(transfer[:filename], @session_key)
+				if serving != "0"
+					@message_queue << "#{transfer[:source].peer_ip} unable to serve file: #{serving}"
 				end
-				sent = transfer[:source].send_file(transfer[:filename], @session_key)
-				@message_queue << sent
+				downloading = transfer[:destination].recieve_file(transfer[:destination_name], @session_key)
+				if downloading != "0"
+					@message_queue << "#{transfer[:destination].peer_ip} unable to recieve file: #{downloading}"
+					next
+				end
+				@message_queue << "Transfer complete"
 			rescue exception
 				@message_queue << "Error transferring #{transfer[:filename]} from #{transfer[:source].peer_ip} to #{transfer[:destination].peer_ip}: #{exception.to_s}"
 			end

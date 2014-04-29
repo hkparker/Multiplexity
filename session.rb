@@ -276,7 +276,7 @@ class Session
 			settings = settings.split(":")
 			session_key = settings[0]
 			filename = settings[1]
-			@imux_connections[session_key].serve_file(filename)
+			Thread.new{ @imux_connections[session_key].serve_file(filename) }
 			@client.puts "0"
 		rescue StandardError => e
 			@client.puts e.inspect
@@ -288,7 +288,7 @@ class Session
 			settings = settings.split(":")
 			session_key = settings[0]
 			filename = settings[1]
-			Thread.new{ @imux_connections[session_key].download_file(filename) }
+			@imux_connections[session_key].download_file(filename)
 			@client.puts "0"
 		rescue StandardError => e
 			@client.puts e.inspect

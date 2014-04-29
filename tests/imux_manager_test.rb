@@ -94,7 +94,7 @@ class IMUXManagerTest
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		serve = Thread.new{ @server.serve_file("testfile") }
-		@client.download_file("testfileout", false, false)
+		@client.download_file("testfileout")
 		serve.join
 		@server.close_session
 		return true
