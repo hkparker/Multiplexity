@@ -78,15 +78,17 @@ class IMUXSocket
 			request_next_chunk
 			response = @socket.gets.chomp
 			if response == "DONE"
-				puts "No more chunks, exiting"
 				return
 			end
 			chunk_id, chunk_size, chunk_crc = parse_chunk_header response
 			start = Time.now
 			chunk_data = recieve_chunk_data(chunk_size)
-			close_connection; break if chunk_data == nil	# how should I handle broken pipes here?
+			if chunk_data == nil
+				close_connection
+				break 
+			end
 			chunk_ok = verify_chunk(chunk_data, chunk_crc)
-			@manager.write_semaphore.synchronize{ buffer.insert({:id => chunk_id, :data => chunk_data}) } if chunk_ok # where does the semaphore come from?
+			buffer.insert({:id => chunk_id, :data => chunk_data}) if chunk_ok
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
 			@bytes_transfered += chunk_size
@@ -100,12 +102,12 @@ class IMUXSocket
 		@state = :serving
 		@bytes_transfered = 0
 		loop{
-			#recieve_connection if @closed	# server is closed at this point?
+			recieve_connection(@manager.server) if @closed
 			request = @socket.gets.chomp
 			add_crc = add_crc? request
 			chunk = nil
 			chunk = file_queue.next_chunk
-			if chunk == nil
+			if chunk[:data] == nil
 				@socket.puts "DONE"
 				puts "Telling client we are out of chunks"
 				return
@@ -163,7 +165,6 @@ class IMUXSocket
 	end
 
 	def verify_chunk(chunk_data, chunk_crc)
-		puts "Asked to verify (#{@verify}) with crc: #{chunk_crc}"
 		if @verify && chunk_crc != nil
 			local_crc = Zlib::crc32(chunk_data)
 			if local_crc == chunk_crc
@@ -223,9 +224,7 @@ class IMUXSocket
 	end
 
 	def client_confirm_crc(chunk)
-		puts "Server waiting for crc instructions"
 		success = @socket.gets.chomp
-		puts "Server crc instructions recieved: #{success}"
 		if success == "CRCMISMATCH"
 			@manager.stale_chunks << chunk
 		end

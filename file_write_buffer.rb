@@ -6,6 +6,7 @@ class Buffer
 		@fileTop = 0
 		@filename = filename
 		@file = File.open(@filename, 'w')
+		@insertion_semaphore = Mutex.new
 	end
 	
 	def checkNext(newChunk, i)
@@ -17,14 +18,16 @@ class Buffer
 	end
 	
 	def insert(newChunk)
-		if @chunkArray.size == 0 || newChunk[:id] > @chunkArray[-1][:id]
-			@chunkArray << newChunk
-		elsif newChunk[:id] < @chunkArray[0][:id]
-			@chunkArray.insert(0, newChunk)
-		elsif newChunk[:id] > @chunkArray[0][:id]
-			checkNext(newChunk, 0)
-		end
-		self.dump
+		@insertion_semaphore.synchronize {
+			if @chunkArray.size == 0 || newChunk[:id] > @chunkArray[-1][:id]
+				@chunkArray << newChunk
+			elsif newChunk[:id] < @chunkArray[0][:id]
+				@chunkArray.insert(0, newChunk)
+			elsif newChunk[:id] > @chunkArray[0][:id]
+				checkNext(newChunk, 0)
+			end
+			self.dump
+		}
 	end
 	
 	def countChunks(i)		

@@ -20,7 +20,7 @@ class IMUXSocketTest
 
 	def test_can_transfer_chunks
 		buffer = Buffer.new("testfileout")
-		file_queue = FileReadQueue.new("testfile",10000)
+		file_queue = FileReadQueue.new("testfile",5242880)
 		Thread.new{ @server.serve_download(file_queue) }
 		@client.process_download(buffer, false, false)
 	end

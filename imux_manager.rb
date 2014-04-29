@@ -15,6 +15,7 @@ require 'timeout'
 class IMUXManager
 	attr_accessor :stale_chunks
 	attr_accessor :chunk_size
+	attr_accessor :server
 	
 	def initialize
 		@workers = []
