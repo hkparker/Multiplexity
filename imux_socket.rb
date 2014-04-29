@@ -56,6 +56,7 @@ class IMUXSocket
 			@state = :idle
 			return true
 		rescue StandardError => e
+			puts e.inspect
 			@state = :failed
 			return false
 		end
@@ -64,6 +65,7 @@ class IMUXSocket
 	def recieve_connection(server)
 		@socket = server.accept
 		@state = :idle
+		@closed = false
 	end
 	
 	def process_download(buffer, verify, reset)
@@ -109,12 +111,10 @@ class IMUXSocket
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
 				@socket.puts "DONE"
-				puts "Telling client we are out of chunks"
 				return
 			end
 			chunk_header = build_chunk_header(chunk, add_crc)
 			success = send_chunk_data(chunk_header, chunk)
-			puts "SERVER DATA SENT"
 			if !success
 				puts "Chunk #{chunk[id]} is now stale"
 				file_queue.stale_chunks << chunk
