@@ -276,8 +276,12 @@ class Session
 			settings = settings.split(":")
 			session_key = settings[0]
 			filename = settings[1]
-			Thread.new{ @imux_connections[session_key].serve_file(filename) }
-			@client.puts "0"
+			if File.readable?(filename)
+				Thread.new{ @imux_connections[session_key].serve_file(filename) }
+				@client.puts "0"
+			else
+				@client.puts "File cannot be read"
+			end
 		rescue StandardError => e
 			@client.puts e.inspect
 		end
