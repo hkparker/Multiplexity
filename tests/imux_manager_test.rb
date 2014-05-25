@@ -102,11 +102,11 @@ class IMUXManagerTest
 end
 
 test = IMUXManagerTest.new
-#puts "test_can_create_unbound_session\t=>\t#{test.test_can_create_unbound_session}"
-#puts "test_can_create_bound_session\t=>\t#{test.test_can_create_bound_session}"
-#puts "test_can_add_unbound_workers\t=>\t#{test.test_can_add_unbound_workers}"
-#puts "test_can_add_bound_workers\t=>\t#{test.test_can_add_bound_workers}"
-#puts "test_can_remove_unbound_workers\t=>\t#{test.test_can_remove_unbound_workers}"
-#puts "test_can_remove_bound_workers\t=>\t#{test.test_can_remove_bound_workers}"
-#puts "test_can_get_stats\t\t=>\t#{test.test_can_get_stats}"
+puts "test_can_create_unbound_session\t=>\t#{test.test_can_create_unbound_session}"
+puts "test_can_create_bound_session\t=>\t#{test.test_can_create_bound_session}"
+puts "test_can_add_unbound_workers\t=>\t#{test.test_can_add_unbound_workers}"
+puts "test_can_add_bound_workers\t=>\t#{test.test_can_add_bound_workers}"
+puts "test_can_remove_unbound_workers\t=>\t#{test.test_can_remove_unbound_workers}"
+puts "test_can_remove_bound_workers\t=>\t#{test.test_can_remove_bound_workers}"
+puts "test_can_get_stats\t\t=>\t#{test.test_can_get_stats}"
 puts "test_can_transfer_files\t\t=>\t#{test.test_can_transfer_files}"

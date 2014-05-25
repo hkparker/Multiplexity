@@ -192,7 +192,7 @@ class Session
 	def recieve_workers(settings)
 		begin
 			settings = settings.split(":")
-			count = settings[0]
+			count = settings[0].to_i
 			session_key = settings[1]
 			Thread.new{ @imux_connections[session_key].recieve_workers(count) }
 			@client.puts "0"
@@ -226,7 +226,7 @@ class Session
 	def change_chunk_size(settings)
 		settings = settings.split(":")
 		session_key = settings[0]
-		size = settings[1]
+		size = settings[1].to_i
 		begin
 			@imux_connections[session_key].chunk_size = size
 			@client.puts "0"

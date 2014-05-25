@@ -19,7 +19,7 @@ class TransferQueueTest
 	end
 	
 	def test_can_change_chunk_size
-		@transfer_queue.set_chunk_size(1000000)
+		@transfer_queue.set_chunk_size(5242880)
 		return true
 	end
 	
@@ -69,9 +69,9 @@ end
 
 test = TransferQueueTest.new
 test.test_can_create_tranfer_queue
-#test.test_can_change_chunk_size
-#test.test_can_change_recycling
-#test.test_can_change_verification
+test.test_can_change_chunk_size
+test.test_can_change_recycling
+test.test_can_change_verification
 #test.test_can_add_workers
 #test.test_can_remove_workers
 test.test_can_transfer_file
