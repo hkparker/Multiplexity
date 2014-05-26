@@ -17,17 +17,15 @@ class IMUXManager
 	attr_accessor :chunk_size
 	attr_accessor :server
 	
-	def initialize
+	def initialize(port = 8000)
 		@workers = []
 		@stale_chunks = []
 		@state = :new
-		@paused = false
 		@reset = false
-		@verify = false
 		@peer_ip = nil
-		@port = nil
-		@server = nil
+		@port = port
 		@chunk_size = 5242880
+		@server = TCPServer.new("0.0.0.0", @port)
 	end
 	
 	#
@@ -52,37 +50,10 @@ class IMUXManager
 	end
 	
 	#
-	# This method should be used to adjust the worker setup after the IMUX session is created
-	#
-	def change_worker_count(change, bind_ip)
-		return "This must be done while idle" if @state != :idle
-		old_state = @state
-		@state = :adjusting_workers
-		old_size = @workers.size
-		socket_change = 0
-		raise "Add workers with WorkerManager#create_workers first" if old_size == 0
-		if change > 0
-			socket_change = create_workers(@peer_ip, @port, Array.new(change, bind_ip))
-		elsif change < 0
-			raise "Cannot reduce workers to or below zero." if @workers.size + change < 1
-			socket_change = 0
-			change.abs.times do |i|
-				success = remove_worker(bind_ip)
-				socket_change -= 1 if success
-			end
-		end
-		@state = old_state
-		return socket_change
-	end
-	
-	#
 	# This method creates a server and accepts IMUX sockets
 	#
 	def recieve_workers(count, listen_ip=nil, listen_port=nil)
 		@state = :recieving_workers
-		if @server == nil
-			@server = TCPServer.new(listen_ip, listen_port)
-		end
 		waiting = []
 		count.times do |i|
 			worker = IMUXSocket.new(self)
@@ -141,23 +112,9 @@ class IMUXManager
 	# This method returns all information about the IMUXManager's state
 	#
 	def get_stats
-		idle_workers = 0
-		connecting_workers = 0
-		downloading_workers = 0
-		serving_workers = 0
 		pool_speed = 0
 		bound_ips = {}
 		@workers.each do |worker|
-			case worker.state
-				when :idle
-					idle_workers += 1
-				when :connecting
-					connecting_workers += 1
-				when :downloading
-					downloading_workers += 1
-				when :serving
-					serving_workers += 1
-			end
 			bound_ip = worker.bind_ip
 			if bound_ips[bound_ip] != nil
 				bound_ips[bound_ip] += 1
@@ -166,33 +123,10 @@ class IMUXManager
 			end
 			pool_speed += worker.transfer_speed
 		end
-		return {:server_ip => @peer_ip,
-				:multiplex_port => @port,
-				:worker_count => @workers.size,
-				:idle_workers => idle_workers,
-				:connecting_workers => connecting_workers,
-				:downloading_workers => downloading_workers,
-				:serving_workers => serving_workers,
+		return {:worker_count => @workers.size,
 				:state => @state,
-				:pause => @pause,
 				:bound_ips => bound_ips,
 				:pool_speed => pool_speed}
-	end
-	
-	def pause_workers
-		return 1 if @paused
-		@workers.each do |worker|
-			worker.pause = true
-		end
-		@paused = true
-	end
-	
-	def resume_workers
-		return 1 if !@paused
-		@workers.each do |worker|
-			worker.pause = false
-		end
-		@paused = false
 	end
 	
 	def enable_reset
@@ -211,35 +145,8 @@ class IMUXManager
 		@reset = false
 	end
 	
-	def enable_verification
-		return 1 if @verify
-		@workers.each do |worker|
-			worker.verify = true
-		end
-		@verify = true
-	end
-	
-	def disable_verification
-		return 1 if !@verify
-		@workers.each do |worker|
-			worker.verify = false
-		end
-		@verify = false
-	end
-	
-	def remove_worker(bind_ip)
-		@workers.each do |worker|
-			if worker.bind_ip == bind_ip
-				worker.close_connection
-				@workers.delete worker
-				return true
-			end
-			return false
-		end
-	end
-	
 	def close_session
 		@workers.each { |worker| worker.close_connection }
-		@server.close if @server != nil
+		@server.close
 	end
 end

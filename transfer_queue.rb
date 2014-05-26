@@ -10,19 +10,17 @@ require 'securerandom'
 #
 
 class TransferQueue
-	attr_accessor :pending			# Access and modify the contents of the queue as an array
-	attr_reader :processing			# Check if the queue is paused
-	attr_accessor :message_queue	# Access messages and errors
+	attr_accessor :pending
+	attr_accessor :message_queue
 
 	def initialize(client, server, imux_config)
-		@pending = []																		# Create a new array of pending transfers
-		@processing = true																	# By default transfers won't start unless the queue is told to begin processing
-		@server = server																	# Create instance variables for server and client
+		@pending = []
+		@server = server
 		@client = client
-		@process_thread = Thread.new{}														# Create a new thread to empty the queue
-		@message_queue = Queue.new															# UIs will access to queue to recieve messages and errors
+		@process_thread = Thread.new{}
+		@message_queue = Queue.new
 		@session_key = SecureRandom.hex.to_s
-		opened = create_imux_session(imux_config)											# Use the configuration information in imux_config to set up inverse multiplexing
+		opened = create_imux_session(imux_config)
 		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}" if opened
 		@message_queue << "Failed to create queue between #{@client.peer_ip} and #{@server.peer_ip}" if !opened
 	end
@@ -42,31 +40,9 @@ class TransferQueue
 			@message_queue << "Destination is not part of this transfer queue, aborting transfer"
 			return false
 		end
-		@pending << {:filename => filename, :source => source, :destination => destination, :destination_name => destination_name}			# Add the transfer information to the queue
+		@pending << {:filename => filename, :source => source, :destination => destination, :destination_name => destination_name}
 		@message_queue << "Adding tranfer: #{filename} (#{source.peer_ip}) -> #{destination_name} (#{destination.peer_ip})"
 		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
-	end
-
-	#
-	# This method is used to the user interface to pause a current transfer or prevent the queue from starting
-	#
-	def pause
-		if @process_thread.status != false
-			# tell both server and client to pause their imux managers
-		end
-		@processing = false
-	end
-
-	#
-	# This method is used by the user interface to resume transfers or start a queue
-	#
-	def process
-		if @process_thread.status == false
-			@process_thread = Thread.new{ process_queue } if @pending.size > 0
-		else
-			# tell both server and client to resume their imux managers
-		end
-		@processing = true
 	end
 
 	##
@@ -109,40 +85,8 @@ class TransferQueue
 		server_change.join
 	end
 	
-	def set_verification(state)
-		client_change = Thread.new{
-			verification_changed = @client.set_verification(@session_key, state)
-			@message_queue << "Could not set verification to #{state.to_s} on #{@client.peer_ip}" if !verification_changed
-			@message_queue << "Set verification to #{state.to_s} on #{@client.peer_ip}" if verification_changed
-		}
-		server_change = Thread.new{
-			verification_changed = @server.set_verification(@session_key, state)
-			@message_queue << "Could not set verification to #{state.to_s} on #{@server.peer_ip}" if !verification_changed
-			@message_queue << "Set verification to #{state.to_s} on #{@server.peer_ip}" if verification_changed
-		}
-		client_change.join
-		server_change.join
-	end
-	
-	#
-	# This method changes the number of workers in an imux session.  Change can be 
-	# :add or :remove, count is the number of workers, and bind_ip optionally only removes
-	# workers bound to that IP.  If no bind IP is specified it will remove evenly across all bind
-	# ips, if there are any.
-	#
-	def change_worker_count(change, count, bind_ip)
-		bind_ip = "nil" if bind_ip == nil
-		if change == :add
-			@server.recieve_more_workers("#{count}:#{@session_key}")
-			error = @client.create_more_workers("#{count}:#{bind_ip}:#{@session_key}")
-			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} increased by #{count}" if error == "0"
-			@message_queue << "Failed to add workers between #{@client.peer_ip} and #{@server.peer_ip}: #{error}" if error != "0"
-		elsif change == :remove
-			error = @client.remove_workers("#{0-count}:#{bind_ip}:#{@session_key}")
-			 
-			@message_queue << "Worker count between #{@client.peer_ip} and #{@server.peer_ip} decreased by #{count.abs}" if error == "0"
-			@message_queue << "Failed to remove #{count.abs} workers between #{@client.peer_ip} and #{@server.peer_ip}" if error != "0"
-		end
+	def close
+		# close the imux managers off each
 	end
 
 	private

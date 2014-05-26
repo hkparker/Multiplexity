@@ -46,12 +46,6 @@ class Session
 					create_imux_session command[1]
 				when "recievesession"
 					recieve_imux_session command[1]
-				when "createworkers"
-					create_workers command[1]
-				when "recieveworkers"
-					recieve_workers command[1]
-				when "removeworkers"
-					remove_workers command[1]
 				when "closesession"
 					close_imux_session
 				when "updatechunk"
@@ -176,45 +170,6 @@ class Session
 		end
 	end
 	
-	def create_workers(settings)
-		begin
-			settings = settings.split(":")
-			count = settings[0].to_i
-			bind_ip = settings[1]
-			session_key = settings[2]
-			@imux_connections[session_key].change_worker_count(count,bind_ip)
-			@client.puts "0"
-		rescue StandardError => e
-			@client.puts e.inspect
-		end
-	end
-	
-	def recieve_workers(settings)
-		begin
-			settings = settings.split(":")
-			count = settings[0].to_i
-			session_key = settings[1]
-			Thread.new{ @imux_connections[session_key].recieve_workers(count) }
-			@client.puts "0"
-		rescue StandardError => e
-			@client.puts e.inspect
-		end
-	end
-	
-	def remove_workers(settings)
-		begin
-			settings = settings.split(":")
-			change = settings[0].to_i
-			bind_ip = settings[1]
-			bind_ip = nil if bind_ip == "nil"
-			session_key = settings[2]
-			@imux_connections[session_key].change_worker_count(change, bind_ip)
-			@client.puts "0"
-		rescue StandardError => e
-			@client.puts e.inspect
-		end
-	end
-	
 	def close_imux_session(session_key)
 		@imux_connections[session_key].close_session
 	end
@@ -244,22 +199,6 @@ class Session
 				@imux_connections[session_key].enable_reset
 			elsif state == "false"
 				@imux_connections[session_key].disable_reset
-			end
-			@client.puts "0"
-		rescue
-			@client.puts "1"
-		end
-	end
-	
-	def set_verification(settings)
-		settings = settings.split(":")
-		session_key = settings[0]
-		state = settings[1]
-		begin
-			if state == "true"
-				@imux_connections[session_key].enable_verification
-			elsif state == "false"
-				@imux_connections[session_key].disable_verification
 			end
 			@client.puts "0"
 		rescue
@@ -304,6 +243,7 @@ class Session
 	##
 	
 	def close
+		# clean up all imux managers
 		Thread.current.terminate
 	end
 end

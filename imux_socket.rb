@@ -32,8 +32,6 @@ class IMUXSocket
 		@transfer_speed = 0
 		@bytes_transfered = 0
 		@reset = false
-		@pause = false
-		@verify = false	
 	end
 
 	def open_socket(peer_ip, port, bind_ip=nil)
@@ -74,20 +72,20 @@ class IMUXSocket
 		@reset = reset
 		@bytes_transfered = 0
 		loop{
-			sleep 1 until @pause == false
 			open_socket if @closed
-			request_next_chunk
-			response = @socket.gets.chomp
-			break if response == "DONE"
-			chunk_id, chunk_size, chunk_crc = parse_chunk_header response
+			@socket.puts "GETNEXT"
+			header = @socket.gets.chomp
+			break if header == "DONE"
+			chunk_id, chunk_size = header.split(":")
+			chunk_id = chunk_id.to_i
+			chunk_size = chunk_size.to_i
 			start = Time.now
 			chunk_data = recieve_chunk_data(chunk_size)
 			if chunk_data == nil
 				close_connection
-				break 
+				break
 			end
-			chunk_ok = verify_chunk(chunk_data, chunk_crc)
-			buffer.insert({:id => chunk_id, :data => chunk_data}) if chunk_ok
+			buffer.insert({:id => chunk_id, :data => chunk_data})
 			time_elapsed = Time.now - start
 			@transfer_speed = chunk_size / time_elapsed
 			@bytes_transfered += chunk_size
@@ -132,26 +130,6 @@ class IMUXSocket
 	# Download methods
 	#
 	
-	def request_next_chunk
-		if @verify
-			@socket.puts "GETNEXTWITHCRC"
-		else
-			@socket.puts "GETNEXT"
-		end
-	end
-
-	def parse_chunk_header(header)
-		header = header.split(":")
-		chunk_id = header[0].to_i
-		chunk_size = header[1].to_i
-		if header.size == 3
-			chunk_crc = header[2].to_i
-		else
-			chunk_crc = nil
-		end
-		return chunk_id, chunk_size, chunk_crc
-	end
-	
 	def recieve_chunk_data(chunk_size)
 		begin
 			chunk_data = @socket.read(chunk_size)
@@ -159,22 +137,6 @@ class IMUXSocket
 			chunk_data = nil
 		end
 		chunk_data
-	end
-
-	def verify_chunk(chunk_data, chunk_crc)
-		if @verify && chunk_crc != nil
-			local_crc = Zlib::crc32(chunk_data)
-			if local_crc == chunk_crc
-				@socket.puts "CRCOK"
-				return true
-			else
-				@socket.puts "CRCMISMATCH"
-				return false
-			end
-		else
-			@socket.puts "CRCOK"
-			return true
-		end
 	end
 	
 	def reset_socket

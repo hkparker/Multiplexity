@@ -35,6 +35,7 @@ class Host
 	end
 	
 	def close
+		# tell the session to close down
 		@control_socket.close
 	end
 
@@ -108,21 +109,6 @@ class Host
 		return @control_socket.gets.chomp
 	end
 
-	def create_more_workers(settings)
-		@control_socket.puts "createworkers #{settings}"
-		return @control_socket.gets.chomp
-	end
-	
-	def recieve_more_workers(settings)
-		@control_socket.puts "recieveworkers #{settings}"
-		return @control_socket.gets.chomp
-	end
-
-	def remove_workers(settings)
-		@control_socket.puts "removeworkers #{settings}"
-		return @control_socket.gets.chomp
-	end
-
 	def close_session(settings)
 		@control_socket.puts "closesession #{settings}"
 		return @control_socket.gets.chomp
@@ -141,14 +127,6 @@ class Host
 	#
 	def set_recycling(session_key, state)
 		@control_socket.puts "setrecycle #{session_key}:#{state.to_s}"
-		return @control_socket.gets.to_i == 0 ? true : false
-	end
-	
-	#
-	# Change if the Session asks for CRCs on chunks it downloads
-	#
-	def set_verification(session_key, state)
-		@control_socket.puts "setverification #{session_key}:#{state.to_s}"
 		return @control_socket.gets.to_i == 0 ? true : false
 	end
 	
