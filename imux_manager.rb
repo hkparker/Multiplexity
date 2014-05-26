@@ -71,7 +71,7 @@ class IMUXManager
 	# This method reads a file and serves it across the workers
 	#
 	def serve_file(filename, starting_position=0)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
+		raise "WorkerManager is currently #{@state}." if @state != :idle
 		@state = :serving
 		@imux_socket_threads = []
 		@file_queue = FileReadQueue.new(filename, 5242880, starting_position)
@@ -90,7 +90,7 @@ class IMUXManager
 	# This method has all the workers download chunks into a buffer
 	#
 	def download_file(filename)
-		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
+		raise "WorkerManager is currently #{@state}." if @state != :idle
 		@state = :downloading
 		buffer = Buffer.new(filename)
 		@working_workers = []

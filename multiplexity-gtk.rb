@@ -15,7 +15,14 @@ hosts_top_hbox = Gtk::HBox.new(false, 0)
 hosts_label = Gtk::Label.new
 hosts_label.set_markup("<span size=\"x-large\" weight=\"bold\">Hosts</span>")
 add_host = Gtk::Button.new("+")
+
+host_assistant = Gtk::Assistant.new()
+host_assistant.signal_connect("close"){
+	puts "!"
+	host_assistant.main_quit
+}
 add_host.signal_connect("clicked"){
+	host_assistant.show_all()
 	# add a host
 }
 hosts_filler = Gtk::HBox.new(true, 0)
@@ -240,33 +247,20 @@ current_stats_bar.pack_start recycle_sockets, false, false, 0
 
 
 
-change_worker_count = Gtk::HBox.new
-add_or_remove = Gtk::ComboBox.new
-add_or_remove.append_text("Add")
-add_or_remove.append_text("Remove")
-add_or_remove.set_active 0
-worker_count = Gtk::Entry.new
-worker_count.width_chars=3
-worker_count.xalign=1
-workers_label = Gtk::Label.new
-workers_label.set_markup("<span size=\"large\" weight=\"bold\"> workers </span>")
-add_bind_ip = Gtk::CheckButton.new("bind ip = ")
-bind_ip_to_add = Gtk::Entry.new
-bind_ip_to_add.width_chars=16
-bind_ip_to_add.set_sensitive false
-add_bind_ip.signal_connect("clicked") {
-	bind_ip_to_add.set_sensitive !bind_ip_to_add.sensitive?
+change_chunk_size = Gtk::HBox.new
+chunk_number = Gtk::Entry.new
+chunk_unit = Gtk::ComboBox.new
+chunk_unit.append_text("KB")
+chunk_unit.append_text("MB")
+chunk_unit.set_active 1
+change_chunk_size_button = Gtk::Button.new("Update chunk size")
+change_chunk_size_button.signal_connect("clicked"){
+	# change chunk size
 }
-change_worker_button = Gtk::Button.new("Ok")
-change_worker_button.signal_connect("clicked") {
-	# Add or remove the number of workers
-}
-change_worker_count.pack_start add_or_remove, false, false, 0
-change_worker_count.pack_start worker_count, false, false, 0
-change_worker_count.pack_start workers_label, false, false, 0
-change_worker_count.pack_start add_bind_ip, false, false, 0
-change_worker_count.pack_start bind_ip_to_add, false, false, 0
-change_worker_count.pack_start change_worker_button, false, false, 0
+
+change_chunk_size.pack_start chunk_number, false, false, 0
+change_chunk_size.pack_start chunk_unit, false, false, 0
+change_chunk_size.pack_start change_chunk_size_button, false, false, 0
 
 messages_top_bar = Gtk::HBox.new(false, 0)
 messages_label = Gtk::Label.new
@@ -278,7 +272,7 @@ messages = Gtk::TextView.new
 
 status_options.pack_start current_file_bar, false, false, 0
 status_options.pack_start current_stats_bar, false, false, 0
-status_options.pack_start change_worker_count, false, false, 0
+status_options.pack_start change_chunk_size, false, false, 0
 status_top_hbox.pack_start status_label, false, false, 0
 status.pack_start status_top_hbox, false, false, 0
 status.pack_start status_options, false, false, 0
@@ -292,10 +286,8 @@ queue_tree = Gtk::ListStore.new(String, String, String, String)
 queue_top_hbox = Gtk::HBox.new(false, 5)
 queue_label = Gtk::Label.new
 queue_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queue</span>")
-process_queue = Gtk::CheckButton.new("Process Queue")
 empty_queue = Gtk::Button.new("Empty queue")
 queue_top_hbox.pack_start queue_label, false, false, 0
-queue_top_hbox.pack_start process_queue, false, false, 0
 queue_top_hbox.pack_start empty_queue, false, false, 0
 
 

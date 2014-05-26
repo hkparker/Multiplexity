@@ -20,6 +20,7 @@ class TransferQueue
 		@process_thread = Thread.new{}
 		@message_queue = Queue.new
 		@session_key = SecureRandom.hex.to_s
+		@message_queue << "Attempting to build queue between #{@client.peer_ip} and #{@server.peer_ip}"
 		opened = create_imux_session(imux_config)
 		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}" if opened
 		@message_queue << "Failed to create queue between #{@client.peer_ip} and #{@server.peer_ip}" if !opened
@@ -127,6 +128,7 @@ class TransferQueue
 			rescue StandardError => e
 				@message_queue << "Error transferring #{transfer[:filename]} from #{transfer[:source].peer_ip} to #{transfer[:destination].peer_ip}: #{e.inspect}"
 			end
+			sleep 5
 		end
 	end
 end

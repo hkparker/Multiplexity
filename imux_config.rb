@@ -7,7 +7,7 @@ class IMUXConfig
 	attr_accessor :verify
 	attr_accessor :listen_ip
 
-	def initialize(sockets_per_ip=10,
+	def initialize(sockets_per_ip=150,
 				   bind_ips=[], port=8001,
 				   chunk_size=5242880,
 				   recycle_sockets=false,

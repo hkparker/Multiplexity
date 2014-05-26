@@ -69,7 +69,12 @@ class IMUXSocket
 		loop{
 			open_socket(@peer_ip, @port, @bind_ip) if @closed
 			@socket.puts "GETNEXT"
-			header = @socket.gets.chomp
+			begin
+				header = @socket.gets.chomp
+			rescue
+				close_connection
+				break
+			end
 			break if header == "DONE"
 			chunk_id, chunk_size = header.split(":")
 			chunk_id = chunk_id.to_i
