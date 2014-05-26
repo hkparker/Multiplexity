@@ -283,7 +283,7 @@ class Session
 				@client.puts "File cannot be read"
 			end
 		rescue StandardError => e
-			@client.puts e.inspect
+			@client.puts "#{e.inspect + ": " + e.backtrace[0]}"
 		end
 	end
 	
@@ -295,7 +295,7 @@ class Session
 			@imux_connections[session_key].download_file(filename)
 			@client.puts "0"
 		rescue StandardError => e
-			@client.puts e.inspect
+			@client.puts "#{e.inspect + ": " + e.backtrace[0]}"
 		end
 	end
 

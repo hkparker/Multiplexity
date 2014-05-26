@@ -78,9 +78,7 @@ class IMUXSocket
 			open_socket if @closed
 			request_next_chunk
 			response = @socket.gets.chomp
-			if response == "DONE"
-				return
-			end
+			break if response == "DONE"
 			chunk_id, chunk_size, chunk_crc = parse_chunk_header response
 			start = Time.now
 			chunk_data = recieve_chunk_data(chunk_size)
@@ -109,7 +107,6 @@ class IMUXSocket
 			chunk = nil
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
-			#	puts "Finishing socket"
 				@socket.puts "DONE"
 				return
 			end
