@@ -105,7 +105,7 @@ class IMUXManager
 			thread.join
 		end
 		@working_workers = []
-		@state = "idle"
+		@state = :idle
 	end
 	
 	#

@@ -22,7 +22,12 @@ class IMUXSocketTest
 		buffer = Buffer.new("testfileout")
 		file_queue = FileReadQueue.new("testfile",5242880)
 		Thread.new{ @server.serve_download(file_queue) }
-		@client.process_download(buffer, false, false)
+		@client.reset = true
+		@client.process_download(buffer)
+	end
+	
+	def server
+		@tcpserver
 	end
 end
 

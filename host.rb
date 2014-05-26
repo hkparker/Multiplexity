@@ -35,7 +35,7 @@ class Host
 	end
 	
 	def close
-		# tell the session to close down
+		@control_socket.puts "close"
 		@control_socket.close
 	end
 

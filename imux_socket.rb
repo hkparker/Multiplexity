@@ -11,23 +11,19 @@ require 'zlib'
 
 class IMUXSocket
 	attr_reader :state
-	attr_reader :bind_ip
 	attr_reader :port
 	attr_reader :peer_ip
-	
+	attr_reader :bind_ip
 	attr_reader :transfer_speed
 	attr_reader :bytes_transfered
-	
 	attr_accessor :reset
-	attr_accessor :pause
-	attr_accessor :verify
 	
 	def initialize(manager)
 		@manager = manager
 		@state = :new
-		@bind_ip = nil
 		@port = nil
 		@peer_ip = nil
+		@bind_ip = nil
 		@closed = true
 		@transfer_speed = 0
 		@bytes_transfered = 0
@@ -65,14 +61,13 @@ class IMUXSocket
 		@closed = false
 	end
 	
-	def process_download(buffer, verify, reset)
+	def process_download(buffer)
 		raise "Socket in use: #{@state}" if @state != :idle
 		@state = :downloading
-		@verify = verify
-		@reset = reset
 		@bytes_transfered = 0
+		@transfer_speed = 0
 		loop{
-			open_socket if @closed
+			open_socket(@peer_ip, @port, @bind_ip) if @closed
 			@socket.puts "GETNEXT"
 			header = @socket.gets.chomp
 			break if header == "DONE"
@@ -91,6 +86,7 @@ class IMUXSocket
 			@bytes_transfered += chunk_size
 			reset_socket
 		}
+		@transfer_speed = 0
 		@state = :idle
 	end
 	
@@ -98,30 +94,31 @@ class IMUXSocket
 		raise "Socket in use: #{@state}" if @state != :idle
 		@state = :serving
 		@bytes_transfered = 0
+		@transfer_speed = 0
 		loop{
 			recieve_connection(@manager.server) if @closed
 			request = @socket.gets.chomp
-			add_crc = add_crc? request
-			chunk = nil
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
 				@socket.puts "DONE"
 				return
 			end
-			chunk_header = build_chunk_header(chunk, add_crc)
-			success = send_chunk_data(chunk_header, chunk)
+			@socket.puts "#{chunk[:id]}:#{chunk[:data].size}"
+			success = send_chunk_data(chunk[:data])
 			if !success
-				puts "Chunk #{chunk[id]} is now stale"
 				file_queue.stale_chunks << chunk
 			end
-			client_confirm_crc(chunk)
 			reset_socket_server
 		}
+		@transfer_speed = 0
 		@state = :idle
 	end
 
 	def close_connection
-		@socket.close if @socket != nil
+		begin
+			@socket.close
+		rescue
+		end
 	end
 
 	private
@@ -153,39 +150,12 @@ class IMUXSocket
 	# Upload methods
 	#
 
-	def buffer_insert(buffer, semaphore, chunk_id, chunk_data)
-		semaphore.synchronize{ buffer.insert({:id => chunk_id, :data => chunk_data}) }
-	end
-	
-	def add_crc?(command)
-		case command
-			when "GETNEXT"
-				return false
-			when "GETNEXTWITHCRC"
-				return true
-		end
-	end
-
-	def build_chunk_header(chunk, add_crc)
-		chunk_header = "#{chunk[:id]}:#{chunk[:data].size}"
-		chunk_header += ":#{Zlib::crc32(chunk[:data])}" if add_crc
-		return chunk_header
-	end
-
-	def send_chunk_data(chunk_header, chunk)
-		@socket.puts chunk_header
+	def send_chunk_data(data)
 		begin
-			@socket.write(chunk[:data])
+			@socket.write(data)
 			return true
 		rescue
 			return false
-		end
-	end
-
-	def client_confirm_crc(chunk)
-		success = @socket.gets.chomp
-		if success == "CRCMISMATCH"
-			@manager.stale_chunks << chunk
 		end
 	end
 	

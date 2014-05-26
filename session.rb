@@ -52,8 +52,6 @@ class Session
 					change_chunk_size command[1]
 				when "setrecycle"
 					set_recycling command[1]
-				when "setverification"
-					set_verification command[1]
 				when "sendfile"
 					send_file command[1]
 				when "recievefile"
