@@ -101,7 +101,7 @@ class IMUXSocket
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
 				@socket.puts "DONE"
-				return
+				break
 			end
 			@socket.puts "#{chunk[:id]}:#{chunk[:data].size}"
 			success = send_chunk_data(chunk[:data])

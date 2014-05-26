@@ -42,7 +42,7 @@ class TransferQueue
 		end
 		@pending << {:filename => filename, :source => source, :destination => destination, :destination_name => destination_name}
 		@message_queue << "Adding tranfer: #{filename} (#{source.peer_ip}) -> #{destination_name} (#{destination.peer_ip})"
-		@process_thread = Thread.new{ process_queue } if @process_thread.status == false && @processing		# start a thread to process whats in the queue if there isn't already one and there is supposed to be one
+		@process_thread = Thread.new{ process_queue } if @process_thread.status == false	# start a thread to process whats in the queue if there isn't already one
 	end
 
 	##

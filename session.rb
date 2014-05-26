@@ -160,8 +160,8 @@ class Session
 			@imux_manager = IMUXManager.new
 			session_key = settings[4]
 			@imux_connections.merge!(session_key => @imux_manager)
-			@imux_manager.chunk_size = settings[3]
-			Thread.new{ @imux_manager.recieve_workers(socket_count, listen_ip, port) }
+			@imux_manager.set_chunk_size(settings[3].to_i)
+			Thread.new{ @imux_manager.recieve_workers(socket_count) }
 			@client.puts "0"
 		rescue StandardError => e
 			@client.puts e.inspect
@@ -181,7 +181,7 @@ class Session
 		session_key = settings[0]
 		size = settings[1].to_i
 		begin
-			@imux_connections[session_key].chunk_size = size
+			@imux_connections[session_key].set_chunk_size(size)
 			@client.puts "0"
 		rescue
 			@client.puts "1"

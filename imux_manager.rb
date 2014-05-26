@@ -13,19 +13,14 @@ require 'timeout'
 #
 
 class IMUXManager
-	attr_accessor :stale_chunks
-	attr_accessor :chunk_size
 	attr_accessor :server
 	
-	def initialize(port = 8000)
+	def initialize(port=8001)
 		@workers = []
-		@stale_chunks = []
 		@state = :new
 		@reset = false
 		@peer_ip = nil
-		@port = port
-		@chunk_size = 5242880
-		@server = TCPServer.new("0.0.0.0", @port)
+		@file_queue = nil
 	end
 	
 	#
@@ -34,7 +29,6 @@ class IMUXManager
 	def create_workers(peer_ip, port, bind_ips)
 		@state = :creating_workers
 		@peer_ip = peer_ip
-		@port = port
 		workers_created = 0
 		bind_ips.each do |bind_ip|
 			begin
@@ -52,7 +46,8 @@ class IMUXManager
 	#
 	# This method creates a server and accepts IMUX sockets
 	#
-	def recieve_workers(count, listen_ip=nil, listen_port=nil)
+	def recieve_workers(count, port=8001)
+		@server = TCPServer.new("0.0.0.0", port)
 		@state = :recieving_workers
 		waiting = []
 		count.times do |i|
@@ -75,18 +70,19 @@ class IMUXManager
 	#
 	# This method reads a file and serves it across the workers
 	#
-	def serve_file(filename)
+	def serve_file(filename, starting_position=0)
 		raise "WorkerManager is currently #{@state}.  Use another WorkerManager instance for concurrent transfers." if @state != :idle
 		@state = :serving
 		@imux_socket_threads = []
-		file_queue = FileReadQueue.new(filename, @chunk_size)
+		@file_queue = FileReadQueue.new(filename, 5242880, starting_position)
 		@workers.each do |worker|
-			@imux_socket_threads << Thread.new{ worker.serve_download(file_queue) }
+			@imux_socket_threads << Thread.new{ worker.serve_download(@file_queue) }
 		end
 		@imux_socket_threads.each do |thread|
 			thread.join
 		end
 		@imux_socket_threads = []
+		@file_queue = nil
 		@state = :idle
 	end
 	
@@ -99,7 +95,7 @@ class IMUXManager
 		buffer = Buffer.new(filename)
 		@working_workers = []
 		@workers.each do |worker|
-			@working_workers << Thread.new{ worker.process_download(buffer, @verify, @reset) }
+			@working_workers << Thread.new{ worker.process_download(buffer) }
 		end
 		@working_workers.each do |thread|
 			thread.join
@@ -123,7 +119,8 @@ class IMUXManager
 			end
 			pool_speed += worker.transfer_speed
 		end
-		return {:worker_count => @workers.size,
+		return {:state => @state,
+				:worker_count => @workers.size,
 				:state => @state,
 				:bound_ips => bound_ips,
 				:pool_speed => pool_speed}
@@ -145,8 +142,17 @@ class IMUXManager
 		@reset = false
 	end
 	
+	def set_chunk_size(chunk_size)
+		if @file_queue != nil
+			@file_queue.chunk_size = chunk_size
+		end
+	end
+	
 	def close_session
 		@workers.each { |worker| worker.close_connection }
-		@server.close
+		begin
+			@server.close
+		rescue
+		end
 	end
 end

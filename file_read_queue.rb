@@ -11,7 +11,7 @@ class FileReadQueue
 	attr_accessor :stale_chunks
 	attr_accessor :chunk_size
 	
-	def initialize(filename, chunk_size, starting_position=0)
+	def initialize(filename, chunk_size, starting_position)
 		@file = File.open(filename, 'rb')
 		@file.read(starting_position) if starting_position > 0
 		@chunk_size = chunk_size

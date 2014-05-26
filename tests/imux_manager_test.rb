@@ -4,13 +4,13 @@ require './imux_manager.rb'
 
 class IMUXManagerTest
 	def initialize
-		@socket_count = 15
+		@socket_count = 5
 	end
 	
 	def test_can_create_unbound_session
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		@server.close_session
@@ -20,65 +20,17 @@ class IMUXManagerTest
 	def test_can_create_bound_session
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		recieve.join
 		@server.close_session
 		return true
 	end
-
-	def test_can_add_unbound_workers
-		@server = IMUXManager.new
-		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
-		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
-		recieve.join
-		recieve = Thread.new{ @server.recieve_workers(10) }
-		@client.change_worker_count(10, nil)
-		recieve.join
-		@server.close_session
-		return @client.get_stats[:worker_count] == @socket_count+10
-	end
-
-	def test_can_add_bound_workers
-		@server = IMUXManager.new
-		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
-		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
-		recieve.join
-		recieve = Thread.new{ @server.recieve_workers(10) }
-		@client.change_worker_count(10, "127.0.0.1")
-		recieve.join
-		@server.close_session
-		return @client.get_stats[:worker_count] == @socket_count+10
-	end
-	
-	def test_can_remove_unbound_workers
-		@server = IMUXManager.new
-		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
-		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
-		recieve.join
-		@client.change_worker_count(-10,nil)
-		@server.close_session
-		return (@client.get_stats[:worker_count] == @socket_count-10)
-	end
-	
-	def test_can_remove_bound_workers
-		@server = IMUXManager.new
-		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
-		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
-		recieve.join
-		@client.change_worker_count(-10,"127.0.0.1")
-		@server.close_session
-		return (@client.get_stats[:worker_count] == @socket_count-10)
-	end
 	
 	def test_can_get_stats
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, "127.0.0.1"))
 		@client.get_stats
 		@server.get_stats
@@ -90,23 +42,20 @@ class IMUXManagerTest
 	def test_can_transfer_files
 		@server = IMUXManager.new
 		@client = IMUXManager.new
-		recieve = Thread.new{ @server.recieve_workers(@socket_count, "0.0.0.0", 8001) }
+		recieve = Thread.new{ @server.recieve_workers(@socket_count) }
 		@client.create_workers("127.0.0.1", 8001, Array.new(@socket_count, nil))
 		recieve.join
 		serve = Thread.new{ @server.serve_file("testfile") }
 		@client.download_file("testfileout")
 		serve.join
+		@client.close_session
 		@server.close_session
 		return true
 	end
 end
 
 test = IMUXManagerTest.new
-puts "test_can_create_unbound_session\t=>\t#{test.test_can_create_unbound_session}"
-puts "test_can_create_bound_session\t=>\t#{test.test_can_create_bound_session}"
-puts "test_can_add_unbound_workers\t=>\t#{test.test_can_add_unbound_workers}"
-puts "test_can_add_bound_workers\t=>\t#{test.test_can_add_bound_workers}"
-puts "test_can_remove_unbound_workers\t=>\t#{test.test_can_remove_unbound_workers}"
-puts "test_can_remove_bound_workers\t=>\t#{test.test_can_remove_bound_workers}"
-puts "test_can_get_stats\t\t=>\t#{test.test_can_get_stats}"
+#puts "test_can_create_unbound_session\t=>\t#{test.test_can_create_unbound_session}"
+#puts "test_can_create_bound_session\t=>\t#{test.test_can_create_bound_session}"
+#puts "test_can_get_stats\t\t=>\t#{test.test_can_get_stats}"
 puts "test_can_transfer_files\t\t=>\t#{test.test_can_transfer_files}"
