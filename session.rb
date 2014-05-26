@@ -241,7 +241,9 @@ class Session
 	##
 	
 	def close
-		# clean up all imux managers
+		@imux_connections.each do |key, imux_manager|
+			imux_manager.close_session
+		end
 		Thread.current.terminate
 	end
 end

@@ -11,8 +11,8 @@ class TransferQueueTest
 	
 	def test_can_create_tranfer_queue
 		@client = Localhost.new
-		@server = Localhost.new(8081)
-		#@server = Host.new("box.rutlen.net", 8000)
+		#@server = Localhost.new(8081)
+		@server = Host.new("box.rutlen.net", 8000)
 		imux_config = IMUXConfig.new
 		@transfer_queue = TransferQueue.new(@client, @server, imux_config)
 		collect_messages
@@ -33,7 +33,7 @@ class TransferQueueTest
 	end
 	
 	def test_can_transfer_file
-		@transfer_queue.add_transfer(@server, @client, "testfile", "testfiledown")
+		@transfer_queue.add_transfer(@server, @client, "testfileout", "testfiledown")
 		sleep 100
 	end
 	
