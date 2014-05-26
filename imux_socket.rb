@@ -108,7 +108,7 @@ class IMUXSocket
 			chunk = file_queue.next_chunk
 			if chunk[:data] == nil
 				@socket.puts "DONE"
-				return
+				break
 			end
 			chunk_header = build_chunk_header(chunk, add_crc)
 			success = send_chunk_data(chunk_header, chunk)
