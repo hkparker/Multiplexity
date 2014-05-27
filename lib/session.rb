@@ -3,7 +3,7 @@ require 'fileutils'
 require 'thread'
 require 'openssl'
 
-require './imux_manager.rb'
+require './lib/imux_manager.rb'
 
 #
 # This class represents the server side part of a control socket.  Sessions

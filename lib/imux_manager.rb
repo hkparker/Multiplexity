@@ -1,6 +1,6 @@
-require './imux_socket.rb'
-require './file_write_buffer.rb'
-require './file_read_queue.rb'
+require './lib/imux_socket.rb'
+require './lib/file_write_buffer.rb'
+require './lib/file_read_queue.rb'
 require 'socket'
 require 'timeout'
 

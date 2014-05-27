@@ -2,11 +2,33 @@
 
 require 'gtk2'
 
-## Create a new window
+class MultiplexityGTK
+
+	def initialize
+		@window = Gtk::Window.new("Multiplexity")
+		@window.set_default_size(1300,700)
+		@window.signal_connect("destroy") { Gtk.main_quit }
+		
+	end
+	
+	def build_essentials
+		
+	end
+	
+	def add_host
+	
+	end
+	
+	def attch_queue_tab
+	
+	end
+	
+end
+
+#MultiplexityGTK.new
 window = Gtk::Window.new("Multiplexity")
 window.set_default_size(1300,700)
 window.signal_connect("destroy") { Gtk.main_quit }
-
 
 ## Hosts
 hosts = Gtk::VBox.new(false, 5)

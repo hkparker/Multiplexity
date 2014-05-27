@@ -1,8 +1,6 @@
-require './file_write_buffer.rb'
 require 'socket'
 require 'zlib'
 require 'openssl'
-require './imux_manager.rb'
 
 #
 # The Host class wraps around multiplexity's control socket.  In scripts or user interfaces
