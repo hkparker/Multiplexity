@@ -5,14 +5,90 @@ require 'gtk2'
 class MultiplexityGTK
 
 	def initialize
-		@window = Gtk::Window.new("Multiplexity")
-		@window.set_default_size(1300,700)
-		@window.signal_connect("destroy") { Gtk.main_quit }
+		build_essentials
+		pack_essentials
 		
 	end
 	
 	def build_essentials
+		@window = Gtk::Window.new("Multiplexity")
+		@window.set_default_size(1300,700)
+		@window.signal_connect("destroy") { Gtk.main_quit }
+		build_hosts
 		
+	end
+	
+	def pack_essentials
+		pack_hosts
+	end
+	
+	def build_hosts
+		@hosts = Gtk::VBox.new(false, 5)
+		@hosts_top_hbox = Gtk::HBox.new(false, 0)
+		@hosts_label = Gtk::Label.new
+		@hosts_label.set_markup("<span size=\"x-large\" weight=\"bold\">Hosts</span>")
+		@hosts_filler = Gtk::HBox.new(true, 0)
+		@add_host = Gtk::Button.new("+")
+		
+		@host_assistant = Gtk::Assistant.new()
+		@add_host.signal_connect("clicked"){
+			# start the assistent
+		}
+
+		@hosts_tree = Gtk::ListStore.new(String, String)
+	#	host_list = []
+	#	host_list << {:state => " ", :hostname => "localhost"}
+	#	host_list << {:state => " ", :hostname => "host1"} 
+	#	host_list << {:state => " ", :hostname => "host2"}
+	#	host_list.each do |host|
+	#		row = @hosts_tree.append()
+	#		row[0] = host[:state]
+	#		row[1] = host[:hostname]
+	#	end
+
+		@hosts_view = Gtk::TreeView.new(@hosts_tree)
+		columns = ["","Hostname"]
+		columns.each_with_index do |column, i|
+			renderer = Gtk::CellRendererText.new
+			colum = Gtk::TreeViewColumn.new(column, renderer, :text => i)
+			@hosts_view.append_column(colum)
+		end
+
+		@rclick_host_menu = Gtk::Menu.new
+		@host_connect_item = Gtk::MenuItem.new("Connect")
+		@host_connect_item.signal_connect("activate") {
+			puts "connect"
+		}
+		@host_disconnect_item = Gtk::MenuItem.new("Disconnect")
+		@host_disconnect_item.signal_connect("activate") {
+			puts "disconnect"
+		}
+		@host_remove_item = Gtk::MenuItem.new("Remove")
+		@host_remove_item.signal_connect("activate") {
+			puts "remove"
+		}
+		@rclick_host_menu.append(host_connect_item)
+		@rclick_host_menu.append(host_disconnect_item)
+		@rclick_host_menu.append(host_remove_item)
+		@rclick_host_menu.show_all
+		@hosts_view.signal_connect("button_press_event") do |widget, event|
+			@rclick_host_menu.popup(nil, nil, event.button, event.time) if event.kind_of? Gdk::EventButton and event.button == 3
+		end
+
+		@scrolled_hosts = Gtk::ScrolledWindow.new
+		
+		@scrolled_hosts.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
+		
+	end
+	
+	def pack_hosts
+		@hosts_top_hbox.pack_start hosts_label, false, false, 0
+		@hosts_top_hbox.pack_start hosts_filler, true, true, 0
+		@hosts_top_hbox.pack_start add_host, false, false, 0
+		
+		@scrolled_hosts.add(@hosts_view)
+		@hosts.pack_start hosts_top_hbox, false, false, 0
+		@hosts.pack_start scrolled_hosts, true, true, 0
 	end
 	
 	def add_host
