@@ -1,11 +1,15 @@
 #!/usr/bin/env ruby
 
 require 'gtk2'
+require 'resolv'
 require './lib/queue_tab.rb'
+require './lib/host.rb'
 
 class MultiplexityGTK
 
 	def initialize
+		@host_objects = []
+		@queue_objects = []
 		build_essentials
 		@window.show_all
 		Gtk.main
@@ -16,7 +20,7 @@ class MultiplexityGTK
 		@window.set_default_size(1300,700)
 		@window.signal_connect("destroy") { Gtk.main_quit }
 		build_hosts
-		add_host_view({:state => " ", :hostname => "localhost"})
+		add_host(Localhost.new())
 		build_queues
 		@tabbed = Gtk::Notebook.new
 		@tabbed.set_size_request(1000,500)
@@ -44,7 +48,7 @@ class MultiplexityGTK
 		@add_host = Gtk::Button.new("+")
 		
 		@add_host.signal_connect("clicked"){
-			# start the assistent
+			ask_for_a_host
 		}
 
 		@hosts_tree = Gtk::ListStore.new(String, String)
@@ -88,10 +92,16 @@ class MultiplexityGTK
 		@hosts.pack_start @scrolled_hosts, true, true, 0
 	end
 	
-	def add_host_view(host)
+	def add_host(host)
+		@host_objects << host
 		row = @hosts_tree.append()
-		row[0] = host[:state]
-		row[1] = host[:hostname]
+		row[0] = ""
+		row[1] = host.peer_ip
+	end
+	
+	def remove_host(host)
+		@hosts.delete(host)
+		# remove from view
 	end
 	
 	def build_queues
@@ -101,7 +111,7 @@ class MultiplexityGTK
 		@queues_label.set_markup("<span size=\"x-large\" weight=\"bold\">Queues</span>")
 		@add_queue = Gtk::Button.new("+")
 		@add_queue.signal_connect("clicked"){
-			# Add a queue
+			build_a_queue
 		}
 		@queue_filler = Gtk::HBox.new(true, 0)
 		
@@ -126,7 +136,8 @@ class MultiplexityGTK
 		@queues.pack_start @scrolled_queues, true, true, 0
 	end
 	
-	def add_queue_view(queue)
+	def add_queue(queue)
+		@queue_objects << queue
 		row = @queues_tree.append()
 		row[0] = queue[:state]
 		row[1] = queue[:hostname]
@@ -136,6 +147,80 @@ class MultiplexityGTK
 		@tabbed.append_page(QueueTab.new.queue_tab, Gtk::Label.new("a <-> b"))
 	end
 	
+	def ask_for_a_host
+		add_host_box = Gtk::Dialog.new("New Host")
+		add_host_box.signal_connect('response') { add_host_box.destroy }
+
+		vbox = Gtk::VBox.new(false, 0)
+		hostname_port_line = Gtk::HBox.new(false, 0)
+		hostname_label = Gtk::Label.new("Hostname: ")
+		hostname_entry = Gtk::Entry.new()
+		port_label = Gtk::Label.new("Port: ")
+		port_entry = Gtk::Entry.new()
+		port_entry.width_chars = 5
+		port_entry.set_text("8000")
+		connect_button = Gtk::Button.new("Connect")
+		hostname_port_line.pack_start hostname_label, false, false, 0
+		hostname_port_line.pack_start hostname_entry, true, true, 0
+		hostname_port_line.pack_start port_label, false, false, 0
+		hostname_port_line.pack_start port_entry, false, false, 0
+		hostname_port_line.pack_start connect_button, false, false, 0
+		
+		connect_button.signal_connect("clicked") {
+			error = attempt_to_connect(hostname_entry.text, port_entry.text)
+			if error != nil
+				dialog = Gtk::MessageDialog.new($main_application_window, 
+									Gtk::Dialog::DESTROY_WITH_PARENT,
+									Gtk::MessageDialog::QUESTION,
+									Gtk::MessageDialog::BUTTONS_CLOSE,
+									"Could not connect to host: #{error}")
+				dialog.run
+				dialog.destroy
+			end
+		}
+		
+		vbox.pack_start hostname_port_line, false, false, 5
+		add_host_box.vbox.add(vbox)
+		add_host_box.show_all	
+	end
+
+	def build_a_queue
+		add_queue_box = Gtk::Dialog.new("New queue")
+		add_queue_box.signal_connect('response') { add_queue_box.destroy }
+
+		vbox = Gtk::VBox.new(false, 0)
+		
+		host_section = Gtk::VBox.new(false, 0)
+		host_selection_label = Gtk::Label.new()
+		host_selection_label.set_markup("<span size=\"x-large\" weight=\"bold\">Select hosts</span>")
+		host_section.pack_start host_selection_label, false, false, 0
+		
+		imux_section = Gtk::VBox.new(false, 0)
+		
+		vbox.pack_start host_section, false, false, 0
+		vbox.pack_start Gtk::HSeparator.new(), false, false, 5
+		vbox.pack_start imux_section, false, false, 5
+		add_queue_box.vbox.add(vbox)
+		add_queue_box.show_all	
+	end
+	
+	def attempt_to_connect(hostname, port)
+		begin
+			port = port.to_i
+		rescue
+			return "port is not an integer"
+		end
+		begin
+			ip = Resolv.getaddress(hostname)
+		rescue
+			return "could not resolve hostname"
+		end
+		host = Host.new(ip, port)
+		error = host.handshake
+		return error if error != nil
+		add_host(host)
+		return nil
+	end
 end
 
 MultiplexityGTK.new

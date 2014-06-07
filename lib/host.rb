@@ -1,6 +1,7 @@
 require 'socket'
 require 'zlib'
 require 'openssl'
+require './lib/session.rb'
 
 #
 # The Host class wraps around multiplexity's control socket.  In scripts or user interfaces
@@ -19,16 +20,23 @@ class Host
 	def initialize(server_ip, server_port)
 		@control_socket_ip = server_ip
 		@control_socket_port = server_port
-		handshake
 	end
 	
 	def handshake
 		begin
 			@control_socket = TCPSocket.new(@control_socket_ip, @control_socket_port)
-			@control_socket.puts "Hello Multiplexity"
-			return ("Hello Client" == @control_socket.gets.chomp)
 		rescue
-			return false
+			return "Failed to open socket"
+		end
+		begin
+			@control_socket.puts "Hello Multiplexity"
+			response = @control_socket.gets.chomp
+			if response != "Hello Client"
+				@control_socket.close
+				return "handshake failure"
+			end
+		rescue
+			return "socket closed on handshake"
 		end
 	end
 	
