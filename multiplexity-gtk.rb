@@ -195,9 +195,23 @@ class MultiplexityGTK
 		host_section = Gtk::VBox.new(false, 0)
 		host_selection_label = Gtk::Label.new()
 		host_selection_label.set_markup("<span size=\"x-large\" weight=\"bold\">Select hosts</span>")
+		host_selection_line = Gtk::HBox.new(false, 0)
+		client_label = Gtk::Label.new("Client: ")
+		client_selection = Gtk::ComboBox.new()
+		server_label = Gtk::Label.new("Server: ")
+		server_selection = Gtk::ComboBox.new()
+		host_selection_line.pack_start client_label, false, false, 0
+		host_selection_line.pack_start client_selection, true, true, 0
+		host_selection_line.pack_start server_label, false, false, 0
+		host_selection_line.pack_start server_selection, true, true, 0
 		host_section.pack_start host_selection_label, false, false, 0
+		host_section.pack_start host_selection_line, false, false, 0
+		
+		
 		
 		imux_section = Gtk::VBox.new(false, 0)
+		imux_section_label = Gtk::Label.new()
+		imux_section_label.set_markup("<span size=\"x-large\" weight=\"bold\">IMUX Settings</span>")
 		bound_ip_box = Gtk::VBox.new(false, 0)
 		add_ip_button = Gtk::Button.new("Add another IP")
 		
@@ -205,15 +219,15 @@ class MultiplexityGTK
 			bound_ip_box.pack_start Gtk::Label.new("Yep").show, false, false, 0
 		}
 		
-		imux_section.pack_start bound_ip_box , false, false, 0
+		imux_section.pack_start imux_section_label, false, false, 0
+		imux_section.pack_start bound_ip_box, true, true, 0
 		imux_section.pack_start add_ip_button, false, false, 0
 		
 		create_button = Gtk::Button.new("Create queue")
 		
 		vbox.pack_start host_section, false, false, 0
-		vbox.pack_start Gtk::HSeparator.new(), false, false, 5
-		vbox.pack_start imux_section, false, false, 5
-		vbox.pack_start create_button, false, false, 5
+		vbox.pack_start imux_section, false, false, 0
+		vbox.pack_start create_button, false, false, 0
 		add_queue_box.vbox.add(vbox)
 		add_queue_box.show_all	
 	end
