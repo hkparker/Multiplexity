@@ -196,10 +196,22 @@ class MultiplexityGTK
 		host_section.pack_start host_selection_label, false, false, 0
 		
 		imux_section = Gtk::VBox.new(false, 0)
+		bound_ip_box = Gtk::VBox.new(false, 0)
+		add_ip_button = Gtk::Button.new("Add another IP")
+		
+		add_ip_button.signal_connect("clicked"){
+			bound_ip_box.pack_start Gtk::Label.new("Yep").show, false, false, 0
+		}
+		
+		imux_section.pack_start bound_ip_box , false, false, 0
+		imux_section.pack_start add_ip_button, false, false, 0
+		
+		create_button = Gtk::Button.new("Create queue")
 		
 		vbox.pack_start host_section, false, false, 0
 		vbox.pack_start Gtk::HSeparator.new(), false, false, 5
 		vbox.pack_start imux_section, false, false, 5
+		vbox.pack_start create_button, false, false, 5
 		add_queue_box.vbox.add(vbox)
 		add_queue_box.show_all	
 	end
