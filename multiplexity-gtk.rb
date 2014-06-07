@@ -96,7 +96,7 @@ class MultiplexityGTK
 		@host_objects << host
 		row = @hosts_tree.append()
 		row[0] = ""
-		row[1] = host.peer_ip
+		row[1] = host.hostname
 	end
 	
 	def remove_host(host)
@@ -176,6 +176,8 @@ class MultiplexityGTK
 									"Could not connect to host: #{error}")
 				dialog.run
 				dialog.destroy
+			else
+				add_host_box.destroy
 			end
 		}
 		
@@ -222,12 +224,7 @@ class MultiplexityGTK
 		rescue
 			return "port is not an integer"
 		end
-		begin
-			ip = Resolv.getaddress(hostname)
-		rescue
-			return "could not resolve hostname"
-		end
-		host = Host.new(ip, port)
+		host = Host.new(hostname, port)
 		error = host.handshake
 		return error if error != nil
 		add_host(host)

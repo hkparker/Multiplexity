@@ -1,4 +1,5 @@
 require 'socket'
+require 'resolv'
 require 'zlib'
 require 'openssl'
 require './lib/session.rb'
@@ -16,13 +17,19 @@ class Host
 	attr_reader :control_socket_ip
 	attr_reader :control_socket_port
 	alias :peer_ip :control_socket_ip
+	attr_reader :hostname
 
-	def initialize(server_ip, server_port)
-		@control_socket_ip = server_ip
+	def initialize(hostname, server_port)
+		@hostname = hostname
 		@control_socket_port = server_port
 	end
 	
 	def handshake
+		begin
+			@control_socket_ip = Resolv.getaddress(hostname)
+		rescue
+			return "could not resolve host name"
+		end
 		begin
 			@control_socket = TCPSocket.new(@control_socket_ip, @control_socket_port)
 		rescue
@@ -153,6 +160,7 @@ end
 
 class Localhost < Host
 	def initialize(port = 8000)
+		@hostname = "localhost"
 		@control_socket_ip = "127.0.0.1"
 		@control_socket_port = port
 		server = TCPServer.new("0.0.0.0", @control_socket_port)
