@@ -3,6 +3,7 @@
 require 'gtk2'
 require 'resolv'
 require './lib/queue_tab.rb'
+require './lib/transfer_queue.rb'
 require './lib/host.rb'
 
 class MultiplexityGTK
@@ -36,7 +37,7 @@ class MultiplexityGTK
 		hbox.pack_start vbox, false, false, 0
 		hbox.pack_start @tabbed, true, true, 0
 		@window.add(hbox)
-		attach_queue_tab
+		#attach_queue_tab
 	end
 	
 	def build_hosts
@@ -144,7 +145,9 @@ class MultiplexityGTK
 	end
 	
 	def attach_queue_tab
-		@tabbed.append_page(QueueTab.new.queue_tab, Gtk::Label.new("a <-> b"))
+		page = QueueTab.new(nil,nil,nil).queue_tab
+		page.show_all
+		@tabbed.append_page(page, Gtk::Label.new("a <-> b"))
 	end
 	
 	def ask_for_a_host
@@ -172,7 +175,7 @@ class MultiplexityGTK
 		pass_connect_line.pack_start connect_button, true, true, 0
 		
 		connect_button.signal_connect("clicked") {
-			error = attempt_to_connect(hostname_entry.text, port_entry.text)
+			error = attempt_to_connect(hostname_entry.text, port_entry.text, password_entry.text)
 			if error != nil
 				dialog = Gtk::MessageDialog.new($main_application_window, 
 									Gtk::Dialog::DESTROY_WITH_PARENT,
@@ -192,20 +195,40 @@ class MultiplexityGTK
 		add_host_box.show_all	
 	end
 
+	def build_ip_config_line
+		line = Gtk::HBox.new(false, 5)
+		ip_entry = Gtk::Entry.new
+		ip_entry.width_chars=3
+		ip_label = Gtk::Label.new("IPs")
+		bound = Gtk::CheckButton.new("Bound")
+		bind_ip = Gtk::Entry.new
+		line.pack_start ip_entry, false, false, 0
+		line.pack_start ip_label, false, false, 0
+		line.pack_start bound, false, false, 0
+		line.pack_start bind_ip, true, true, 0
+		return line
+	end
+
 	def build_a_queue
 		add_queue_box = Gtk::Dialog.new("New queue")
 		add_queue_box.signal_connect('response') { add_queue_box.destroy }
 
-		vbox = Gtk::VBox.new(false, 0)
+		vbox = Gtk::VBox.new(false, 5)
 		
-		host_section = Gtk::VBox.new(false, 0)
+		host_section = Gtk::VBox.new(false, 5)
 		host_selection_label = Gtk::Label.new()
 		host_selection_label.set_markup("<span size=\"x-large\" weight=\"bold\">Select hosts</span>")
-		host_selection_line = Gtk::HBox.new(false, 0)
+		host_selection_line = Gtk::HBox.new(false, 5)
 		client_label = Gtk::Label.new("Client: ")
 		client_selection = Gtk::ComboBox.new()
+		@host_objects.each do |host|
+			client_selection.append_text host.hostname
+		end
 		server_label = Gtk::Label.new("Server: ")
 		server_selection = Gtk::ComboBox.new()
+		@host_objects.each do |host|
+			server_selection.append_text host.hostname
+		end
 		host_selection_line.pack_start client_label, false, false, 0
 		host_selection_line.pack_start client_selection, true, true, 0
 		host_selection_line.pack_start server_label, false, false, 0
@@ -213,23 +236,27 @@ class MultiplexityGTK
 		host_section.pack_start host_selection_label, false, false, 0
 		host_section.pack_start host_selection_line, false, false, 0
 		
-		
-		
 		imux_section = Gtk::VBox.new(false, 0)
 		imux_section_label = Gtk::Label.new()
 		imux_section_label.set_markup("<span size=\"x-large\" weight=\"bold\">IMUX Settings</span>")
 		bound_ip_box = Gtk::VBox.new(false, 0)
 		add_ip_button = Gtk::Button.new("Add another IP")
-		
 		add_ip_button.signal_connect("clicked"){
-			bound_ip_box.pack_start Gtk::Label.new("Yep").show, false, false, 0
+			bound_ip_box.pack_start build_ip_config_line.show_all, false, false, 0
 		}
 		
 		imux_section.pack_start imux_section_label, false, false, 0
 		imux_section.pack_start bound_ip_box, true, true, 0
 		imux_section.pack_start add_ip_button, false, false, 0
-		
+
 		create_button = Gtk::Button.new("Create queue")
+		create_button.signal_connect("clicked"){
+			# create the new transfer queue object here and pass it into a tabbed queue
+			# build the queue object
+			# if something failes, report the error and close
+			# if not, 
+			attach_queue_tab
+		}
 		
 		vbox.pack_start host_section, false, false, 0
 		vbox.pack_start imux_section, false, false, 0
@@ -238,13 +265,13 @@ class MultiplexityGTK
 		add_queue_box.show_all	
 	end
 	
-	def attempt_to_connect(hostname, port)
+	def attempt_to_connect(hostname, port, password)
 		begin
 			port = port.to_i
 		rescue
 			return "port is not an integer"
 		end
-		host = Host.new(hostname, port)
+		host = Host.new(hostname, port, password)
 		error = host.handshake
 		return error if error != nil
 		add_host(host)

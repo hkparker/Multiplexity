@@ -1,9 +1,9 @@
 class QueueTab
 	attr_accessor :queue_tab
-	def initialize
-		@client = nil
-		@server = nil
-		@transfer_queue = nil
+	def initialize(client, server, transfer_queue)
+		@client = client
+		@server = server
+		@transfer_queue = transfer_queue
 		build_essentials
 	end
 	
