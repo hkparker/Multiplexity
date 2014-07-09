@@ -19,9 +19,10 @@ class Host
 	alias :peer_ip :control_socket_ip
 	attr_reader :hostname
 
-	def initialize(hostname, server_port)
+	def initialize(hostname, server_port, password)
 		@hostname = hostname
 		@control_socket_port = server_port
+		@password = password
 	end
 	
 	def handshake
@@ -41,6 +42,12 @@ class Host
 			if response != "Hello Client"
 				@control_socket.close
 				return "handshake failure"
+			end
+			@control_socket.puts @password
+			response = @control_socket.gets.chomp
+			if response == "PASS FAIL"
+				@control_socket.close
+				return "incorrect password"
 			end
 		rescue
 			return "socket closed on handshake"

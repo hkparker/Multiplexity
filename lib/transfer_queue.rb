@@ -87,7 +87,7 @@ class TransferQueue
 	end
 	
 	def close
-		# close the imux managers off each
+		# close the imux managers of each
 	end
 
 	private

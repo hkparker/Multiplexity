@@ -152,19 +152,24 @@ class MultiplexityGTK
 		add_host_box.signal_connect('response') { add_host_box.destroy }
 
 		vbox = Gtk::VBox.new(false, 0)
-		hostname_port_line = Gtk::HBox.new(false, 0)
+		hostname_port_line = Gtk::HBox.new(false, 5)
 		hostname_label = Gtk::Label.new("Hostname: ")
 		hostname_entry = Gtk::Entry.new()
 		port_label = Gtk::Label.new("Port: ")
 		port_entry = Gtk::Entry.new()
 		port_entry.width_chars = 5
 		port_entry.set_text("8000")
+		pass_connect_line = Gtk::HBox.new(false, 5)
+		password_label = Gtk::Label.new("Password: ")
+		password_entry = Gtk::Entry.new()
 		connect_button = Gtk::Button.new("Connect")
 		hostname_port_line.pack_start hostname_label, false, false, 0
 		hostname_port_line.pack_start hostname_entry, true, true, 0
 		hostname_port_line.pack_start port_label, false, false, 0
 		hostname_port_line.pack_start port_entry, false, false, 0
-		hostname_port_line.pack_start connect_button, false, false, 0
+		pass_connect_line.pack_start password_label, false, false, 0
+		pass_connect_line.pack_start password_entry, false, false, 0
+		pass_connect_line.pack_start connect_button, true, true, 0
 		
 		connect_button.signal_connect("clicked") {
 			error = attempt_to_connect(hostname_entry.text, port_entry.text)
@@ -182,6 +187,7 @@ class MultiplexityGTK
 		}
 		
 		vbox.pack_start hostname_port_line, false, false, 5
+		vbox.pack_start pass_connect_line, false, false, 5
 		add_host_box.vbox.add(vbox)
 		add_host_box.show_all	
 	end

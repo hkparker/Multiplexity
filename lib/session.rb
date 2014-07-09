@@ -16,16 +16,28 @@ class Session
 	def initialize(client)
 		@client = client
 		@imux_connections = {}
-		handshake
-		process_commands
+		@password = "tmpauthforpoc"
+		process_commands if handshake
 	end
 
 	private
 	
 	def handshake
-		init = @client.gets.chomp
-		raise "Connection not from a multiplexity client" if init != "Hello Multiplexity"
-		@client.puts "Hello Client"
+		begin
+			init = @client.gets.chomp
+			raise "Connection not from a multiplexity client" if init != "Hello Multiplexity"
+			@client.puts "Hello Client"
+			pass = @client.gets.chomp
+			if pass != @password
+				@client.puts "PASS FAIL"
+				return false
+			else
+				@client.puts "PASS OK"
+			end
+			return true
+		rescue
+			return false
+		end
 	end
 
 	def process_commands
