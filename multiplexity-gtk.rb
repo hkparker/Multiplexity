@@ -11,6 +11,7 @@ class MultiplexityGTK
 	def initialize
 		@host_objects = []
 		@queue_objects = []
+		@tabs = []
 		build_essentials
 		@window.show_all
 		Gtk.main
@@ -144,10 +145,12 @@ class MultiplexityGTK
 		row[1] = queue[:hostname]
 	end
 	
-	def attach_queue_tab
-		page = QueueTab.new(nil,nil,nil).queue_tab
+	def attach_queue_tab(client, server, transfer_queue)
+		tab = QueueTab.new(client, server, transfer_queue)
+		@tabs << tab
+		page = tab.queue_tab
 		page.show_all
-		@tabbed.append_page(page, Gtk::Label.new("a <-> b"))
+		@tabbed.append_page(page, Gtk::Label.new("#{client.hostname} <-> #{server.hostname}"))
 	end
 	
 	def ask_for_a_host
@@ -251,11 +254,10 @@ class MultiplexityGTK
 
 		create_button = Gtk::Button.new("Create queue")
 		create_button.signal_connect("clicked"){
-			# create the new transfer queue object here and pass it into a tabbed queue
-			# build the queue object
-			# if something failes, report the error and close
-			# if not, 
-			attach_queue_tab
+			# get the host objects from the drop down menus
+			# create the new transfer queue object
+			# if there were any errors, report and break
+			attach_queue_tab(client, server, transfer_queue)
 		}
 		
 		vbox.pack_start host_section, false, false, 0
