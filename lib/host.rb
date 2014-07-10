@@ -175,5 +175,8 @@ class Localhost < Host
 		@control_socket = TCPSocket.new("127.0.0.1", @control_socket_port)
 		@control_socket.puts "Hello Multiplexity"
 		@control_socket.gets
+		@control_socket.puts "tmpauthforpoc"
+		@control_socket.gets
+		
 	end
 end

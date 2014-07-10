@@ -263,8 +263,8 @@ class MultiplexityGTK
 			server = nil
 			transfer_queue = nil
 			@host_objects.each do |host|
-				client = host if host.hostname = client_selection.active_text
-				server = host if host.hostname = server_selection.active_text
+				client = host if host.hostname == client_selection.active_text
+				server = host if host.hostname == server_selection.active_text
 			end
 			if server == nil || client == nil
 				dialog = Gtk::MessageDialog.new($main_application_window, 
@@ -278,6 +278,7 @@ class MultiplexityGTK
 			end
 			imux_config = IMUXConfig.new()	# ok so actually parse the input and make this object
 			transfer_queue = TransferQueue.new(client, server, imux_config)
+			Thread.new{ loop{ puts transfer_queue.message_queue.pop } }
 			if !transfer_queue.opened
 				dialog = Gtk::MessageDialog.new($main_application_window, 
 									Gtk::Dialog::DESTROY_WITH_PARENT,
