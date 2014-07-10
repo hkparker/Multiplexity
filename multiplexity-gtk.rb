@@ -5,6 +5,7 @@ require 'resolv'
 require './lib/queue_tab.rb'
 require './lib/transfer_queue.rb'
 require './lib/host.rb'
+require './lib/imux_config.rb'
 
 class MultiplexityGTK
 
@@ -205,6 +206,10 @@ class MultiplexityGTK
 		ip_label = Gtk::Label.new("IPs")
 		bound = Gtk::CheckButton.new("Bound")
 		bind_ip = Gtk::Entry.new
+		bound.signal_connect("toggeled") {
+			bin_ip.set_sensitive !bind_ip.sensitive?
+		}
+		bin_ip.set_sensitive = false
 		line.pack_start ip_entry, false, false, 0
 		line.pack_start ip_label, false, false, 0
 		line.pack_start bound, false, false, 0
@@ -254,9 +259,35 @@ class MultiplexityGTK
 
 		create_button = Gtk::Button.new("Create queue")
 		create_button.signal_connect("clicked"){
-			# get the host objects from the drop down menus
-			# create the new transfer queue object
-			# if there were any errors, report and break
+			client = nil
+			server = nil
+			transfer_queue = nil
+			@host_objects.each do |host|
+				client = host if host.hostname = client_selection.active_text
+				server = host if host.hostname = server_selection.active_text
+			end
+			if server == nil || client == nil
+				dialog = Gtk::MessageDialog.new($main_application_window, 
+									Gtk::Dialog::DESTROY_WITH_PARENT,
+									Gtk::MessageDialog::QUESTION,
+									Gtk::MessageDialog::BUTTONS_CLOSE,
+									"Please select both a server and a client.")
+				dialog.run
+				dialog.destroy
+				break
+			end
+			imux_config = IMUXConfig.new()	# ok so actually parse the input and make this object
+			transfer_queue = TransferQueue.new(client, server, imux_config)
+			if !transfer_queue.opened
+				dialog = Gtk::MessageDialog.new($main_application_window, 
+									Gtk::Dialog::DESTROY_WITH_PARENT,
+									Gtk::MessageDialog::QUESTION,
+									Gtk::MessageDialog::BUTTONS_CLOSE,
+									"The transfer queue could not be built correctly.  See the messages box for more information.")
+				dialog.run
+				dialog.destroy
+				break
+			end
 			attach_queue_tab(client, server, transfer_queue)
 		}
 		

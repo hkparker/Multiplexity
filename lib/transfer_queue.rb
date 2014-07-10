@@ -12,6 +12,7 @@ require 'securerandom'
 class TransferQueue
 	attr_accessor :pending
 	attr_accessor :message_queue
+	attr_reader :opened
 
 	def initialize(client, server, imux_config)
 		@pending = []
@@ -21,9 +22,9 @@ class TransferQueue
 		@message_queue = Queue.new
 		@session_key = SecureRandom.hex.to_s
 		@message_queue << "Attempting to build queue between #{@client.peer_ip} and #{@server.peer_ip}"
-		opened = create_imux_session(imux_config)
-		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}" if opened
-		@message_queue << "Failed to create queue between #{@client.peer_ip} and #{@server.peer_ip}" if !opened
+		@opened = create_imux_session(imux_config)
+		@message_queue << "Created queue between #{@client.peer_ip} and #{@server.peer_ip}" if @opened
+		@message_queue << "Failed to create queue between #{@client.peer_ip} and #{@server.peer_ip}" if !@opened
 	end
 
 	#
