@@ -171,16 +171,29 @@ class QueueTab
 		queue_files.pack_start_defaults(scrolled_queue)
 	end
 
-	def update_files(host, host_tree)
-		files = host.get_server_files()
+	def update_client_files
+		files = @client.get_remote_files()
 		files.each do |file|
-			row = host_tree.append()
+			row = @client_tree.append()
 			row[0] = file[:filename]
 			row[1] = file[:path]
-			row[2] = file[:size]
+			row[2] = file[:size].to_s
 			row[3] = file[:type]
 			row[4] = file[:last_write]
-			row[5] = file[:readable]
+			row[5] = file[:readable].to_s
+		end
+	end
+	
+	def update_server_files
+		files = @server.get_remote_files()
+		files.each do |file|
+			row = @server_tree.append()
+			row[0] = file[:filename]
+			row[1] = file[:path]
+			row[2] = file[:size].to_s
+			row[3] = file[:type]
+			row[4] = file[:last_write]
+			row[5] = file[:readable].to_s
 		end
 	end
 end

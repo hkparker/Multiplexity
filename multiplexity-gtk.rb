@@ -151,7 +151,13 @@ class MultiplexityGTK
 		@tabs << tab
 		page = tab.queue_tab
 		page.show_all
+		tab.update_client_files
+		tab.update_server_files
 		@tabbed.append_page(page, Gtk::Label.new("#{client.hostname} <-> #{server.hostname}"))
+		row = @queues_tree.append()
+		row[0] = ""
+		row[1] = client.hostname
+		row[2] = server.hostname
 	end
 	
 	def ask_for_a_host
@@ -290,6 +296,7 @@ class MultiplexityGTK
 				break
 			end
 			attach_queue_tab(client, server, transfer_queue)
+			add_queue_box.destroy
 		}
 		
 		vbox.pack_start host_section, false, false, 0
