@@ -212,10 +212,10 @@ class MultiplexityGTK
 		ip_label = Gtk::Label.new("IPs")
 		bound = Gtk::CheckButton.new("Bound")
 		bind_ip = Gtk::Entry.new
-		bound.signal_connect("toggeled") {
-			bin_ip.set_sensitive !bind_ip.sensitive?
+		bound.signal_connect("clicked") {
+			bind_ip.set_sensitive !bind_ip.sensitive?
 		}
-		bin_ip.set_sensitive = false
+		bind_ip.set_sensitive false
 		line.pack_start ip_entry, false, false, 0
 		line.pack_start ip_label, false, false, 0
 		line.pack_start bound, false, false, 0
